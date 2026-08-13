@@ -17,14 +17,14 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Set up MATLAB R2024a
-        uses: matlab-actions/setup-matlab@v3
+        uses: matlab-actions/setup-matlab@2323adb8243827ea460b0def4c413545aaec46a9 # v3
         with:
           release: R2024a
 
       - name: Run core build and tests
-        uses: matlab-actions/run-build@v3
+        uses: matlab-actions/run-build@ed1a00aeaf0b3e7946e28e8263eb5fe5ec232106 # v3
         with:
           tasks: test

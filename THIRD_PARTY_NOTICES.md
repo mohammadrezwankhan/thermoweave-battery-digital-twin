@@ -1,6 +1,6 @@
 # ThermoWeave third-party notices
 
-Status: repository-wide provenance audit complete for the local package (2026-08-13).
+Status: repository-wide provenance audit complete; workflow pin audit refreshed 2026-08-14.
 
 ## MATLAB, Simulink, and related products
 
@@ -16,15 +16,14 @@ The citation above does not grant a license to copy source code, prose, diagrams
 
 GitHub-hosted repository and workflow services, if used, are provided under GitHub's terms. The workflow files reference these external actions; their source is not vendored here:
 
-- `actions/checkout@v6`, <https://github.com/actions/checkout>, MIT License.
-- `actions/configure-pages@v5`, <https://github.com/actions/configure-pages>, MIT License.
-- `actions/upload-pages-artifact@v4`, <https://github.com/actions/upload-pages-artifact>, MIT License.
-- `actions/deploy-pages@v4`, <https://github.com/actions/deploy-pages>, MIT License.
-- `actions/upload-artifact@v4`, <https://github.com/actions/upload-artifact>, MIT License.
-- `matlab-actions/setup-matlab@v3`, <https://github.com/matlab-actions/setup-matlab>, BSD 3-Clause License.
-- `matlab-actions/run-build@v3`, <https://github.com/matlab-actions/run-build>, BSD 3-Clause License.
+- `actions/checkout` commit `d23441a48e516b6c34aea4fa41551a30e30af803` (resolved from `v6` on 2026-08-14), <https://github.com/actions/checkout>, MIT License.
+- `actions/configure-pages` commit `983d7736d9b0ae728b81ab479565c72886d7745b` (resolved from `v5` on 2026-08-14), <https://github.com/actions/configure-pages>, MIT License.
+- `actions/upload-pages-artifact` commit `7b1f4a764d45c48632c6b24a0339c27f5614fb0b` (resolved from `v4` on 2026-08-14), <https://github.com/actions/upload-pages-artifact>, MIT License.
+- `actions/deploy-pages` commit `d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e` (resolved from `v4` on 2026-08-14), <https://github.com/actions/deploy-pages>, MIT License.
+- `matlab-actions/setup-matlab` commit `2323adb8243827ea460b0def4c413545aaec46a9` (resolved from `v3` on 2026-08-14), <https://github.com/matlab-actions/setup-matlab>, BSD 3-Clause License.
+- `matlab-actions/run-build` commit `ed1a00aeaf0b3e7946e28e8263eb5fe5ec232106` (resolved from `v3` on 2026-08-14), <https://github.com/matlab-actions/run-build>, BSD 3-Clause License.
 
-These major-version references are intentionally readable but mutable. Their source is not included in this repository, and the listed licenses are the upstream license classifications for the referenced actions, not a license grant for bundled code. Before a public release, audit the resolved commits and pin immutable revisions, record the resolved revisions and notices, and review any license change. GitHub trademarks remain the property of GitHub, Inc.; their appearance does not imply endorsement.
+The workflow references are pinned to the immutable commits recorded above; readable version comments remain beside the pins. Their source is not included in this repository, and the listed licenses are the upstream license classifications for the referenced actions, not a license grant for bundled code. Future updates require resolving and recording a new commit and reviewing any license change. GitHub trademarks remain the property of GitHub, Inc.; their appearance does not imply endorsement.
 
 ## Project-created assets
 
@@ -38,4 +37,4 @@ At initialization, no third-party code, assets, images, diagrams, datasets, bina
 
 ## Notice maintenance
 
-The repository-wide provenance audit is complete for the local package. `LICENSE` and `CITATION.cff` may therefore identify original ThermoWeave contributions as MIT-licensed. That conclusion does not relicense MathWorks products or documentation, GitHub services or Actions, OpenAI services or generated-media terms, or any other third-party dependency. Before a public release, audit the tree and build/workflow configuration again for imported material, pin and record action revisions, add applicable copyright and license text, and reconcile this notice with `PROVENANCE.md`.
+The repository-wide provenance audit is complete for the local package. `LICENSE` and `CITATION.cff` may therefore identify original ThermoWeave contributions as MIT-licensed. That conclusion does not relicense MathWorks products or documentation, GitHub services or Actions, OpenAI services or generated-media terms, or any other third-party dependency. Before a public release, audit the tree and build/workflow configuration again for imported material, confirm the recorded action revisions, add applicable copyright and license text, and reconcile this notice with `PROVENANCE.md`.

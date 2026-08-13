@@ -1,6 +1,6 @@
 # ThermoWeave provenance and licensing record
 
-Status: repository-wide provenance audit complete for the local package (2026-08-13). This file describes provenance for the independent MATLAB graph-based battery electrothermal digital twin named ThermoWeave. It is a record of design inspiration and attribution, not a statement of endorsement by any third party.
+Status: repository-wide provenance audit complete for the local package (2026-08-13); workflow pin audit refreshed 2026-08-14. This file describes provenance for the independent MATLAB graph-based battery electrothermal digital twin named ThermoWeave. It is a record of design inspiration and attribution, not a statement of endorsement by any third party.
 
 ## Sources consulted
 
@@ -43,13 +43,13 @@ After initialization, `docs/assets/og.png` was generated specifically for Thermo
 
 ## Repository-wide audit conclusion
 
-The audit of the source, documentation, workflows, assets, manifests, `RED_TEAM_REPORT.md`, `LICENSE`, and `CITATION.cff` found the source to be independently authored. It found no copied MathWorks code, prose, diagrams, screenshots, numerical scenarios, names, or page structure. The OpenAI-generated social preview has a retained prompt record and no supplied input image. External GitHub Actions are referenced by major version but are not vendored. On that evidence, the repository-wide audit permits the MIT license for original ThermoWeave contributions as identified by `LICENSE` and `CITATION.cff`.
+The audit of the source, documentation, workflows, assets, manifests, `RED_TEAM_REPORT.md`, `LICENSE`, and `CITATION.cff` found the source to be independently authored. It found no copied MathWorks code, prose, diagrams, screenshots, numerical scenarios, names, or page structure. The OpenAI-generated social preview has a retained prompt record and no supplied input image. External GitHub Actions are pinned to recorded commits and are not vendored. On that evidence, the repository-wide audit permits the MIT license for original ThermoWeave contributions as identified by `LICENSE` and `CITATION.cff`.
 
-That permission is scoped: it does not relicense MATLAB, Simulink, Simscape, Simscape Battery, MathWorks documentation, GitHub or its Actions, or any future external dependency. `docs/assets/og.png` remains subject to the applicable OpenAI service terms; the MIT scope does not override those terms. Third-party components and services retain their own notices and restrictions. The local package may therefore present itself as MIT-licensed for original ThermoWeave material, while a public release remains separately gated by unresolved release-evidence and supply-chain items recorded below and in `RED_TEAM_REPORT.md`.
+That permission is scoped: it does not relicense MATLAB, Simulink, Simscape, Simscape Battery, MathWorks documentation, GitHub or its Actions, or any future external dependency. `docs/assets/og.png` remains subject to the applicable OpenAI service terms; the MIT scope does not override those terms. Third-party components and services retain their own notices and restrictions. The local package may therefore present itself as MIT-licensed for original ThermoWeave material, while public claims remain separately constrained by the release-evidence items recorded below and in `RED_TEAM_REPORT.md`.
 
 ## Public-release gate status
 
-The provenance decision approves the local package; it is not public-release approval. Public release remains gated by the current release policy until the workflow actions are pinned to immutable revisions with resolved notices, the R2024a core CI path is run and recorded, and the optional Simscape library policy is resolved or its skipped status is retained with no integration claim. The final local evidence is 31/31 tests on MATLAB R2026a Update 4, E0–E8 passing with E9 skipped, and a fresh portable-ZIP extraction smoke pass. Statement coverage is about 60% versus an 80% advisory target, and no remote repository or site publication is claimed; these limitations must remain visible in any release decision.
+The provenance decision approves the local package; it is not evidence of numerical certification. On 2026-08-14, every external GitHub Action reference was resolved and pinned to an immutable commit, with revisions and licenses recorded in `THIRD_PARTY_NOTICES.md`. The R2024a core CI path must still run and be recorded before claiming R2024a portability. The optional Simscape library policy remains unresolved, so E9 retains its explicit skipped status and no Simscape integration claim is made. The final local evidence is 31/31 tests on MATLAB R2026a Update 4, E0–E8 passing with E9 skipped, and a fresh portable-ZIP extraction smoke pass. Statement coverage is about 60% versus an 80% advisory target; these limitations remain visible in any release decision.
 
 ## License considerations
 
