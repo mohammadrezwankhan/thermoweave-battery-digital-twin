@@ -20,7 +20,7 @@ The local MATLAB release is newer than the portable target. Results marked as lo
 
 ## Portable target and CI
 
-The reduced-order core targets MATLAB R2024a or newer. Core CI runs on an Ubuntu GitHub-hosted runner with immutable-pinned MATLAB Actions configured for `R2024a`. The first published run installed R2024a but stopped at MATLAB startup because no usable MathWorks license was available; repository tests did not execute. R2024a is therefore a portability target, not a verified compatibility claim.
+The reduced-order core targets MATLAB R2024a or newer. Core CI runs on an Ubuntu GitHub-hosted runner with immutable-pinned MATLAB Actions configured for `R2024a`. The public workflow successfully provisioned R2024a and completed the configured core build and tests on 2026-08-14. This evidence covers the portable core, not the policy-gated optional Simscape model.
 
 The full Simscape integration workflow is deliberately manual and requires a runner labelled `[self-hosted, thermoweave-simscape]`. That runner must have a licensed MATLAB installation and the products required by the selected integration task. A missing optional product is recorded as an explicit skip, never as a passing simulation.
 

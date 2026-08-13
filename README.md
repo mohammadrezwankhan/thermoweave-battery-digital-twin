@@ -3,7 +3,7 @@
 > Adaptive spatial electrothermal digital twin for battery cooling design
 
 ![Local tests: 31/31](https://img.shields.io/badge/local_tests-31%2F31_passed-b7ff58?labelColor=071019)
-![MATLAB: tested R2026a](https://img.shields.io/badge/MATLAB-tested_R2026a-b7ff58?labelColor=071019)
+![MATLAB: R2024a+](https://img.shields.io/badge/MATLAB-R2024a%2B-b7ff58?labelColor=071019)
 ![License: MIT](https://img.shields.io/badge/license-MIT-58d8ff?labelColor=071019)
 ![Source: published](https://img.shields.io/badge/source-published-b7ff58?labelColor=071019)
 ![Pages: deployed](https://img.shields.io/badge/Pages-deployed-b7ff58?labelColor=071019)

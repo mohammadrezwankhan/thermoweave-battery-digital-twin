@@ -49,7 +49,7 @@ That permission is scoped: it does not relicense MATLAB, Simulink, Simscape, Sim
 
 ## Public-release gate status
 
-The provenance decision approves the local package; it is not evidence of numerical certification. On 2026-08-14, every external GitHub Action reference was resolved and pinned to an immutable commit, with revisions and licenses recorded in `THIRD_PARTY_NOTICES.md`. The R2024a core CI path must still run and be recorded before claiming R2024a portability. The optional Simscape library policy remains unresolved, so E9 retains its explicit skipped status and no Simscape integration claim is made. The final local evidence is 31/31 tests on MATLAB R2026a Update 4, E0–E8 passing with E9 skipped, and a fresh portable-ZIP extraction smoke pass. Statement coverage is about 60% versus an 80% advisory target; these limitations remain visible in any release decision.
+The provenance decision approves the local package; it is not evidence of numerical certification. On 2026-08-14, every external GitHub Action reference was resolved and pinned to an immutable commit, with revisions and licenses recorded in `THIRD_PARTY_NOTICES.md`, and the public R2024a core workflow completed successfully. The optional Simscape library policy remains unresolved, so E9 retains its explicit skipped status and no Simscape integration claim is made. Local evidence is 31/31 tests on MATLAB R2026a Update 4, E0–E8 passing with E9 skipped, and a fresh portable-ZIP extraction smoke pass. Statement coverage is about 60% versus an 80% advisory target; these limitations remain visible in any release decision.
 
 ## License considerations
 
