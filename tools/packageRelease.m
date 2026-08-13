@@ -22,7 +22,7 @@ restoreFolder = onCleanup(@() cd(oldFolder));
 zip(archive, existing);
 manifest = struct("archive", string(archive), "bytes", ...
     dir(archive).bytes, "sha256", thermoweave.util.hashFile(archive), ...
-    "contents", existing);
+    "gitCommit", currentGitCommit(), "contents", existing);
 manifestPath = fullfile(releaseFolder, "release-manifest.json");
 portableManifest = manifest;
 portableManifest.archive = "release/thermoweave-source.zip";
@@ -32,4 +32,12 @@ if file < 0
 end
 cleanup = onCleanup(@() fclose(file));
 fwrite(file, jsonencode(portableManifest), "char");
+end
+
+function revision = currentGitCommit()
+revision = "";
+[status, output] = system('git rev-parse HEAD');
+if status == 0
+    revision = string(strtrim(output));
+end
 end
