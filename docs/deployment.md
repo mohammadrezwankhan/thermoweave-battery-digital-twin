@@ -1,31 +1,20 @@
-# Publication and deployment checklist
+# Publication and deployment status
 
-No remote repository, pull request, release, Pages site, or personal-site integration is currently claimed.
+The source repository and static documentation site were published on 2026-08-14:
 
-The local repository is already committed on `main`. Before any public release, replace every major-version Action reference with an audited immutable commit SHA and rerun the local package gate. Then install/authenticate GitHub CLI without pasting credentials into chat.
+- repository: <https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin>
+- project site: <https://mohammadrezwankhan.github.io/thermoweave-battery-digital-twin/>
 
-One conservative route is to create a private remote first so R2024a CI can run before changing visibility:
+All external GitHub Actions are pinned to immutable commits recorded in `THIRD_PARTY_NOTICES.md`. Local MATLAB R2026a verification passed 31/31 tests. The first hosted R2024a run provisioned MATLAB but could not obtain a MathWorks license, so no repository code executed and no R2024a compatibility claim is made.
 
-```powershell
-gh auth login
-gh repo create thermoweave-battery-digital-twin --private --source . --remote origin
-git push -u origin main
-gh run list --workflow core-ci.yml
-```
+GitHub Pages uses **GitHub Actions** as its source; `.github/workflows/pages.yml` publishes `docs/` after a push to `main`.
 
-Inspect the R2024a workflow to completion with `gh run watch <run-id> --exit-status`. Resolve the Simscape policy separately or preserve the explicit skip/no-comparison posture. When the provenance and engineering gates are accepted, make the repository public using the GitHub repository settings (visibility changes are deliberately not automated here). Enable GitHub Pages with **GitHub Actions** as the source; `.github/workflows/pages.yml` publishes `docs/` after a push to `main`.
-
-Before a semantic-version tag:
+No semantic-version release is currently claimed. Before creating one, run:
 
 ```matlab
 buildtool package
 ```
 
-Then inspect `release/release-manifest.json`, the archive checksum, provenance/notices, and `git status`. Create and push `v1.0.0` only after every mandatory gate is satisfied:
-
-```powershell
-git tag -a v1.0.0 -m "ThermoWeave v1.0.0"
-git push origin v1.0.0
-```
+Then inspect `release/release-manifest.json`, the archive checksum, provenance/notices, test evidence, and `git status`. Resolve the hosted R2024a license gate or retain the limitation explicitly in release notes. The optional Simscape integration remains `SKIPPED_LIBRARY_POLICY_UNRESOLVED` and must not be marketed as a completed comparison.
 
 Profile pinning remains manual: open the GitHub profile, choose **Customize your pins**, select the repository, and save.

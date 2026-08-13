@@ -24,11 +24,11 @@ results = runtests("tests", IncludeSubfolders=true)
 buildtool test
 ```
 
-The build task emits JUnit and Cobertura-compatible files under `results/`. CI targets the minimum MATLAB R2024a release; that job has not run until the repository is published and Actions execute.
+The build task emits JUnit and Cobertura-compatible files under `results/`. GitHub CI provisioned MATLAB R2024a successfully on 2026-08-14, but MATLAB execution stopped before project code ran because the hosted runner had no usable MathWorks license. R2024a compatibility therefore remains unverified; the failed infrastructure run is not counted as a project test failure or a portability pass.
 
 ## Remaining validation work
 
-- Run the same suite on the R2024a minimum target.
+- Run the same suite on the R2024a minimum target with a usable MATLAB license.
 - Resolve the custom Simulink-library declaration, generate the optional model, and record the exact licensed-product result.
 - Add measured held-out cell/module data under compatible terms before making any predictive-accuracy statement.
 - Perform solver/mesh reduction studies over a broader stiffness and fault envelope.

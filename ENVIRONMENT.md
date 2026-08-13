@@ -1,6 +1,6 @@
 # ThermoWeave environment baseline
 
-Status: observed baseline (2026-08-13). This record describes the machine used for local verification and the portable minimum targeted by CI. It is not a guarantee that every optional product is available on another machine.
+Status: observed baseline (2026-08-13), publication state refreshed 2026-08-14. This record describes the machine used for local verification and the portable minimum targeted by CI. It is not a guarantee that every optional product is available on another machine.
 
 ## Local verification baseline
 
@@ -11,8 +11,8 @@ Status: observed baseline (2026-08-13). This record describes the machine used f
 | Installed MATLAB products | MATLAB, Simulink, Simscape, Simscape Battery, Optimization Toolbox, Model Predictive Control Toolbox, MATLAB Test |
 | Build system | MATLAB `buildtool` is available |
 | Git | 2.53.0.windows.3 |
-| Repository state | Empty, no commits yet; branch `master`; no configured remote observed |
-| GitHub CLI | Not detected during the baseline audit; authentication is therefore unverified |
+| Repository state | Committed `main` branch with GitHub `origin` at `mohammadrezwankhan/thermoweave-battery-digital-twin` |
+| GitHub CLI | 2.97.0; authenticated publication completed 2026-08-14 |
 | Node.js/npm | Not detected during the baseline audit |
 | Website repository | No separate website repository detected inside this repository |
 
@@ -20,7 +20,7 @@ The local MATLAB release is newer than the portable target. Results marked as lo
 
 ## Portable target and CI
 
-The reduced-order core targets MATLAB R2024a or newer. Core CI runs on an Ubuntu GitHub-hosted runner with `matlab-actions/setup-matlab@v3` configured for `R2024a`, followed by `matlab-actions/run-build@v3`. This is the minimum supported path, not a claim that optional Simscape integration is portable to every runner.
+The reduced-order core targets MATLAB R2024a or newer. Core CI runs on an Ubuntu GitHub-hosted runner with immutable-pinned MATLAB Actions configured for `R2024a`. The first published run installed R2024a but stopped at MATLAB startup because no usable MathWorks license was available; repository tests did not execute. R2024a is therefore a portability target, not a verified compatibility claim.
 
 The full Simscape integration workflow is deliberately manual and requires a runner labelled `[self-hosted, thermoweave-simscape]`. That runner must have a licensed MATLAB installation and the products required by the selected integration task. A missing optional product is recorded as an explicit skip, never as a passing simulation.
 

@@ -3,12 +3,14 @@
 > Adaptive spatial electrothermal digital twin for battery cooling design
 
 ![Local tests: 31/31](https://img.shields.io/badge/local_tests-31%2F31_passed-b7ff58?labelColor=071019)
-![MATLAB: R2024a+](https://img.shields.io/badge/MATLAB-R2024a%2B-58d8ff?labelColor=071019)
+![MATLAB: tested R2026a](https://img.shields.io/badge/MATLAB-tested_R2026a-b7ff58?labelColor=071019)
 ![License: MIT](https://img.shields.io/badge/license-MIT-58d8ff?labelColor=071019)
-![Release: not published](https://img.shields.io/badge/release-not_published-ffb343?labelColor=071019)
-![Pages: not deployed](https://img.shields.io/badge/Pages-not_deployed-ffb343?labelColor=071019)
+![Source: published](https://img.shields.io/badge/source-published-b7ff58?labelColor=071019)
+![Pages: deployed](https://img.shields.io/badge/Pages-deployed-b7ff58?labelColor=071019)
 
 ThermoWeave is an independent MATLAB implementation for exploring how spatially and temporally varying cooling boundaries affect a synthetic multi-cell assembly. Its portable graph core runs without Simscape Battery; an optional adapter is kept behind explicit product, library-policy, and generated-model gates.
+
+[Interactive project site](https://mohammadrezwankhan.github.io/thermoweave-battery-digital-twin/) · [GitHub repository](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin)
 
 ![ThermoWeave animated vectorized thermal field](artifacts/animation/thermal-field.gif)
 
