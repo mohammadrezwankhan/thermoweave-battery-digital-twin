@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#071019">
+  <meta name="description" content="ThermoWeave is an independent MATLAB graph-based electrothermal digital twin for studying spatial battery cooling boundaries.">
+  <meta property="og:title" content="ThermoWeave — battery thermal digital twin">
+  <meta property="og:description" content="Explore scalar, vectorized, zonal, and coolant-propagation boundary fields using traceable synthetic simulation data.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="assets/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <title>ThermoWeave — adaptive electrothermal digital twin</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#methodology">Skip to methodology</a>
+  <header class="site-header">
+    <a class="wordmark" href="#top" aria-label="ThermoWeave home">
+      <span class="wordmark-mark" aria-hidden="true"></span>
+      ThermoWeave
+    </a>
+    <nav aria-label="Primary navigation">
+      <a href="#lab">Explore</a>
+      <a href="#methodology">Methodology</a>
+      <a href="#validation">Validation</a>
+      <a href="#limitations">Limitations</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow">MATLAB · GRAPH THERMAL MODEL · SYNTHETIC DATA</p>
+        <h1 id="hero-title">Cooling fields,<br><span>made visible.</span></h1>
+        <p class="lede">An independently implemented spatial electrothermal digital twin for testing how boundary shape, coolant direction, faults, and adaptive cooling influence a multi-cell assembly.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="#lab">Open the thermal lab</a>
+          <a class="button secondary" href="#methodology">View methodology</a>
+        </div>
+        <p class="microcopy">Demonstration assumptions, not calibrated cell predictions. MATLAB R2026a local evidence.</p>
+      </div>
+      <div class="hero-visual" aria-hidden="true">
+        <canvas id="hero-canvas" width="760" height="620"></canvas>
+        <div class="flow-key" aria-hidden="true"><span></span> coolant direction</div>
+      </div>
+    </section>
+
+    <section class="metrics" aria-label="Current scenario metrics">
+      <article><p>Peak temperature</p><strong id="metric-peak">—</strong><span>from result manifest</span></article>
+      <article><p>Maximum spread</p><strong id="metric-spread">—</strong><span>across graph edges</span></article>
+      <article><p>Cooling effort</p><strong id="metric-cooling">—</strong><span>energy proxy</span></article>
+      <article><p>Energy residual</p><strong id="metric-residual">—</strong><span>normalized accounting</span></article>
+    </section>
+
+    <section class="lab section-shell" id="lab" aria-labelledby="lab-title">
+      <div class="section-heading">
+        <p class="eyebrow">INTERACTIVE RESULT EXPLORER</p>
+        <h2 id="lab-title">Follow heat through the assembly.</h2>
+        <p>The animation reads the exported MATLAB result file directly. Choose a scenario, play it, or scrub one frame at a time.</p>
+      </div>
+      <div class="lab-grid">
+        <div class="canvas-card">
+          <canvas id="lab-canvas" width="800" height="520" aria-label="Battery-cell temperature heatmap" aria-describedby="frame-data-caption"></canvas>
+          <div class="time-readout"><span>Simulation time</span><strong id="time-label">0 s</strong></div>
+          <details class="frame-data">
+            <summary>Inspect current frame as data</summary>
+            <div class="table-scroll">
+              <table>
+                <caption id="frame-data-caption">Cell temperatures for the selected scenario and simulation time.</caption>
+                <thead><tr><th scope="col">Cell</th><th scope="col">Row</th><th scope="col">Column</th><th scope="col">Temperature</th></tr></thead>
+                <tbody id="frame-data-body" aria-live="polite"></tbody>
+              </table>
+            </div>
+          </details>
+        </div>
+        <aside class="controls" aria-label="Simulation controls">
+          <label for="scenario-select">Scenario</label>
+          <select id="scenario-select"></select>
+          <div class="control-row">
+            <button id="play-button" type="button">Play</button>
+            <button id="step-button" type="button">Step</button>
+          </div>
+          <label for="time-slider">Timeline</label>
+          <input id="time-slider" type="range" min="0" max="1" step="1" value="0">
+          <div class="scenario-note">
+            <span id="mode-pill">—</span>
+            <p id="scenario-description">Loading verified result data…</p>
+          </div>
+          <label class="motion-toggle"><input id="motion-toggle" type="checkbox"> Reduce motion</label>
+          <p class="hash-label">Manifest <code id="scenario-hash">—</code></p>
+        </aside>
+      </div>
+    </section>
+
+    <section class="modes section-shell" aria-labelledby="modes-title">
+      <div class="section-heading compact">
+        <p class="eyebrow">ONE SCHEMA, FOUR BOUNDARY IDEAS</p>
+        <h2 id="modes-title">The boundary is part of the experiment.</h2>
+      </div>
+      <div class="mode-grid" id="mode-grid" aria-live="polite"></div>
+    </section>
+
+    <section class="method section-shell" id="methodology" aria-labelledby="method-title">
+      <div class="section-heading">
+        <p class="eyebrow">MODEL</p>
+        <h2 id="method-title">Transparent enough to interrogate.</h2>
+      </div>
+      <div class="method-grid">
+        <article class="equation-card">
+          <p class="card-index">01 / ENERGY BALANCE</p>
+          <p class="equation" aria-label="Cell thermal energy balance">Cᵢ Ṫᵢ = Q<sub>gen,i</sub> − Σ Gᵢⱼ(Tᵢ−Tⱼ) − G<sub>b,i</sub>(Tᵢ−T<sub>b,i</sub>) − G<sub>c,i</sub>(Tᵢ−T<sub>c,i</sub>)</p>
+          <p>Each cell is a graph node. Conductive edges, ambient interfaces, and coolant links all expose their sign convention and SI units.</p>
+        </article>
+        <article>
+          <p class="card-index">02 / ELECTRICAL HEAT</p>
+          <h3>Heat follows current, SOC, and temperature.</h3>
+          <p>Joule heating is always available; an optional signed entropic term can be enabled. Parameters remain visibly synthetic unless a licensed validation dataset is added.</p>
+        </article>
+        <article>
+          <p class="card-index">03 / COOLANT MARCH</p>
+          <h3>The outlet remembers the inlet path.</h3>
+          <p>A finite-capacity flow balance marches coolant through declared cell segments. Reversing the channel order changes the spatial field and is covered by an automated test.</p>
+        </article>
+        <article>
+          <p class="card-index">04 / CONTROL</p>
+          <h3>Bounded, rate-limited, observable.</h3>
+          <p>The baseline zonal controller is deterministic. Optional optimization reports solver status and falls back visibly—never silently—when it cannot produce a command.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="validation section-shell" id="validation" aria-labelledby="validation-title">
+      <div class="validation-copy">
+        <p class="eyebrow">VERIFICATION</p>
+        <h2 id="validation-title">Evidence before adjectives.</h2>
+        <p>Class-based MATLAB tests cover configuration failure modes, equilibrium, relaxation, energy accounting, scalar/vector equivalence, graph permutation behavior, flow reversal, controller constraints, scenario-specific benefit, faults, deterministic seeds, and export traceability.</p>
+        <a class="text-link" href="validation.md">Read the verification record →</a>
+      </div>
+      <div class="test-score" aria-label="Local test result">
+        <strong>31<span>/31</span></strong>
+        <p>local tests passed</p>
+        <small>MATLAB R2026a Update 4 · 0 failed · 0 incomplete</small>
+      </div>
+    </section>
+
+    <section class="architecture section-shell" aria-labelledby="architecture-title">
+      <div class="section-heading compact">
+        <p class="eyebrow">ARCHITECTURE</p>
+        <h2 id="architecture-title">One result contract. Multiple consumers.</h2>
+      </div>
+      <div class="architecture-flow" role="img" aria-label="Configuration flows through topology, solver and result schema to MATLAB dashboard, tests, and website">
+        <span>Validated config</span><i>→</i><span>Graph + boundaries</span><i>→</i><span>ODE solver</span><i>→</i><span class="accent">result/v1</span><i>→</i><span>Tests · UI · Web</span>
+      </div>
+    </section>
+
+    <section class="limitations section-shell" id="limitations" aria-labelledby="limitations-title">
+      <div>
+        <p class="eyebrow">LIMITATIONS</p>
+        <h2 id="limitations-title">Useful because its boundaries are explicit.</h2>
+      </div>
+      <ul>
+        <li>Lumped isothermal cell nodes; no electrochemical diffusion or ageing prediction.</li>
+        <li>Synthetic parameters; no held-out real-cell accuracy evidence.</li>
+        <li>Controller demonstrations are scenario-specific and are not safety certification.</li>
+        <li>Simscape products are installed locally, but structural model generation remains policy-gated and unclaimed.</li>
+      </ul>
+    </section>
+
+    <section class="reproduce section-shell" aria-labelledby="reproduce-title">
+      <p class="eyebrow">REPRODUCE</p>
+      <h2 id="reproduce-title">Clone. Run. Inspect every assumption.</h2>
+      <pre><code>startup
+result = runDemo
+buildtool test
+generateArtifacts</code></pre>
+      <div class="hero-actions">
+        <a class="button primary" href="https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin">Repository path</a>
+        <a class="button secondary" href="reproducibility.md">Reproducibility guide</a>
+      </div>
+      <p class="microcopy">The GitHub repository link is the intended publication path; no remote publication is claimed on this local build.</p>
+    </section>
+  </main>
+
+  <footer>
+    <p>Independent implementation inspired by documented scalar/vectorized thermal-boundary concepts.</p>
+    <p>Not sponsored or endorsed by MathWorks.</p>
+  </footer>
+  <noscript><p class="noscript">JavaScript is needed only for the interactive result explorer. The methodology and verification documentation remain available.</p></noscript>
+</body>
+</html>

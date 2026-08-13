@@ -1,0 +1,42 @@
+# MATLAB / Simulink derived state
+slprj/
+sccprj/
+codegen/
+simulationCache/
+*.autosave
+*.asv
+*.m~
+*.slx.r20*
+*.mdl.r20*
+*.mex*
+
+# Generated Simscape libraries/models and local logs
+simscape/models/*.slx
+simscape/models/*.slxc
+*.slxc
+*.sldd.autosave
+
+# Build, test, and release output
+results/
+release/
+coverage-report/
+.buildtool/
+artifacts/raw/
+*.junit.xml
+
+# Machine-local state and secrets
+.env
+.env.*
+!.env.example
+*.mlsettings
+*.license
+*.lic
+*.key
+*.pem
+.DS_Store
+Thumbs.db
+
+# Web caches
+node_modules/
+.vite/
+dist/

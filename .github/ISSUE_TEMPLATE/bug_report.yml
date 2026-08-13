@@ -1,0 +1,32 @@
+name: Bug report
+description: Report a reproducible ThermoWeave defect
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Observed behavior
+      description: Include the exact error identifier and command.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Include configuration, seed, solver, and tolerances.
+    validations:
+      required: true
+  - type: input
+    id: release
+    attributes:
+      label: MATLAB release and products
+    validations:
+      required: true
+  - type: checkboxes
+    id: data
+    attributes:
+      label: Data and privacy
+      options:
+        - label: I removed credentials, license files, and proprietary data.
+          required: true

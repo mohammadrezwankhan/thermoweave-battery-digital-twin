@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "thermoweave.config/v1",
+  "scenario": {"id": "E5-channel-restriction", "description": "Coolant marching with blockage"},
+  "simulation": {"duration_s": 240, "outputStep_s": 1, "solver": "ode15s", "seed": 5},
+  "layout": {"type": "rectangular", "rows": 3, "columns": 4, "zoneCount": 4},
+  "controller": {"mode": "baseline"},
+  "boundary": {"mode": "coolant", "coolant": {"segments": 4, "massFlow_kg_per_s": 0.01, "inletTemperature_K": 298.15, "segmentConductance_W_per_K": 2}},
+  "electrical": {"current_A": 10},
+  "faults": {"events": [{"type": "coolant_blockage", "target": 2, "start_s": 150, "end_s": 240, "magnitude": 0.2}]}
+}

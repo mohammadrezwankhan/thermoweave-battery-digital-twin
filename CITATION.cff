@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If ThermoWeave contributes to your work, please cite this repository and the exact release or revision used."
+title: "ThermoWeave"
+abstract: >-
+  An independently engineered MATLAB platform for studying spatially and
+  temporally varying thermal boundaries in a synthetic multi-cell battery
+  assembly.
+authors:
+  - name: "ThermoWeave contributors"
+version: "0.1.0"
+date-released: "2026-08-13"
+license: MIT
+keywords:
+  - battery thermal modeling
+  - electrothermal simulation
+  - MATLAB
+  - reproducibility

@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "thermoweave.config/v1",
+  "scenario": {"id": "D3-zonal-boundary", "description": "Four independently prescribed thermal zones"},
+  "simulation": {"duration_s": 240, "outputStep_s": 1, "solver": "ode15s", "seed": 1},
+  "layout": {"type": "rectangular", "rows": 3, "columns": 4, "zoneCount": 4},
+  "controller": {"mode": "baseline", "qMax_W": 25},
+  "boundary": {"mode": "zonal", "zoneTemperature_K": [298.15, 299.15, 300.15, 301.15], "zoneConductance_W_per_K": [0.25, 0.25, 0.25, 0.25]},
+  "electrical": {"current_A": 10},
+  "faults": {"events": []}
+}

@@ -1,0 +1,18 @@
+name: Feature request
+description: Propose an evidence-backed capability
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Engineering problem
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Proposed acceptance evidence
+      description: Describe tests, metrics, provenance, and optional product needs.
+    validations:
+      required: true

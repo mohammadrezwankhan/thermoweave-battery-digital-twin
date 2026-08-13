@@ -1,0 +1,16 @@
+function report = generateDocs()
+%GENERATEDOCS Validate the static documentation entry points.
+
+root = fileparts(fileparts(mfilename("fullpath")));
+required = ["index.html", "styles.css", "app.js", "model.md", ...
+    "validation.md", "scenarios.md", "reproducibility.md", ...
+    "portfolio-case-study.md"];
+missing = required(~arrayfun(@(name) isfile(fullfile(root, "docs", name)), required));
+if ~isempty(missing)
+    error("thermoweave:docs:MissingFile", ...
+        "Missing documentation files: %s", strjoin(missing, ", "));
+end
+report = struct("status", "PASS", "files", required, ...
+    "timestampUtc", string(datetime("now", "TimeZone", "UTC", ...
+        "Format", "yyyy-MM-dd'T'HH:mm:ss'Z'")));
+end

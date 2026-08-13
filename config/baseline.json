@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "thermoweave.config/v1",
+  "scenario": {"id": "D0-nominal-web", "description": "Nominal rectangular website demonstration"},
+  "simulation": {"duration_s": 600, "outputStep_s": 1, "solver": "ode15s", "seed": 0},
+  "layout": {"type": "rectangular", "rows": 3, "columns": 4, "zoneCount": 4},
+  "controller": {"mode": "baseline"},
+  "boundary": {"mode": "scalar", "temperature_K": 298.15, "conductance_W_per_K": 0.25},
+  "electrical": {"current_A": 5, "entropicHeat": false},
+  "faults": {"events": []}
+}

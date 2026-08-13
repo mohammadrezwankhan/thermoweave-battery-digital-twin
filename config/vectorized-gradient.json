@@ -1,0 +1,46 @@
+{
+  "schemaVersion": "thermoweave.config/v1",
+  "scenario": {
+    "id": "E1-vectorized-gradient",
+    "description": "Smooth prescribed per-cell boundary field"
+  },
+  "simulation": {
+    "duration_s": 240,
+    "outputStep_s": 1,
+    "solver": "ode15s",
+    "seed": 11
+  },
+  "layout": {
+    "type": "rectangular",
+    "rows": 3,
+    "columns": 4,
+    "zoneCount": 4
+  },
+  "controller": {
+    "mode": "openloop"
+  },
+  "boundary": {
+    "mode": "vector",
+    "temperature_K": [
+      298.15,
+      298.38,
+      299.02,
+      299.94,
+      300.98,
+      301.85,
+      302.33,
+      302.33,
+      301.85,
+      300.98,
+      299.94,
+      299.02
+    ],
+    "conductance_W_per_K": 0.5
+  },
+  "electrical": {
+    "current_A": 0
+  },
+  "faults": {
+    "events": []
+  }
+}
