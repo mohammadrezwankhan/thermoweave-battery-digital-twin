@@ -1,4 +1,4 @@
-# ThermoWeave predeclared experiment matrix (E0-E9)
+# ThermoWeave predeclared experiment matrix (E0-E10)
 
 These IDs and settings define the synthetic demonstration suite. They are independent of the cited MathWorks example. Every run uses `thermoweave.result/v1`, records the resolved configuration and scenario hash, and reports normalized energy residual. Thresholds are engineering-demo assumptions, not validated battery limits.
 
@@ -24,6 +24,7 @@ These IDs and settings define the synthetic demonstration suite. They are indepe
 | **E7 Controller comparison** | `examples/runAdaptiveCooling.m`: 3x4 nominal graph; 18 A/cell; 180 s; OL versus BZ. AC is evaluated separately on the same bounded command contract when Optimization Toolbox exists. | BZ and AC command/rate limits are automated. AC must command positive cooling for hot zones; optimization failure must emit fallback metadata. No universal AC energy advantage is claimed. |
 | **E8 Monte Carlo robustness** | `examples/runMonteCarloStudy.m`: default 20 runs, seeds 6100-6119; 5 A/cell; BZ; 120 s; declared variability model. | The returned table is the seed manifest. Runs must remain finite and rerunnable; population percentiles are descriptive only until a convergence study is added. |
 | **E9 Core versus Simscape** | `examples/compareCoreAndSimscape.m`: one resolved core configuration passed to the optional adapter. | Missing products or unresolved library policy must produce an explicit `SKIPPED_*` record. A real adapter result must satisfy the same schema; neither model is called ground truth. |
+| **E10 Three-dimensional inter-cell study** | `config/3d-intercell-study.json`: independently authored 3x4x3 cuboid graph; 36 nodes; 75 axis-labelled edges; a synthetic 298.15/302.15/306.15 K layer boundary field; $g_z\in\{0.10,0.25,0.75\}$ W/K; 8 A/cell; 120 s; OL. | Six dedicated tests require topology counts, six-face masks, positive-semidefinite Laplacian, one-layer reduction, canonical 36-node result dimensions, isothermal conservation, finite state, residual $\le10^{-3}$, and headless 3-D rendering. The sensitivity output is descriptive synthetic evidence, not physical-cell validation. |
 
 ## Reproduction entry points
 
@@ -34,6 +35,7 @@ compareBoundaryModes
 runAdaptiveCooling
 runMonteCarloStudy(20)
 compareCoreAndSimscape
+run3DStudy
 ```
 
 The static site consumes five compact, downsampled scenario exports from `tools/exportWebData.m`; simulations retain each source configuration's full duration and output step before presentation downsampling. `D0` and `D3` explicitly identify website demonstrations rather than E0/E3 acceptance cases. The class tests cover the physics and schema contracts used by all ten experiments; longer distribution studies remain opt-in so core CI stays bounded.

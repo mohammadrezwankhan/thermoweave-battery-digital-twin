@@ -3,7 +3,7 @@ function report = writeVerificationReport()
 
 root = fileparts(fileparts(mfilename("fullpath")));
 resultFile = fullfile(root, "results", "test-results.xml");
-if ~isfile(resultFile)
+if ~isfile(resultFile) || sourceNewerThan(resultFile, root)
     testResults = runtests(fullfile(root, "tests"), IncludeSubfolders=true);
     testCount = numel(testResults);
     failures = sum([testResults.Failed]);
@@ -71,6 +71,20 @@ if file < 0
 end
 cleanup = onCleanup(@() fclose(file));
 fwrite(file, jsonencode(report), "char");
+end
+
+function newer = sourceNewerThan(resultFile, root)
+reportTime = dir(resultFile).datenum;
+patterns = [fullfile(root, "tests", "**", "*.m"), ...
+    fullfile(root, "src", "**", "*.m")];
+newer = false;
+for pattern = patterns
+    files = dir(pattern);
+    if ~isempty(files) && max([files.datenum]) > reportTime
+        newer = true;
+        return
+    end
+end
 end
 
 function value = attributeNumber(node, name)

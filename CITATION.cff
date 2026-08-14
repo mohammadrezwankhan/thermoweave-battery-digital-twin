@@ -7,11 +7,12 @@ abstract: >-
   assembly.
 authors:
   - name: "ThermoWeave contributors"
-version: "0.1.0"
-date-released: "2026-08-13"
+version: "0.2.0"
+date-released: "2026-08-14"
 license: MIT
 keywords:
   - battery thermal modeling
   - electrothermal simulation
   - MATLAB
   - reproducibility
+  - three-dimensional thermal graph

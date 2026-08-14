@@ -4,6 +4,8 @@ Status: repository-wide provenance audit complete for the local package (2026-08
 
 ## Sources consulted
 
+- MathWorks, "Build Model of Battery Module with Inter-Cell Heat Exchange," *MATLAB & Simulink Documentation*, <https://www.mathworks.com/help/simscape-battery/ug/build-battery-module-with-inter-cell-heat-exchange.html> (accessed 2026-08-14).
+- MathWorks, "Model Heat Exchange Between Cells," *MATLAB & Simulink Documentation*, <https://www.mathworks.com/help/simscape-battery/ug/inter-cell-thermal-path-workflow.html> (accessed 2026-08-14).
 - MathWorks, “Add Vectorized and Scalar Thermal Boundary Conditions to Battery Models,” *MATLAB & Simulink Documentation*, available at <https://www.mathworks.com/help/simscape-battery/ug/battery-thermal-boundary-conditions-vectorized-scalar-example.html> (documentation page states availability since R2024a; accessed 2026-08-13).
 
 The MathWorks page was consulted only to understand high-level terminology and modeling motivation. It is not a source of implementation code for this project.
@@ -13,6 +15,8 @@ The MathWorks page was consulted only to understand high-level terminology and m
 The consulted material illustrates that thermal conditions at a battery assembly boundary can be represented either as one common boundary condition or as values that vary by boundary location/cell, and that boundary-to-cell thermal coupling can influence temperature spread. These broad scalar-versus-varying-boundary ideas informed the problem framing only. ThermoWeave's equations, graph representation, parameters, interfaces, scenarios, and validation approach are independently selected and implemented.
 
 ## Explicitly excluded / copied-none statement
+
+No numerical scenario, parameter set, topology count, connection map, model hierarchy, or visual layout from the inter-cell heat-exchange documentation is copied or adapted. The three-dimensional Cartesian graph, axis-specific conductance contract, six-face boundary masks, validation experiments, figures, and manuscript are independently authored for ThermoWeave.
 
 No source code, prose passages, diagrams, screenshots, numerical scenarios, sample identifiers, API calls, or page structure from the consulted material are copied, translated, or adapted into ThermoWeave. In particular, ThermoWeave does not reproduce the source page's example models, command sequences, object names, or visual layout. Any similarity is limited to unavoidable high-level scientific vocabulary and the general distinction described above.
 
@@ -49,7 +53,7 @@ That permission is scoped: it does not relicense MATLAB, Simulink, Simscape, Sim
 
 ## Public-release gate status
 
-The provenance decision approves the local package; it is not evidence of numerical certification. On 2026-08-14, every external GitHub Action reference was resolved and pinned to an immutable commit, with revisions and licenses recorded in `THIRD_PARTY_NOTICES.md`, and the public R2024a core workflow completed successfully. The optional Simscape library policy remains unresolved, so E9 retains its explicit skipped status and no Simscape integration claim is made. Local evidence is 31/31 tests on MATLAB R2026a Update 4, E0–E8 passing with E9 skipped, and a fresh portable-ZIP extraction smoke pass. Statement coverage is about 60% versus an 80% advisory target; these limitations remain visible in any release decision.
+The provenance decision approves the local package; it is not evidence of numerical certification. On 2026-08-14, every external GitHub Action reference was resolved and pinned to an immutable commit, with revisions and licenses recorded in `THIRD_PARTY_NOTICES.md`, and the public R2024a core workflow completed successfully. The optional Simscape library policy remains unresolved, so E9 retains its explicit skipped status and no Simscape integration claim is made. Local evidence includes the original 31/31 core audit and the subsequent 37/37 suite after the independently authored E10 three-dimensional extension; the earlier portable-ZIP extraction smoke pass remains recorded. Statement coverage remains below the 80% advisory target; these limitations remain visible in any release decision.
 
 ## License considerations
 

@@ -44,13 +44,13 @@ Required top-level fields are `schemaVersion`, `scenario`, `simulation`, `layout
 `thermoweave.thermal.buildTopology(config.layout)` returns:
 
 - `nodeId`: N-by-1 integer column, exactly `1:N`;
-- `row`, `column`, `x_m`, `y_m`: N-by-1 columns;
+- `row`, `column`, `layer`, `x_m`, `y_m`, `z_m`: N-by-1 columns;
 - `edges`: M-by-2 unique, ascending node pairs;
 - `edgeConductance_W_per_K`: M-by-1 positive column;
 - `zoneId`: N-by-1 positive integer column;
 - `channelOrder`: a permutation of `1:N`.
 
-Rectangular layouts use orthogonal nearest neighbours. Staggered layouts offset alternating rows and use a distance threshold derived from pitch; neither layout hard-codes cell indices.
+Rectangular layouts use orthogonal nearest neighbours. Staggered layouts offset alternating rows and use a distance threshold derived from pitch; neither layout hard-codes cell indices. Three-dimensional `cuboid` and `stacked-staggered` layouts extend those contracts through `layers`, `pitchZ_m`, and axis-specific `gz_W_per_K`, while exposing six surface masks and edge-axis labels. A one-layer 3D layout must reduce exactly to its two-dimensional counterpart.
 
 ## Runtime model contract
 

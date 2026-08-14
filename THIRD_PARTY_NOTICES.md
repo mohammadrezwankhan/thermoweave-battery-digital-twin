@@ -8,6 +8,10 @@ MATLAB®, Simulink®, Simscape™, and Simscape Battery™ are product and/or se
 
 Documentation consulted for design context:
 
+> MathWorks, "Build Model of Battery Module with Inter-Cell Heat Exchange," *MATLAB & Simulink Documentation*, <https://www.mathworks.com/help/simscape-battery/ug/build-battery-module-with-inter-cell-heat-exchange.html>, accessed 2026-08-14.
+
+> MathWorks, "Model Heat Exchange Between Cells," *MATLAB & Simulink Documentation*, <https://www.mathworks.com/help/simscape-battery/ug/inter-cell-thermal-path-workflow.html>, accessed 2026-08-14.
+
 > MathWorks, “Add Vectorized and Scalar Thermal Boundary Conditions to Battery Models,” *MATLAB & Simulink Documentation* (available since R2024a), <https://www.mathworks.com/help/simscape-battery/ug/battery-thermal-boundary-conditions-vectorized-scalar-example.html>, accessed 2026-08-13.
 
 The citation above does not grant a license to copy source code, prose, diagrams, screenshots, numerical examples, or other protected material from the documentation.

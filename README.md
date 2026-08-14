@@ -2,13 +2,13 @@
 
 > Adaptive spatial electrothermal digital twin for battery cooling design
 
-![Local tests: 31/31](https://img.shields.io/badge/local_tests-31%2F31_passed-b7ff58?labelColor=071019)
+![Local tests: 37/37](https://img.shields.io/badge/local_tests-37%2F37_passed-b7ff58?labelColor=071019)
 ![MATLAB: R2024a+](https://img.shields.io/badge/MATLAB-R2024a%2B-b7ff58?labelColor=071019)
 ![License: MIT](https://img.shields.io/badge/license-MIT-58d8ff?labelColor=071019)
 ![Source: published](https://img.shields.io/badge/source-published-b7ff58?labelColor=071019)
 ![Pages: deployed](https://img.shields.io/badge/Pages-deployed-b7ff58?labelColor=071019)
 
-ThermoWeave is an independent MATLAB implementation for exploring how spatially and temporally varying cooling boundaries affect a synthetic multi-cell assembly. Its portable graph core runs without Simscape Battery; an optional adapter is kept behind explicit product, library-policy, and generated-model gates.
+ThermoWeave is an independent MATLAB implementation for exploring how spatially and temporally varying cooling boundaries affect a synthetic multi-cell assembly. Its portable graph core supports deterministic 2-D and 3-D Cartesian lattices without Simscape Battery; an optional adapter is kept behind explicit product, library-policy, and generated-model gates.
 
 [Interactive project site](https://mohammadrezwankhan.github.io/thermoweave-battery-digital-twin/) · [GitHub repository](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin)
 
@@ -22,7 +22,7 @@ A pack-average temperature can conceal the boundary gradients, coolant warming, 
 
 ## Distinct engineering contributions
 
-- configuration-generated rectangular and staggered thermal graphs;
+- configuration-generated rectangular, staggered, cuboid, and stacked-staggered thermal graphs with axis-specific conductances and six-face masks;
 - one solver interface for scalar, per-cell vector, zonal, and finite-capacity coolant-propagation boundaries;
 - transparent Joule plus optional signed entropic heat with SOC evolution;
 - deterministic bounded/rate-limited zonal control and an observable optimization fallback;
@@ -86,20 +86,23 @@ generateArtifacts
 
 ## Experiments and examples
 
-The predeclared E0–E9 matrix is in [`docs/scenarios.md`](docs/scenarios.md). Four direct entry points are included:
+The predeclared E0–E10 matrix is in [`docs/scenarios.md`](docs/scenarios.md). Five direct entry points are included:
 
 ```matlab
 compareBoundaryModes
 runAdaptiveCooling
 runMonteCarloStudy(20)
 compareCoreAndSimscape
+run3DStudy
 ```
+
+The independently authored E10 study uses a 3x4x3 graph with 36 thermal nodes and 75 interfaces. It compares three declared through-layer conductances under the same synthetic boundary field and exports exact scenario hashes, CSV, JSON, and figures. In this constructed case, increasing $g_z$ from 0.10 to 0.75 W/K reduces the final layer-mean spread from 4.589 K to 2.450 K. This is a sensitivity result for the stated assumptions, not measured battery accuracy.
 
 The generated website bundle includes actual scalar, vector, zonal, coolant-restriction, and sensor-fault result records under `artifacts/web-data/`. Every displayed metric is read from that exported JSON and is tied to a scenario hash.
 
 ## Testing and CI
 
-The local class-based test suite passed **31/31**, with 0 failed and 0 incomplete. It covers strict configuration failure modes, equilibrium, relaxation, energy accounting and solver convergence, uniform scalar/vector equivalence, graph relabelling, coolant conservation and flow reversal, fault targeting, per-segment conductance, baseline/advanced controller bounds and a predeclared synthetic benefit, multi-interface variability, deterministic result export, schema mapping, and honest Simscape status.
+The local class-based test suite passed **37/37**, with 0 failed and 0 incomplete. It covers strict configuration failure modes, equilibrium, relaxation, energy accounting and solver convergence, uniform scalar/vector equivalence, graph relabelling, coolant conservation and flow reversal, fault targeting, per-segment conductance, baseline/advanced controller bounds and a predeclared synthetic benefit, multi-interface variability, deterministic result export, schema mapping, honest Simscape status, and the 3-D topology/reduction/rendering contracts.
 
 ```matlab
 results = runtests("tests", IncludeSubfolders=true)
@@ -111,14 +114,14 @@ Core CI uses official MATLAB Actions on R2024a. Full Simscape integration is man
 ## Repository map
 
 ```text
-config/                 Reproducible JSON scenarios
+config/                 Reproducible JSON scenarios, including the 3-D study
 src/+thermoweave/       Portable package implementation
 simscape/               Optional product- and policy-aware adapter
 examples/               Boundary, control, Monte Carlo, adapter workflows
 tests/                  Unit, integration, and regression tests
 artifacts/              Lightweight generated figures, manifests, web data
 docs/                   Technical docs and animated static case study
-tools/                  Artifact, documentation, and release entry points
+tools/                  Artifact, research-figure, documentation, and release entry points
 .github/workflows/      Core, integration, Pages, and release automation
 ```
 
@@ -128,7 +131,7 @@ ThermoWeave is a lumped reduced-order demonstrator with synthetic parameters. It
 
 ## Inspiration and related documentation
 
-The project is an **independent implementation inspired by documented scalar/vectorized thermal-boundary concepts** in MathWorks, [“Add Vectorized and Scalar Thermal Boundary Conditions to Battery Models”](https://www.mathworks.com/help/simscape-battery/ug/battery-thermal-boundary-conditions-vectorized-scalar-example.html). No source code, prose, diagrams, screenshots, numerical scenarios, page structure, or example-specific names were copied. MathWorks did not sponsor or endorse ThermoWeave. See [`PROVENANCE.md`](PROVENANCE.md) and [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+The project is an **independent implementation informed only by high-level thermal-network concepts** in official MathWorks documentation, including [inter-cell thermal paths](https://www.mathworks.com/help/simscape-battery/ug/inter-cell-thermal-path-workflow.html) and [scalar/vectorized thermal boundaries](https://www.mathworks.com/help/simscape-battery/ug/battery-thermal-boundary-conditions-vectorized-scalar-example.html). No source code, prose, equations, diagrams, screenshots, numerical scenarios, topology counts, model hierarchy, page structure, or example-specific names were copied. MathWorks did not sponsor or endorse ThermoWeave. See [`PROVENANCE.md`](PROVENANCE.md) and [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
 ## Citation, contribution, and roadmap
 

@@ -4,13 +4,14 @@ ThermoWeave separates implementation consistency from real-cell validation. The 
 
 ## Local evidence
 
-Tested on MATLAB R2026a Update 4 on Windows 11. The class-based suite contains 31 tests:
+Tested on MATLAB R2026a Update 4 on Windows 11. The class-based suite contains 37 tests:
 
 - 16 unit tests for strict configuration validation, graph contracts, heat/SOC signs, coolant balance/targeting/per-segment conductance, declared variability interfaces, scalar/vector equivalence, and scalar current profiles;
 - 9 integration tests for equilibrium, relaxation, energy residual and solver convergence, graph relabelling, prescribed vector mapping, coolant flow reversal, baseline/advanced controller constraints, and the predeclared E3 benefit criterion;
 - 6 regression tests for deterministic seeded results, canonical schema/export traceability, fault metadata, Simscape mapper completeness/orientation, and explicit optional-integration status.
+- 6 three-dimensional tests for cuboid counts and masks, axis conductances, Laplacian structure, one-layer reduction, 36-node canonical simulation, insulated-state conservation, and headless rendering.
 
-Result: **31 passed, 0 failed, 0 incomplete** in the local run. Code Analyzer reported 0 errors, 0 warnings, and 0 informational findings over the configured 44-file source/adapter/example/tool check. Statement coverage remains below the advisory 80% target; the exact regenerated rate is recorded in `artifacts/reports/verification.json`. This is a declared coverage gap, not a pass claim. The Simscape test accepts a real mapped result only when execution succeeds; otherwise it requires an explicit `SKIPPED_*` status. In the current repository state the adapter reports `SKIPPED_LIBRARY_POLICY_UNRESOLVED`.
+Result: **37 passed, 0 failed, 0 incomplete** in the local run. Code Analyzer reported 0 errors, 0 warnings, and 0 informational findings over the prior configured source/adapter/example/tool check; the final 3-D branch is rechecked before publication. Statement coverage remains below the advisory 80% target; the exact regenerated rate is recorded in `artifacts/reports/verification.json`. This is a declared coverage gap, not a pass claim. The Simscape test accepts a real mapped result only when execution succeeds; otherwise it requires an explicit `SKIPPED_*` status. In the current repository state the adapter reports `SKIPPED_LIBRARY_POLICY_UNRESOLVED`.
 
 ## Numerical tolerances
 
