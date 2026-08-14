@@ -9,7 +9,7 @@ Status values: `DONE`, `BLOCKED`, `SKIPPED`, `FAILED`, `IN_PROGRESS`, `PENDING`.
 | 1 | Initial provenance and notices | DONE | `PROVENANCE.md`, `THIRD_PARTY_NOTICES.md`; final release audit pending |
 | 1 | Scientific equations and experiment declarations | DONE | `docs/model.md`, `docs/scenarios.md` |
 | 2 | Reduced-order core and boundary modes | DONE | `src/+thermoweave`, `config/`, `runDemo.m` |
-| 3 | Control, variability, uncertainty, and faults | DONE | Controller/fault/variability packages; E0-E9 experiment manifest |
+| 3 | Control, variability, uncertainty, and faults | DONE | Controller/fault/variability packages; E0-E10 experiment manifest with E10 generated separately by the 3-D evidence pipeline |
 | 4 | Optional Simscape adapter | SKIPPED | `SKIPPED_LIBRARY_POLICY_UNRESOLVED`; canonical mapper and explicit adapter gate are tested |
 | 5 | Visualization and deterministic artifacts | DONE | `artifacts/`; MATLAB dashboard; PNG/GIF/JSON/manifests |
 | 6 | Documentation, CI, and release metadata | DONE | README, technical docs, `buildfile.m`, workflows, community files |

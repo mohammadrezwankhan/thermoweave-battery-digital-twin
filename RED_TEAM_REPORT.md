@@ -84,6 +84,10 @@ Earlier review passes found and the current tree now tests/fixes: targeted coola
 
 Repository evidence shows a high-level MathWorks citation and an explicit independent-implementation statement in `README.md:129`, `PROVENANCE.md:7-17`, and `THIRD_PARTY_NOTICES.md:9-13`. I found no copied MathWorks source, prose, diagram, screenshot, numerical scenario, page structure, or example-specific identifier in the repository. The MATLAB project XML is ordinary project metadata; no repository evidence supports a claim that MathWorks structure was copied. This is an evidence-limited determination, not an external provenance investigation.
 
+## 3-D extension addendum (2026-08-14)
+
+After the original audit snapshot, the repository added an independently authored 3-D Cartesian graph extension, six dedicated tests, a deterministic E10 sensitivity study, and a manuscript evidence package. The complete local R2026a suite now passes **37/37**. The added study is explicitly synthetic, and the manuscript preserves the unresolved Simscape policy, sub-80% coverage advisory, absence of measured validation, and human-review requirement. This addendum records the expanded evidence; it does not convert the original audit into journal peer review or predictive validation.
+
 ## Conclusion (not a release approval)
 
 The portable core is substantially stronger and the current source suite passes, but I do **not** approve release. At minimum, regenerate and reconcile all verification/docs/package evidence to the actual 31-test tree, decide the canonical metrics contract, and preserve the explicit R2024a/Simscape/coverage limitations. Resolve the provenance/license policy and release-action pinning before any public release; only then should a maintainer make a separate release decision.

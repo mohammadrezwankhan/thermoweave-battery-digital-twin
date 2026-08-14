@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "thermoweave.study3d/v1",
+  "studyType": "synthetic verification and sensitivity study",
+  "sourceScenario": "config/3d-intercell-study.json",
+  "sourceScenarioHash": "cc95864caf80bfcc21321286ccb2881065edd18b12af73880a178b0bc0b5df5e",
+  "matlabRelease": "2026a",
+  "timestampPolicy": "omitted-for-deterministic-core",
+  "modelBoundary": "Reduced-order lumped graph; no measured-cell validation; not a safety or design-approval model.",
+  "nodeOrdering": "r + (c-1)*rows + (layer-1)*rows*columns",
+  "cases": [
+    {
+      "caseId": "weak",
+      "gz_W_per_K": 0.1,
+      "scenarioHash": "60a8204af91747b62c9cfdf7cdd5f410e290e22d71dd6a8d34e3f6b0ad36f2a1",
+      "nodeCount": 36,
+      "edgeCount": 75,
+      "peakTemperature_K": 303.98732039807896,
+      "peakEdgeGradient_K": 2.2944395125779238,
+      "finalLayerMeanTemperature_K": [
+        299.39844137292391,
+        301.69288088550178,
+        303.98732039807891
+      ],
+      "finalLayerSpread_K": 4.5888790251549949,
+      "energyResidualNormalized": 1.0776995315176161E-13
+    },
+    {
+      "caseId": "nominal",
+      "gz_W_per_K": 0.25,
+      "scenarioHash": "1b8aa41929ab2f8db931971d5795eb2025dd8b7791fa2579b1c77fd91e01c094",
+      "nodeCount": 36,
+      "edgeCount": 75,
+      "peakTemperature_K": 303.63446261461735,
+      "peakEdgeGradient_K": 1.9415660708576752,
+      "finalLayerMeanTemperature_K": [
+        299.75133047290274,
+        301.69289654376047,
+        303.63446261461735
+      ],
+      "finalLayerSpread_K": 3.8831321417146114,
+      "energyResidualNormalized": 6.7425504667748212E-14
+    },
+    {
+      "caseId": "strong",
+      "gz_W_per_K": 0.75,
+      "scenarioHash": "14515878f5d31d6111c4effbaea202ece4926d2a2549f6c60c0e5252f4df4986",
+      "nodeCount": 36,
+      "edgeCount": 75,
+      "peakTemperature_K": 302.91788786391658,
+      "peakEdgeGradient_K": 1.2250636931118493,
+      "finalLayerMeanTemperature_K": [
+        300.467760477693,
+        301.69282417080473,
+        302.91788786391663
+      ],
+      "finalLayerSpread_K": 2.4501273862236417,
+      "energyResidualNormalized": 1.0810663092338714E-13
+    }
+  ],
+  "artifacts": {
+    "moduleFigure": "artifacts/figures/3d-module-temperature.png",
+    "layerFigure": "artifacts/figures/3d-layer-response.png",
+    "table": "artifacts/data/3d-study-results.csv"
+  }
+}

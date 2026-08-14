@@ -1,0 +1,66 @@
+{
+  "schemaVersion": "thermoweave.config/v1",
+  "scenario": {
+    "id": "3d-intercell-study",
+    "description": "Synthetic three-layer inter-cell electrothermal study with a through-thickness boundary gradient"
+  },
+  "simulation": {
+    "duration_s": 120,
+    "outputStep_s": 2,
+    "solver": "ode15s",
+    "relativeTolerance": 1e-7,
+    "absoluteTolerance": 1e-9,
+    "maxStep_s": 0.5,
+    "seed": 17
+  },
+  "layout": {
+    "type": "cuboid",
+    "rows": 3,
+    "columns": 4,
+    "layers": 3,
+    "pitchX_m": 0.03,
+    "pitchY_m": 0.03,
+    "pitchZ_m": 0.012,
+    "gx_W_per_K": 0.8,
+    "gy_W_per_K": 0.6,
+    "gz_W_per_K": 0.25,
+    "zoneCount": 6
+  },
+  "cell": {
+    "count": 36,
+    "initialTemperature_K": 298.15,
+    "initialSOC": 0.8,
+    "thermalCapacity_J_per_K": 40.5
+  },
+  "thermal": {
+    "ambientTemperature_K": 298.15,
+    "ambientConductance_W_per_K": 0.08,
+    "externalHeat_W": 0
+  },
+  "boundary": {
+    "mode": "vector",
+    "temperature_K": [
+      298.15, 298.15, 298.15, 298.15,
+      298.15, 298.15, 298.15, 298.15,
+      298.15, 298.15, 298.15, 298.15,
+      302.15, 302.15, 302.15, 302.15,
+      302.15, 302.15, 302.15, 302.15,
+      302.15, 302.15, 302.15, 302.15,
+      306.15, 306.15, 306.15, 306.15,
+      306.15, 306.15, 306.15, 306.15,
+      306.15, 306.15, 306.15, 306.15
+    ],
+    "conductance_W_per_K": 0.35
+  },
+  "controller": {
+    "mode": "openloop"
+  },
+  "electrical": {
+    "current_A": 8,
+    "R0_Ohm": 0.008,
+    "entropicHeat": false
+  },
+  "faults": {
+    "events": []
+  }
+}

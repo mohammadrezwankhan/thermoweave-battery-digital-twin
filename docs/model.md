@@ -66,6 +66,14 @@ Edges join existing up/down/left/right neighbours. Horizontal and vertical condu
 
 Alternating rows are offset by half a pitch. Store physical $(x_i,y_i)$ and an explicit edge list from the declared neighbour rule (lateral neighbours plus nearest opposing-row centres within a fixed tolerance, for example). Unequal degree and edge length are allowed; edge conductance is supplied per edge or computed from declared $kA/\ell_e$. Never apply a rectangular stencil to staggered storage. The same $B,L_g$ equations apply.
 
+### Three-dimensional Cartesian topology
+
+For an $n_r\times n_c\times n_l$ cuboid, the deterministic node ID is
+
+$$i=r+(c-1)n_r+(l-1)n_rn_c.$$
+
+Orthogonal edges connect nearest neighbours in $x$, $y$, and $z$ with independently declared conductances $g_x$, $g_y$, and $g_z$. The result schema exposes physical $(x_i,y_i,z_i)$ coordinates, the axis label of each edge, and Boolean masks for the six exterior faces. These masks identify boundaries; they do not silently add heat transfer. A one-layer cuboid is required to produce the same in-plane edges, conductances, coordinates, and Laplacian as the legacy rectangular layout.
+
 ## Boundary representations
 
 Every boundary declares its representation and units.
