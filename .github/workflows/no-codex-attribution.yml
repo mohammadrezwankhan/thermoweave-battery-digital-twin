@@ -1,0 +1,93 @@
+name: Human authorship policy
+
+on:
+  pull_request:
+  merge_group:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  human-authorship-policy:
+    name: human-authorship-policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out full history
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Reject AI author, committer, and co-author attribution
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE_SHA: ${{ github.event.before }}
+          CURRENT_SHA: ${{ github.sha }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          MERGE_BASE_SHA: ${{ github.event.merge_group.base_sha }}
+          MERGE_HEAD_SHA: ${{ github.event.merge_group.head_sha }}
+        run: |
+          set -euo pipefail
+          zero=0000000000000000000000000000000000000000
+          ai_identity='(codex|claude|grok|noreply@openai\.com|codex-agent@openai\.invalid|codex@openai\.com|anthropic\.com|x\.ai)'
+
+          case "$EVENT_NAME" in
+            pull_request)
+              range="${PR_BASE_SHA}..${PR_HEAD_SHA}"
+              ;;
+            merge_group)
+              range="${MERGE_BASE_SHA}..${MERGE_HEAD_SHA}"
+              ;;
+            push)
+              if [[ -n "${BEFORE_SHA:-}" && "$BEFORE_SHA" != "$zero" ]] \
+                 && git cat-file -e "${BEFORE_SHA}^{commit}" 2>/dev/null; then
+                range="${BEFORE_SHA}..${CURRENT_SHA}"
+              else
+                range="$CURRENT_SHA"
+              fi
+              ;;
+            *)
+              echo "Unsupported event: $EVENT_NAME" >&2
+              exit 2
+              ;;
+          esac
+
+          mapfile -t commits < <(git rev-list "$range")
+          if [[ ${#commits[@]} -eq 0 ]]; then
+            echo "No commits to inspect."
+            exit 0
+          fi
+
+          failed=0
+          for commit in "${commits[@]}"; do
+            author=$(git show -s --format='%an <%ae>' "$commit")
+            committer=$(git show -s --format='%cn <%ce>' "$commit")
+            message=$(git show -s --format='%B' "$commit")
+
+            if grep -Eiq "$ai_identity" <<< "$author"; then
+              echo "::error::Commit $commit attributes authorship to an AI identity: $author"
+              failed=1
+            fi
+            if grep -Eiq "$ai_identity" <<< "$committer"; then
+              echo "::error::Commit $commit attributes committer identity to an AI system: $committer"
+              failed=1
+            fi
+            while IFS= read -r line; do
+              if grep -Eiq '^co-authored-by:' <<< "$line" \
+                 && grep -Eiq "$ai_identity" <<< "$line"; then
+                echo "::error::Commit $commit contains a prohibited AI co-author trailer: $line"
+                failed=1
+              fi
+            done <<< "$message"
+          done
+
+          if [[ "$failed" -ne 0 ]]; then
+            echo "AI tools may be disclosed as tools, but must not be recorded as authors, committers, or co-authors."
+            exit 1
+          fi
+
+          echo "Checked ${#commits[@]} commit(s); human-authorship metadata policy passed."
