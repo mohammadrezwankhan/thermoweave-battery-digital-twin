@@ -21,7 +21,7 @@ for k=1:Nt-1
   switch lower(char(cfg.simulation.solver)), case 'ode45', [~,ys]=ode45(rhs,[t0 t1],y0,opts); otherwise, [~,ys]=ode15s(rhs,[t0 t1],y0,opts); end
   y1=ys(end,:)'; T(k+1,:)=y1(1:N)'; S(k+1,:)=y1(N+1:end)';
   if any(S(k+1,:)<-1e-8|S(k+1,:)>1+1e-8), events(end+1)=struct('type','soc_bounds_violation','time_s',t1,'details',[]);end %#ok<AGROW>
-  [~,bd,qq,ii,cc,rr]=derivative(t1,y1,cmd); BT(k,:)=bd.temperature_K'; BH(k,:)=bd.conductance_W_per_K'; QHist(k,:)=qq'; IHist(k)=mean(ii); CHist(k)=cc; residual(k)=rr;
+  [~,bd,qq,ii,cc,rr]=derivative(t0,y0,cmd); BT(k,:)=bd.temperature_K'; BH(k,:)=bd.conductance_W_per_K'; QHist(k,:)=qq'; IHist(k)=mean(ii); CHist(k)=cc; residual(k)=rr;
 end
 
 function topo=applyEdgeVariability(topo,cfg)
@@ -52,7 +52,11 @@ result=thermoweave.results.makeResult(data,cfg,topo,meta); result.energyResidual
 
  function [dy,b,q,I,cp,res] = derivative(tt,yy,cmd)
   temp=yy(1:N); soc=yy(N+1:end); I=currentAt(cfg,tt,N); p=struct('ambientConductance_W_per_K',expand(cfg.thermal.ambientConductance_W_per_K,N),'edgeScale',ones(topo.edgeCount,1),'heatMultiplier',ones(N,1),'currentScale',ones(N,1),'coolantScale',ones(getField(cfg.boundary.coolant,'segments',4),1),'massFlow_kg_per_s',getField(cfg.boundary.coolant,'massFlow_kg_per_s',0.01)); [p,~]=thermoweave.uncertainty.applyFaults(cfg,tt,p); I=I.*p.currentScale; [q,~]=thermoweave.electrical.heatGeneration(temp,soc,I,cfg); q=q.*p.heatMultiplier; ccfg=cfg; ccfg.thermal.ambientConductance_W_per_K=p.ambientConductance_W_per_K; ccfg.boundary.coolant.massFlow_kg_per_s=p.massFlow_kg_per_s; b=thermoweave.coolant.evaluate(temp,ccfg,topo,cmd,tt);
-  edgeG=topo.edgeConductance_W_per_K.*p.edgeScale; flow=accumarray([topo.edges(:,1);topo.edges(:,2)],[edgeG.*(temp(topo.edges(:,2))-temp(topo.edges(:,1)));edgeG.*(temp(topo.edges(:,1))-temp(topo.edges(:,2)))],[N 1]); C=expand(cfg.cell.thermalCapacity_J_per_K,N); dT=(flow+b.conductance_W_per_K.*(b.temperature_K-temp)+q+b.qCool_W+expand(cfg.thermal.externalHeat_W,N))./C; ds=thermoweave.electrical.socDerivative(soc,I,cfg); dy=[dT;ds]; cp=b.coolingPower_W; res=sum(C.*dT)-(sum(q)+sum(b.qCool_W)-sum(b.conductance_W_per_K.*(temp-b.temperature_K))+sum(flow));
+  edgeG=topo.edgeConductance_W_per_K.*p.edgeScale; flow=accumarray([topo.edges(:,1);topo.edges(:,2)],[edgeG.*(temp(topo.edges(:,2))-temp(topo.edges(:,1)));edgeG.*(temp(topo.edges(:,1))-temp(topo.edges(:,2)))],[N 1]); C=expand(cfg.cell.thermalCapacity_J_per_K,N);
+  externalHeat=expand(cfg.thermal.externalHeat_W,N);
+  dT=(flow+b.conductance_W_per_K.*(b.temperature_K-temp)+q+b.qCool_W+externalHeat)./C;
+  ds=thermoweave.electrical.socDerivative(soc,I,cfg); dy=[dT;ds]; cp=b.coolingPower_W;
+  res=sum(C.*dT)-(sum(q)+sum(b.qCool_W)+sum(externalHeat)-sum(b.conductance_W_per_K.*(temp-b.temperature_K))+sum(flow));
  end
 end
 

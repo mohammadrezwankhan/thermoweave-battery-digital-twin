@@ -64,6 +64,34 @@ classdef TestSimulationIntegration < matlab.unittest.TestCase
             testCase.verifyLessThanOrEqual(finalDifference, 1e-4);
         end
 
+        function signalHistoriesUseTheirDeclaredSampleTimes(testCase)
+            cfg = thermoweave.config.defaultConfig();
+            cfg.simulation.duration_s = 2;
+            cfg.simulation.outputStep_s = 1;
+            cfg.controller.mode = 'openloop';
+            cfg.electrical.currentProfile = struct('time_s', [0; 1; 2], ...
+                'current_A', [1; 2; 3]);
+            result = thermoweave.simulate(cfg);
+            testCase.verifyEqual(result.time_s, [0; 1; 2]);
+            testCase.verifyEqual(result.signals.current_A, [1; 2; 3]);
+            initialHeat = thermoweave.electrical.heatGeneration( ...
+                result.state.temperature_K(1, :)', ...
+                result.state.soc(1, :)', 1, cfg);
+            testCase.verifyEqual(result.signals.heatGeneration_W(1, :)', ...
+                initialHeat, 'AbsTol', 1e-12);
+        end
+
+        function externalHeatPreservesEnergyAccounting(testCase)
+            cfg = thermoweave.config.defaultConfig();
+            cfg.simulation.duration_s = 4;
+            cfg.simulation.outputStep_s = 1;
+            cfg.controller.mode = 'openloop';
+            cfg.thermal.externalHeat_W = 2;
+            result = thermoweave.simulate(cfg);
+            testCase.verifyLessThanOrEqual( ...
+                result.metrics.energyResidualNormalized, 1e-4);
+        end
+
         function storagePermutationPreservesSymmetricChainBehavior(testCase)
             cfgA = thermoweave.config.defaultConfig();
             cfgA.layout.rows = 1;

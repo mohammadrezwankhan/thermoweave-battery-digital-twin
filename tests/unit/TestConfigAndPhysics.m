@@ -69,6 +69,14 @@ classdef TestConfigAndPhysics < matlab.unittest.TestCase
                 'thermoweave:config:Fault');
         end
 
+        function rejectsNegativeRuntimeResistanceFactor(testCase)
+            cfg = thermoweave.config.defaultConfig();
+            cfg.electrical.alphaT_per_K = 0;
+            cfg.electrical.alphaSOC = -1.1;
+            testCase.verifyError(@() thermoweave.config.loadScenario(cfg), ...
+                'thermoweave:config:Range');
+        end
+
         function rejectsUnknownConfigurationSchema(testCase)
             cfg = thermoweave.config.defaultConfig();
             cfg.schemaVersion = 'thermoweave.config/v9';
