@@ -6,7 +6,7 @@
 ![MATLAB: R2024a+](https://img.shields.io/badge/MATLAB-R2024a%2B-b7ff58?labelColor=071019)
 ![License: MIT](https://img.shields.io/badge/license-MIT-58d8ff?labelColor=071019)
 ![Source: published](https://img.shields.io/badge/source-published-b7ff58?labelColor=071019)
-![Pages: deployed](https://img.shields.io/badge/Pages-deployed-b7ff58?labelColor=071019)
+[![Documentation Pages](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/workflows/pages.yml/badge.svg?branch=main)](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/workflows/pages.yml)
 
 ThermoWeave is an independent MATLAB implementation for exploring how spatially and temporally varying cooling boundaries affect a synthetic multi-cell assembly. Its portable graph core supports deterministic 2-D and 3-D Cartesian lattices without Simscape Battery; an optional adapter is kept behind explicit product, library-policy, and generated-model gates.
 
@@ -75,14 +75,14 @@ generateArtifacts
 
 ## Product matrix
 
-| Capability | Requirement | Current local evidence |
+| Capability | Requirement | Published evidence |
 |---|---|---|
 | Graph core, baseline control, scenarios, JSON export | MATLAB R2024a+ | Tested on R2026a Update 4 |
 | Build reports and enhanced coverage | MATLAB Test where available | Installed and exercised locally |
 | Advanced quadratic controller | Optimization Toolbox | Installed; transparent fallback retained |
 | MPC-specific extension | Model Predictive Control Toolbox | Installed; not required by the portable core |
 | High-fidelity adapter | Simulink + Simscape + Simscape Battery | Products installed; structural generation policy-gated |
-| Static case-study page | Modern browser | Source built; not deployed |
+| Static case-study page | Modern browser | [Pages deployment succeeded on 2026-08-14](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/31786512239) at `e181bd5` |
 
 ## Experiments and examples
 
@@ -102,14 +102,14 @@ The generated website bundle includes actual scalar, vector, zonal, coolant-rest
 
 ## Testing and CI
 
-The local class-based test suite passed **37/37**, with 0 failed and 0 incomplete. It covers strict configuration failure modes, equilibrium, relaxation, energy accounting and solver convergence, uniform scalar/vector equivalence, graph relabelling, coolant conservation and flow reversal, fault targeting, per-segment conductance, baseline/advanced controller bounds and a predeclared synthetic benefit, multi-interface variability, deterministic result export, schema mapping, honest Simscape status, and the 3-D topology/reduction/rendering contracts.
+The published baseline records a local class-based test run of **37/37**, with 0 failed and 0 incomplete. That run covered strict configuration failure modes, equilibrium, relaxation, energy accounting and solver convergence, uniform scalar/vector equivalence, graph relabelling, coolant conservation and flow reversal, fault targeting, per-segment conductance, baseline/advanced controller bounds and a predeclared synthetic benefit, multi-interface variability, deterministic result export, schema mapping, honest Simscape status, and the 3-D topology/reduction/rendering contracts. This historical count does not include later source changes or newly added tests.
 
 ```matlab
 results = runtests("tests", IncludeSubfolders=true)
 buildtool
 ```
 
-Core CI uses official MATLAB Actions on R2024a. Full Simscape integration is manual and targets a licensed self-hosted runner labelled `thermoweave-simscape`. CI and Pages badges deliberately remain “not deployed” until a remote run exists. See [`docs/validation.md`](docs/validation.md).
+Core CI uses official MATLAB Actions on R2024a. At source [`e181bd54dd7b24b6ea373e747770481d3ba19f16`](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/commit/e181bd54dd7b24b6ea373e747770481d3ba19f16), the [Core CI run](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/31786512183) and [Documentation Pages run](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/31786512239) completed successfully on 2026-08-14. These are historical results for that source revision; the Pages badge follows `main` and is a workflow-status indicator, not a live-site availability check. Full Simscape integration is manual and targets a licensed self-hosted runner labelled `thermoweave-simscape`. See [`docs/validation.md`](docs/validation.md) for the numerical evidence and remaining validation work.
 
 ## Repository map
 

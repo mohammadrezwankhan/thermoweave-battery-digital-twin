@@ -18,6 +18,12 @@ All notable changes to ThermoWeave are recorded here. Release notes describe evi
 
 ## [Unreleased]
 
+### Fixed
+
+- Align current, heat, cooling, and boundary history samples with their declared result times and states.
+- Include configured external heat in the energy-residual balance.
+- Validate the electrical resistance correction using the same state-of-charge dependence as heat generation.
+
 ### Added
 
 - Initial repository environment, contribution, security, licensing, and citation records.
