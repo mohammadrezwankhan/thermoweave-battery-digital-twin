@@ -1,0 +1,373 @@
+{
+  "schema_version": 1,
+  "repository": "mohammadrezwankhan/thermoweave-battery-digital-twin",
+  "display_name": "ThermoWeave Battery Digital Twin",
+  "description": "A MATLAB electrothermal battery twin with graph-based cooling, scenario configuration and traceable evidence.",
+  "domain": "DOMAIN_D",
+  "theme": {
+    "accent": "#FF6D00",
+    "secondary": "#00B0FF",
+    "surface": "#1A1412",
+    "glow": "rgba(255, 109, 0, 0.35)",
+    "label": "Simulation & digital twins",
+    "short": "Simulation"
+  },
+  "repo_type": "research model",
+  "source_revision": "1e8eb66a767104cffbb5c7d921228d9f0b6419fd",
+  "source_snapshot_date": "2026-10-19",
+  "repo_url": "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin",
+  "homepage": "https://mohammadrezwankhan.github.io/thermoweave-battery-digital-twin/",
+  "upstream": null,
+  "lessons": [
+    {
+      "id": "path-01",
+      "title": "Core configuration and equilibrium",
+      "summary": "Validate inputs and distinguish a demo from the E0 zero-current equilibrium case.",
+      "objective": "Validate inputs and distinguish a demo from the E0 zero-current equilibrium case.",
+      "checkpoint": "E0 stated acceptance: drift/spread ≤1e-10 K and residual ≤1e-10. Use actual existing integration assertions before declaring pass.",
+      "level": "Foundation",
+      "tags": [
+        "foundations",
+        "engineering",
+        "validation",
+        "evidence"
+      ],
+      "source_paths": [
+        "config/baseline.json",
+        "runDemo.m",
+        "tests/integration/TestSimulationIntegration.m"
+      ],
+      "source_urls": [
+        "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/1e8eb66a767104cffbb5c7d921228d9f0b6419fd/config/baseline.json",
+        "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/1e8eb66a767104cffbb5c7d921228d9f0b6419fd/runDemo.m",
+        "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/1e8eb66a767104cffbb5c7d921228d9f0b6419fd/tests/integration/TestSimulationIntegration.m"
+      ],
+      "parameters": [
+        {
+          "source_inputs": [
+            "baseline config; E0 parameters in docs/scenarios.md"
+          ],
+          "expected_outputs": [
+            "canonical result",
+            "energy residual",
+            "temperature drift"
+          ],
+          "note": "Source reference; execution and scientific verification are separate."
+        }
+      ],
+      "command": null,
+      "native_id": null,
+      "native_route": null,
+      "execution_status": "source-linked guide; no execution by this dashboard"
+    },
+    {
+      "id": "path-02",
+      "title": "Compare scalar and vector boundaries",
+      "summary": "Explain per-cell cooling boundaries and uniform scalar/vector equivalence.",
+      "objective": "Explain per-cell cooling boundaries and uniform scalar/vector equivalence.",
+      "checkpoint": "Uniform scalar/vector inputs should agree under existing tests. E1 residual gate in scenario matrix is ≤1e-4.",
+      "level": "Foundation",
+      "tags": [
+        "foundations",
+        "engineering",
+        "thermal",
+        "uncertainty",
+        "validation",
+        "evidence"
+      ],
+      "source_paths": [
+        "config/vectorized-gradient.json",
+        "examples/compareBoundaryModes.m",
+        "tests/unit/TestConfigAndPhysics.m"
+      ],
+      "source_urls": [
+        "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/1e8eb66a767104cffbb5c7d921228d9f0b6419fd/config/vectorized-gradient.json",
+        "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/1e8eb66a767104cffbb5c7d921228d9f0b6419fd/examples/compareBoundaryModes.m",
+        "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/1e8eb66a767104cffbb5c7d921228d9f0b6419fd/tests/unit/TestConfigAndPhysics.m"
+      ],
+      "parameters": [
+        {
+          "source_inputs": [
+            "12-node graph",
+            "scalar/vector temperatures",
+            "conductance"
+          ],
+          "expected_outputs": [
+            "spatial temperatures",
+            "hash",
+            "finite metrics"
+          ],
+          "note": "Source reference; execution and scientific verification are separate."
+        }
+      ],
+      "command": null,
+      "native_id": null,
+      "native_route": null,
+      "execution_status": "source-linked guide; no execution by this dashboard"
+    },
+    {
+      "id": "path-03",
+      "title": "Coolant propagation and restriction",
+      "summary": "Follow heat into finite-capacity coolant and a declared channel restriction.",
+      "objective": "Follow heat into finite-capacity coolant and a declared channel restriction.",
+      "checkpoint": "Check coolant heat versus mass-flow heat capacity balance. Only the declared segment receives the restriction.",
+      "level": "Applied",
+      "tags": [
+        "application",
+        "engineering",
+        "thermal",
+        "uncertainty",
+        "validation",
+        "evidence"
+      ],
+      "source_paths": [
+        "config/channel-restriction.json",
+        "src/+thermoweave/+coolant/march.m",
+        "src/+thermoweave/+uncertainty/applyFaults.m",
+        "tests/unit/TestConfigAndPhysics.m"
+      ],
+      "source_urls": [
+        "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/1e8eb66a767104cffbb5c7d921228d9f0b6419fd/config/channel-restriction.json",
+        "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/1e8eb66a767104cffbb5c7d921228d9f0b6419fd/src/%2Bthermoweave/%2Bcoolant/march.m",
+        "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/1e8eb66a767104cffbb5c7d921228d9f0b6419fd/src/%2Bthermoweave/%2Buncertainty/applyFaults.m",
+        "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/1e8eb66a767104cffbb5c7d921228d9f0b6419fd/tests/unit/TestConfigAndPhysics.m"
+      ],
+      "parameters": [
+        {
+          "source_inputs": [
+            "four segments",
+            "mass flow 0.010 kg/s",
+            "cp 3800 J/(kg K)",
+            "segment-2 restriction"
+          ],
+          "expected_outputs": [
+            "outlet temperature",
+            "cell field",
+            "fault metadata"
+          ],
+          "note": "Source reference; execution and scientific verification are separate."
+        }
+      ],
+      "command": null,
+      "native_id": null,
+      "native_route": null,
+      "execution_status": "source-linked guide; no execution by this dashboard"
+    },
+    {
+      "id": "path-04",
+      "title": "Bounded zonal cooling",
+      "summary": "Compare declared controller modes with common command/rate bounds and explicit optimization fallback.",
+      "objective": "Compare declared controller modes with common command/rate bounds and explicit optimization fallback.",
+      "checkpoint": "Enforce command and rate limits. Missing Optimization Toolbox or solver failure must remain visible.",
+      "level": "Applied",
+      "tags": [
+        "application",
+        "engineering",
+        "thermal",
+        "optimization",
+        "uncertainty"
+      ],
+      "source_paths": [
+        "examples/runAdaptiveCooling.m",
+        "src/+thermoweave/+control/baselineController.m",
+        "src/+thermoweave/+control/advancedController.m"
+      ],
+      "source_urls": [
+        "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/1e8eb66a767104cffbb5c7d921228d9f0b6419fd/examples/runAdaptiveCooling.m",
+        "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/1e8eb66a767104cffbb5c7d921228d9f0b6419fd/src/%2Bthermoweave/%2Bcontrol/baselineController.m",
+        "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/1e8eb66a767104cffbb5c7d921228d9f0b6419fd/src/%2Bthermoweave/%2Bcontrol/advancedController.m"
+      ],
+      "parameters": [
+        {
+          "source_inputs": [
+            "matched initial state/topology/load",
+            "controller parameters"
+          ],
+          "expected_outputs": [
+            "cooling commands",
+            "temperature results",
+            "fallback status"
+          ],
+          "note": "Source reference; execution and scientific verification are separate."
+        }
+      ],
+      "command": null,
+      "native_id": null,
+      "native_route": null,
+      "execution_status": "source-linked guide; no execution by this dashboard"
+    },
+    {
+      "id": "path-05",
+      "title": "Sensor bias and provenance",
+      "summary": "Distinguish true temperatures from a biased measurement and retain fault provenance.",
+      "objective": "Distinguish true temperatures from a biased measurement and retain fault provenance.",
+      "checkpoint": "Fault metadata and time targeting must match source config. Do not imply a fault-detection algorithm exists.",
+      "level": "Applied",
+      "tags": [
+        "application",
+        "engineering",
+        "thermal",
+        "state-estimation",
+        "data-provenance",
+        "uncertainty",
+        "evidence"
+      ],
+      "source_paths": [
+        "config/sensor-fault.json",
+        "src/+thermoweave/+uncertainty/applyFaults.m",
+        "tests/regression/TestRegressionContracts.m"
+      ],
+      "source_urls": [
+        "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/1e8eb66a767104cffbb5c7d921228d9f0b6419fd/config/sensor-fault.json",
+        "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/1e8eb66a767104cffbb5c7d921228d9f0b6419fd/src/%2Bthermoweave/%2Buncertainty/applyFaults.m",
+        "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/1e8eb66a767104cffbb5c7d921228d9f0b6419fd/tests/regression/TestRegressionContracts.m"
+      ],
+      "parameters": [
+        {
+          "source_inputs": [
+            "zone-2 +5 K bias, 180–240 s",
+            "baseline controller"
+          ],
+          "expected_outputs": [
+            "sensor/cooling fault metadata",
+            "canonical array dimensions"
+          ],
+          "note": "Source reference; execution and scientific verification are separate."
+        }
+      ],
+      "command": null,
+      "native_id": null,
+      "native_route": null,
+      "execution_status": "source-linked guide; no execution by this dashboard"
+    },
+    {
+      "id": "path-06",
+      "title": "Seeded variability study",
+      "summary": "Reproduce variability draws before interpreting descriptive population summaries.",
+      "objective": "Reproduce variability draws before interpreting descriptive population summaries.",
+      "checkpoint": "Same seed must reproduce full JSON/hash. Do not claim convergence of population percentiles without a convergence study.",
+      "level": "Applied",
+      "tags": [
+        "application",
+        "engineering",
+        "uncertainty",
+        "validation",
+        "evidence"
+      ],
+      "source_paths": [
+        "examples/runMonteCarloStudy.m",
+        "src/+thermoweave/+uncertainty/applyVariability.m",
+        "tests/regression/TestRegressionContracts.m"
+      ],
+      "source_urls": [
+        "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/1e8eb66a767104cffbb5c7d921228d9f0b6419fd/examples/runMonteCarloStudy.m",
+        "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/1e8eb66a767104cffbb5c7d921228d9f0b6419fd/src/%2Bthermoweave/%2Buncertainty/applyVariability.m",
+        "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/1e8eb66a767104cffbb5c7d921228d9f0b6419fd/tests/regression/TestRegressionContracts.m"
+      ],
+      "parameters": [
+        {
+          "source_inputs": [
+            "default 20 runs",
+            "seeds 6100–6119",
+            "declared variability model"
+          ],
+          "expected_outputs": [
+            "seed manifest",
+            "finite results",
+            "descriptive summary"
+          ],
+          "note": "Source reference; execution and scientific verification are separate."
+        }
+      ],
+      "command": null,
+      "native_id": null,
+      "native_route": null,
+      "execution_status": "source-linked guide; no execution by this dashboard"
+    },
+    {
+      "id": "path-07",
+      "title": "Three-dimensional inter-cell conduction",
+      "summary": "Relate through-layer conductance to layer spread in the constructed 3D graph.",
+      "objective": "Relate through-layer conductance to layer spread in the constructed 3D graph.",
+      "checkpoint": "Check topology counts, face masks, Laplacian and one-layer reduction. Use E10 residual gate ≤1e-3; synthetic sensitivity only.",
+      "level": "Advanced",
+      "tags": [
+        "verification",
+        "engineering",
+        "validation",
+        "evidence"
+      ],
+      "source_paths": [
+        "config/3d-intercell-study.json",
+        "examples/run3DStudy.m",
+        "tests/integration/Test3DStudy.m",
+        "tests/unit/TestTopology3D.m"
+      ],
+      "source_urls": [
+        "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/1e8eb66a767104cffbb5c7d921228d9f0b6419fd/config/3d-intercell-study.json",
+        "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/1e8eb66a767104cffbb5c7d921228d9f0b6419fd/examples/run3DStudy.m",
+        "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/1e8eb66a767104cffbb5c7d921228d9f0b6419fd/tests/integration/Test3DStudy.m",
+        "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/1e8eb66a767104cffbb5c7d921228d9f0b6419fd/tests/unit/TestTopology3D.m"
+      ],
+      "parameters": [
+        {
+          "source_inputs": [
+            "3x4x3 cuboid",
+            "36 nodes",
+            "75 interfaces",
+            "gz 0.10/0.25/0.75 W/K"
+          ],
+          "expected_outputs": [
+            "temperature layers",
+            "scenario hashes",
+            "CSV/JSON/figures"
+          ],
+          "note": "Source reference; execution and scientific verification are separate."
+        }
+      ],
+      "command": null,
+      "native_id": null,
+      "native_route": null,
+      "execution_status": "source-linked guide; no execution by this dashboard"
+    },
+    {
+      "id": "path-08",
+      "title": "Optional core/Simscape comparison",
+      "summary": "Understand which product/library-policy prerequisites permit a comparable adapter run.",
+      "objective": "Understand which product/library-policy prerequisites permit a comparable adapter run.",
+      "checkpoint": "Missing products/policy must yield honest SKIPPED_* record. Neither engine is ground truth; do not convert skips to passes.",
+      "level": "Advanced",
+      "tags": [
+        "verification",
+        "engineering"
+      ],
+      "source_paths": [
+        "examples/compareCoreAndSimscape.m",
+        "simscape/runSimscapeScenario.m",
+        ".github/workflows/simscape-integration.yml"
+      ],
+      "source_urls": [
+        "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/1e8eb66a767104cffbb5c7d921228d9f0b6419fd/examples/compareCoreAndSimscape.m",
+        "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/1e8eb66a767104cffbb5c7d921228d9f0b6419fd/simscape/runSimscapeScenario.m",
+        "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/1e8eb66a767104cffbb5c7d921228d9f0b6419fd/.github/workflows/simscape-integration.yml"
+      ],
+      "parameters": [
+        {
+          "source_inputs": [
+            "same resolved core configuration",
+            "licensed products",
+            "library policy"
+          ],
+          "expected_outputs": [
+            "canonical adapter result or explicit SKIPPED status"
+          ],
+          "note": "Source reference; execution and scientific verification are separate."
+        }
+      ],
+      "command": null,
+      "native_id": null,
+      "native_route": null,
+      "execution_status": "source-linked guide; no execution by this dashboard"
+    }
+  ]
+}

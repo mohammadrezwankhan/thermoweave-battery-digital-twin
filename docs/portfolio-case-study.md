@@ -19,8 +19,12 @@ ThermoWeave represents cells as thermal graph nodes with independently generated
 
 ## Demonstrated results
 
+![Section 04 · Verification / output](visuals/sections/section-04-verification.svg)
+
 The locally generated compact bundle contains five website scenarios spanning scalar, vectorized, zonal, coolant, and sensor-fault cases. The default 30-second demo reached a peak temperature of 298.230683 K and a normalized energy-accounting residual of approximately $4.39\times10^{-15}$ on MATLAB R2026a Update 4. The automated suite passed 31 of 31 local tests; statement coverage remains below the declared advisory 80% target. These are synthetic implementation results, not measured accuracy evidence.
 
 ## Limitations
+
+![Section 05 · Scope / limitations](visuals/sections/section-05-scope.svg)
 
 The graph nodes are lumped and isothermal. Parameter defaults are convenient synthetic assumptions. No ageing, runaway chemistry, electrochemical diffusion, or certified safety logic is modeled. Controller benefit is scenario-specific. Simscape structural generation is still gated by the repository's unresolved custom-library declaration and therefore no core-versus-Simscape numerical comparison is claimed.
