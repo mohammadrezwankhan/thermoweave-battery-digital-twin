@@ -6,6 +6,12 @@ ThermoWeave models a synthetic battery assembly with thermal graphs, spatial bou
 
 [Original project interactive view](docs/original-index.html)
 
+## Previous animations
+
+[Open the previous-animation gallery](https://mohammadrezwankhan.github.io/thermoweave-battery-digital-twin/animations/) · [Local gallery](docs/animations/index.html)
+
+Earlier animated artwork, waveform demos, and original interactive experiences are linked alongside the current animations.
+
 ## Your first interactive result
 
 1. Download or clone this repository and open `docs/index.html` in a modern browser.

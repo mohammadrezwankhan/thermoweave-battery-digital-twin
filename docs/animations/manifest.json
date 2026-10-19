@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "repository": "thermoweave-battery-digital-twin",
+  "preserved_current_commit": "527e470b6d40ed8f84b044bd96be16ca366edfa5",
+  "animations": [
+    {
+      "kind": "image",
+      "title": "Original floating-layer SVG",
+      "badge": "Earlier animated media",
+      "description": "Floating isometric tiers, pulsing circuits, and flowing dashed traces from the earlier repository hero.",
+      "format": "Animated SVG",
+      "preview": "media/hero-25d-54447d2d4385.svg",
+      "preview_sha256": "e9c549672c38a84d6b68bcede2b65f946da7be0330805a0efbe6e6d89fc34626",
+      "motion_identity": "54447d2d4385823d30868a73b991bfa00e531a474378dc67a3cce411474f820b",
+      "sources": [
+        {
+          "path": "assets/hero-25d.svg",
+          "commit": "e62c0d720aa92273e4b8c9a2b03977ba06045fd2",
+          "sha256": "520a54d7275957a95a9c40fbd694f93641acd3a06b906bffe42edb74cbf74766",
+          "blob": "0772b476120b2b128d584bcab16315ef1778641e",
+          "url": "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/e62c0d720aa92273e4b8c9a2b03977ba06045fd2/assets/hero-25d.svg"
+        },
+        {
+          "path": "assets/hero-25d.svg",
+          "commit": "009c46e34e7c46f31336b809e0973576ad73ded0",
+          "sha256": "49da253a1c4d218ac81a40de00b1f7b858c001b53e5ef9c9aaafffd1cc2628bb",
+          "blob": "95d4d9186f74fda7bb609194bfa4ffeed34dbbe8",
+          "url": "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/009c46e34e7c46f31336b809e0973576ad73ded0/assets/hero-25d.svg"
+        }
+      ]
+    },
+    {
+      "kind": "image",
+      "title": "Original thermal-field animation",
+      "badge": "Earlier animated media",
+      "description": "The original 24-frame thermal-field GIF. Its model assumptions and validation boundaries remain in the ThermoWeave documentation.",
+      "format": "Animated GIF",
+      "preview": "media/thermal-field-04bda196771e.gif",
+      "preview_sha256": "04bda196771ed9d8a887a2b45127a2b3608f171cdd862d98ec86585aa2169877",
+      "motion_identity": "04bda196771ed9d8a887a2b45127a2b3608f171cdd862d98ec86585aa2169877",
+      "sources": [
+        {
+          "path": "artifacts/animation/thermal-field.gif",
+          "commit": "3ed818a69614cf7e612aa33961a3ba0bdd8454d7",
+          "sha256": "04bda196771ed9d8a887a2b45127a2b3608f171cdd862d98ec86585aa2169877",
+          "blob": "22ff2401065ddcc9f57f67a075ebb4d4ab49bea3",
+          "url": "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/3ed818a69614cf7e612aa33961a3ba0bdd8454d7/artifacts/animation/thermal-field.gif"
+        }
+      ]
+    },
+    {
+      "kind": "waveform",
+      "title": "Original interactive waveform",
+      "badge": "Previous dashboard animation",
+      "description": "The earlier 2.5D perspective card and its moving waveform, with the original visual formulas and sliders.",
+      "preview": "waveform.html",
+      "preview_sha256": "76cd6a349820cbd40a1d38b15a749fbb7eb6e8f54543fa188f733780167d0595",
+      "sources": [
+        {
+          "path": "docs/index.html",
+          "commit": "e62c0d720aa92273e4b8c9a2b03977ba06045fd2",
+          "blob": "40d0bfc5c113c07cbcc8b4b3f4b9ce41e6f3368b",
+          "sha256": "263d3ec7d4f3293734edf837d585d61a3356ec4a398918d0e5422fc4ad9288da",
+          "url": "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/e62c0d720aa92273e4b8c9a2b03977ba06045fd2/docs/index.html"
+        },
+        {
+          "path": "docs/index.html",
+          "commit": "009c46e34e7c46f31336b809e0973576ad73ded0",
+          "blob": "ba7e815378012cb08c11ae7e020688b98a09d261",
+          "sha256": "5f6063dc4fec5acbf8e531db7b7a4214fafcc686911254b0e7c9f4f182645028",
+          "url": "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/009c46e34e7c46f31336b809e0973576ad73ded0/docs/index.html"
+        }
+      ]
+    }
+  ],
+  "native_links": [
+    {
+      "title": "Original ThermoWeave interactive page",
+      "url": "../original-index.html",
+      "description": "The preserved original thermal-field interface, with its existing controls and model disclosures."
+    }
+  ],
+  "historical_source_links": []
+}
