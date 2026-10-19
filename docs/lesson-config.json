@@ -1,0 +1,92 @@
+{
+  "repository": "thermoweave-battery-digital-twin",
+  "domain": "DOMAIN_D",
+  "title": "ThermoWeave Battery Digital Twin",
+  "version": "2.0.0",
+  "author": "Mohammad Rezwan Khan",
+  "lessons": [
+    {
+      "id": "L01",
+      "title": "Graph-Network Cell Mesh & Conductive Thermal Resistor Network",
+      "level": "Intermediate",
+      "duration": "45 mins",
+      "config_file": "models/mesh_network_graph.m",
+      "summary": "Formulate sparse Laplacian thermal conductance matrices connecting adjacent cylindrical/prismatic cells through structural busbars and aerogel separators.",
+      "inputs": [
+        "96-cell pack CAD coordinate array",
+        "Material conductivity tensor (kx, ky, kz)"
+      ],
+      "parameters": {
+        "Conductance_Busbar_W_K": 14.5,
+        "Conductance_Aerogel_W_K": 0.024,
+        "Nodes_Per_Cell": 5
+      },
+      "checkpoints": [
+        "Check Laplacian matrix positive semi-definiteness",
+        "Verify mass and energy conservation balance"
+      ]
+    },
+    {
+      "id": "L02",
+      "title": "Fluid Boundary Layer Conjugate Heat Transfer (Cold Plates & Immersion)",
+      "level": "Advanced",
+      "duration": "60 mins",
+      "config_file": "models/fluid_boundary_convection.m",
+      "summary": "Solve Nusselt number correlations and localized convection coefficients along turbulent cooling microchannels with inlet-to-outlet temperature rise.",
+      "inputs": [
+        "Dielectric coolant fluid properties",
+        "Channel hydraulic diameter = 4.2 mm"
+      ],
+      "parameters": {
+        "Reynolds_Number": 3200,
+        "Prandtl_Number": 18.4,
+        "InletVelocity_m_s": 0.65
+      },
+      "checkpoints": [
+        "Confirm flow regime transitions",
+        "Map spatial temperature gradient along the fluid path"
+      ]
+    },
+    {
+      "id": "L03",
+      "title": "Non-Uniform Aging & Localized Hotspot Propagation Tracking",
+      "level": "Advanced",
+      "duration": "75 mins",
+      "config_file": "models/hotspot_propagation.m",
+      "summary": "Coupled electro-thermal degradation: simulate how thermal gradients induce asymmetric current density distribution and accelerate local SEI growth.",
+      "inputs": [
+        "500 dynamic high-rate charge-discharge cycles",
+        "Cell spatial temperature variance map"
+      ],
+      "parameters": {
+        "ArrheniusActivationEnergy_kJ_mol": 52.4,
+        "CurrentMaldistribution_Max_pct": 14.2
+      },
+      "checkpoints": [
+        "Predict earliest degraded cell location",
+        "Determine pack usable capacity fade acceleration factor"
+      ]
+    },
+    {
+      "id": "L04",
+      "title": "Predictive Model Predictive Control (MPC) Coolant Flow Regulation",
+      "level": "Production",
+      "duration": "90 mins",
+      "config_file": "models/mpc_flow_optimizer.m",
+      "summary": "Synthesize a constrained receding-horizon controller that anticipates thermal surges during aggressive fast-charging and minimizes auxiliary pumping parasitics.",
+      "inputs": [
+        "Fast-charge 350 kW pulse trajectory",
+        "Chiller compressor efficiency curve COP(T)"
+      ],
+      "parameters": {
+        "PredictionHorizon_sec": 30.0,
+        "ControlHorizon_sec": 10.0,
+        "MaxPumpingPower_W": 450.0
+      },
+      "checkpoints": [
+        "Prevent cell peak temperature exceeding 45\u00b0C",
+        "Achieve 28% auxiliary energy reduction compared to baseline bang-bang control"
+      ]
+    }
+  ]
+}
