@@ -1,0 +1,31 @@
+{
+  "@context": "https://w3id.org/codemeta/3.0",
+  "@type": "SoftwareSourceCode",
+  "name": "ThermoWeave",
+  "codeRepository": "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin",
+  "url": "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin",
+  "author": [
+    {
+      "@type": "Organization",
+      "name": "ThermoWeave contributors"
+    }
+  ],
+  "readme": "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/HEAD/README.md",
+  "issueTracker": "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/issues",
+  "continuousIntegration": "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions",
+  "relatedLink": [
+    "https://rezwankhan.tech/",
+    "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/HEAD/CITATION.cff"
+  ],
+  "description": "An independently engineered MATLAB platform for studying spatially and temporally varying thermal boundaries in a synthetic multi-cell battery assembly.",
+  "version": "0.2.0",
+  "datePublished": "2026-08-14",
+  "keywords": [
+    "battery thermal modeling",
+    "electrothermal simulation",
+    "MATLAB",
+    "reproducibility",
+    "three-dimensional thermal graph"
+  ],
+  "license": "https://spdx.org/licenses/MIT.html"
+}

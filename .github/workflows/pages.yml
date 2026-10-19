@@ -16,10 +16,31 @@ concurrency:
 
 jobs:
   build:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Check the learning dashboard before publishing
+        env:
+          EXPECTED_REPOSITORY: ${{ github.repository }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          docs = Path('docs')
+          page = (docs / 'index.html').read_text(encoding='utf-8')
+          config = json.loads((docs / 'lesson-config.json').read_text(encoding='utf-8'))
+          assert 'data-flagship-repo="' + os.environ['EXPECTED_REPOSITORY'] + '"' in page
+          assert 'data-flagship-version="1.0"' in page
+          assert 'data-flagship-build="' in page
+          assert len(config['modules']) == 4
+          assert config['repository']['owner'] + '/' + config['repository']['slug'] == os.environ['EXPECTED_REPOSITORY']
+          for item in docs.rglob('*'):
+              assert not item.is_symlink(), 'Pages artifact cannot contain symlinks: ' + str(item)
+          print('Dashboard identity and four lesson modules verified before upload.')
+          PY
 
       - name: Configure Pages
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
@@ -30,6 +51,7 @@ jobs:
           path: docs
 
   deploy:
+    if: github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     environment:

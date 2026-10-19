@@ -1,92 +1,320 @@
 {
-  "repository": "thermoweave-battery-digital-twin",
-  "domain": "DOMAIN_D",
-  "title": "ThermoWeave Battery Digital Twin",
-  "version": "2.0.0",
-  "author": "Mohammad Rezwan Khan",
-  "lessons": [
+  "$schema": "./lesson-config.schema.json",
+  "schema_version": "1.0",
+  "repository": {
+    "owner": "mohammadrezwankhan",
+    "slug": "thermoweave-battery-digital-twin",
+    "name": "thermoweave-battery-digital-twin",
+    "title": "ThermoWeave Spatial Battery Lab",
+    "url": "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin",
+    "default_branch": "main",
+    "description": "Review graph-based battery electrothermal dynamics, cooling assumptions and reproducible evidence in MATLAB experiments.",
+    "summary": "ThermoWeave models a synthetic battery assembly with thermal graphs, spatial boundaries, control, and deterministic fault studies. This companion introduces a one-node balance before the native multi-node experiments.",
+    "audience": "Battery thermal researchers and MATLAB learners studying topology, cooling boundaries, and numerical verification.",
+    "topics": [
+      "battery",
+      "digital-twin",
+      "electro-thermal-modeling",
+      "thermal-modeling",
+      "battery-thermal-management",
+      "matlab",
+      "simulink",
+      "simscape",
+      "graph-theory",
+      "heat-transfer",
+      "model-validation",
+      "sensitivity-analysis",
+      "scientific-computing",
+      "reproducible-research",
+      "engineering-education"
+    ],
+    "source_paths": [
+      "README.md",
+      "LICENSE",
+      "PROVENANCE.md",
+      "buildfile.m",
+      "runDemo.m",
+      "docs/model.md",
+      "docs/validation.md",
+      "docs/scenarios.md",
+      "docs/index.html",
+      "src/+thermoweave/simulate.m",
+      "src/+thermoweave/+thermal/buildTopology.m",
+      "examples/run3DStudy.m",
+      "tests/unit/TestConfigAndPhysics.m"
+    ],
+    "is_fork": false,
+    "upstream": null,
+    "legacy_demo": "original-index.html"
+  },
+  "domain": {
+    "id": "D",
+    "name": "Simulation and digital twins",
+    "primary": "#FF6D00",
+    "secondary": "#00B0FF",
+    "surface": "#1A1412",
+    "glow": "rgba(255,109,0,0.35)"
+  },
+  "model": {
+    "title": "Spatial-model warmup · a single thermal node",
+    "timeUnit": "min",
+    "horizon": 60,
+    "parameters": [
+      {
+        "key": "heatW",
+        "label": "Heat input",
+        "unit": "W",
+        "min": 100,
+        "max": 3000,
+        "step": 100,
+        "default": 600,
+        "calibration": "Illustrative input; verified against the declared analytical model, not field measurements."
+      },
+      {
+        "key": "coolingWK",
+        "label": "Heat transfer",
+        "unit": "W/K",
+        "min": 10,
+        "max": 120,
+        "step": 5,
+        "default": 30,
+        "calibration": "Illustrative input; verified against the declared analytical model, not field measurements."
+      },
+      {
+        "key": "capacityJPerK",
+        "label": "Thermal capacity",
+        "unit": "J/K",
+        "min": 3000,
+        "max": 60000,
+        "step": 1000,
+        "default": 12000,
+        "calibration": "Illustrative input; verified against the declared analytical model, not field measurements."
+      },
+      {
+        "key": "ambientC",
+        "label": "Ambient temperature",
+        "unit": "°C",
+        "min": 0,
+        "max": 45,
+        "step": 1,
+        "default": 20,
+        "calibration": "Illustrative input; verified against the declared analytical model, not field measurements."
+      }
+    ],
+    "metrics": [
+      {
+        "key": "temperatureC",
+        "label": "Body temperature",
+        "unit": "°C",
+        "decimals": 1
+      },
+      {
+        "key": "heatRemovedW",
+        "label": "Heat removed",
+        "unit": "W",
+        "decimals": 0
+      },
+      {
+        "key": "storedEnergyKJ",
+        "label": "Stored heat",
+        "unit": "kJ",
+        "decimals": 1
+      },
+      {
+        "key": "residualW",
+        "label": "Net heating",
+        "unit": "W",
+        "decimals": 0
+      }
+    ],
+    "equation": "ΔT = (Q/h) · (1 − exp(−h · 60t/C)); T = Tₐ + ΔT; heat removed = hΔT; stored heat = CΔT/1000.",
+    "assumptions": [
+      "One uniform thermal mass starts at ambient temperature.",
+      "Constant heat input and linear heat transfer; no phase change or spatial gradients.",
+      "Elapsed time is shown in minutes; the energy-balance calculation uses seconds.",
+      "ThermoWeave is an independent synthetic MATLAB implementation with source-controlled provenance; third-party product rights remain separate.",
+      "The browser’s illustrative node is not a fitted cell and its visual assembly is not a calculated spatial temperature field.",
+      "Native kelvin-based graph experiments and optional Simscape gates remain separate from this Celsius-based one-node lesson."
+    ],
+    "kind": "thermal",
+    "introduction": "The browser shows one scalar thermal balance with invented parameters. It cannot reproduce ThermoWeave’s temperature field, graph topology, coolant propagation, faults, controllers, or scenario-hashed native artifacts.",
+    "calibration_status": "Uncalibrated synthetic teaching proxy"
+  },
+  "modules": [
     {
-      "id": "L01",
-      "title": "Graph-Network Cell Mesh & Conductive Thermal Resistor Network",
-      "level": "Intermediate",
-      "duration": "45 mins",
-      "config_file": "models/mesh_network_graph.m",
-      "summary": "Formulate sparse Laplacian thermal conductance matrices connecting adjacent cylindrical/prismatic cells through structural busbars and aerogel separators.",
-      "inputs": [
-        "96-cell pack CAD coordinate array",
-        "Material conductivity tensor (kx, ky, kz)"
+      "id": "module-1",
+      "title": "Identify one node’s energy balance",
+      "objective": "Read a local thermal balance before adding graph interfaces.",
+      "minutes": 12,
+      "steps": [
+        "Read the signs, units, and node-state orientation in docs/model.md.",
+        "Apply 600 W heat, 30 W/K cooling, 12,000 J/K capacity, and 20°C ambient.",
+        "Predict a 20 K steady rise and inspect the ten-minute temperature and stored heat."
       ],
-      "parameters": {
-        "Conductance_Busbar_W_K": 14.5,
-        "Conductance_Aerogel_W_K": 0.024,
-        "Nodes_Per_Cell": 5
+      "preset": {
+        "heatW": 600,
+        "coolingWK": 30,
+        "capacityJPerK": 12000,
+        "ambientC": 20
       },
       "checkpoints": [
-        "Check Laplacian matrix positive semi-definiteness",
-        "Verify mass and energy conservation balance"
-      ]
+        {
+          "label": "One-node temperature after ten minutes",
+          "metric": "temperatureC",
+          "operator": "==",
+          "expected": 35.537397,
+          "tolerance": 0.02,
+          "atTime": 10
+        },
+        {
+          "label": "One-node stored heat after ten minutes",
+          "metric": "storedEnergyKJ",
+          "operator": "==",
+          "expected": 186.448762,
+          "tolerance": 0.02,
+          "atTime": 10
+        }
+      ],
+      "reflection": "Which inter-node heat-flow terms disappear when a graph is reduced to one uniform thermal mass?",
+      "source_paths": [
+        "docs/model.md",
+        "src/+thermoweave/+thermal/buildTopology.m"
+      ],
+      "level": "Foundation"
     },
     {
-      "id": "L02",
-      "title": "Fluid Boundary Layer Conjugate Heat Transfer (Cold Plates & Immersion)",
-      "level": "Advanced",
-      "duration": "60 mins",
-      "config_file": "models/fluid_boundary_convection.m",
-      "summary": "Solve Nusselt number correlations and localized convection coefficients along turbulent cooling microchannels with inlet-to-outlet temperature rise.",
-      "inputs": [
-        "Dielectric coolant fluid properties",
-        "Channel hydraulic diameter = 4.2 mm"
+      "id": "module-2",
+      "title": "Change the boundary conductance",
+      "objective": "Explain how a boundary parameter affects both steady rise and transient response.",
+      "minutes": 15,
+      "steps": [
+        "Hold heat, capacity, and ambient fixed.",
+        "Double the cooling conductance from 30 to 60 W/K and predict the ten-minute response.",
+        "Read the scalar, vector, zonal, and coolant boundary distinctions in the native model documentation."
       ],
-      "parameters": {
-        "Reynolds_Number": 3200,
-        "Prandtl_Number": 18.4,
-        "InletVelocity_m_s": 0.65
+      "preset": {
+        "heatW": 600,
+        "coolingWK": 60,
+        "capacityJPerK": 12000,
+        "ambientC": 20
       },
       "checkpoints": [
-        "Confirm flow regime transitions",
-        "Map spatial temperature gradient along the fluid path"
-      ]
+        {
+          "label": "Stronger-cooling temperature after ten minutes",
+          "metric": "temperatureC",
+          "operator": "==",
+          "expected": 29.502129,
+          "tolerance": 0.02,
+          "atTime": 10
+        },
+        {
+          "label": "Heat rejection after ten minutes",
+          "metric": "heatRemovedW",
+          "operator": "==",
+          "expected": 570.127759,
+          "tolerance": 0.02,
+          "atTime": 10
+        }
+      ],
+      "reflection": "Why is replacing a scalar boundary with per-cell values a model-structure change rather than simply another value on this slider?",
+      "source_paths": [
+        "docs/model.md",
+        "docs/scenarios.md"
+      ],
+      "level": "Parameter study"
     },
     {
-      "id": "L03",
-      "title": "Non-Uniform Aging & Localized Hotspot Propagation Tracking",
-      "level": "Advanced",
-      "duration": "75 mins",
-      "config_file": "models/hotspot_propagation.m",
-      "summary": "Coupled electro-thermal degradation: simulate how thermal gradients induce asymmetric current density distribution and accelerate local SEI growth.",
-      "inputs": [
-        "500 dynamic high-rate charge-discharge cycles",
-        "Cell spatial temperature variance map"
+      "id": "module-3",
+      "title": "Locate the limit of a pack average",
+      "objective": "Identify why a single temperature cannot reveal spatial hot spots.",
+      "minutes": 18,
+      "steps": [
+        "Return conductance to 30 W/K and raise ambient to 35°C.",
+        "Run and compare the absolute temperature with the unchanged rise above ambient.",
+        "Open the native 3D study source and identify the topology and conductance information the browser does not contain."
       ],
-      "parameters": {
-        "ArrheniusActivationEnergy_kJ_mol": 52.4,
-        "CurrentMaldistribution_Max_pct": 14.2
+      "preset": {
+        "heatW": 600,
+        "coolingWK": 30,
+        "capacityJPerK": 12000,
+        "ambientC": 35
       },
       "checkpoints": [
-        "Predict earliest degraded cell location",
-        "Determine pack usable capacity fade acceleration factor"
-      ]
+        {
+          "label": "Hot-boundary scalar temperature after ten minutes",
+          "metric": "temperatureC",
+          "operator": "==",
+          "expected": 50.537397,
+          "tolerance": 0.02,
+          "atTime": 10
+        },
+        {
+          "label": "Stored heat above ambient remains the baseline value",
+          "metric": "storedEnergyKJ",
+          "operator": "==",
+          "expected": 186.448762,
+          "tolerance": 0.02,
+          "atTime": 10
+        }
+      ],
+      "reflection": "What measurements or spatially resolved states would be required to make a claim about cell-to-cell temperature spread?",
+      "source_paths": [
+        "examples/run3DStudy.m",
+        "src/+thermoweave/+thermal/buildTopology.m",
+        "docs/scenarios.md"
+      ],
+      "level": "Stress test"
     },
     {
-      "id": "L04",
-      "title": "Predictive Model Predictive Control (MPC) Coolant Flow Regulation",
-      "level": "Production",
-      "duration": "90 mins",
-      "config_file": "models/mpc_flow_optimizer.m",
-      "summary": "Synthesize a constrained receding-horizon controller that anticipates thermal surges during aggressive fast-charging and minimizes auxiliary pumping parasitics.",
-      "inputs": [
-        "Fast-charge 350 kW pulse trajectory",
-        "Chiller compressor efficiency curve COP(T)"
+      "id": "module-4",
+      "title": "Design a reproducible graph experiment",
+      "objective": "Carry a scalar intuition into a native study with explicit topology and evidence checks.",
+      "minutes": 18,
+      "steps": [
+        "Use the hot-boundary case and double thermal capacity to 24,000 J/K.",
+        "Predict the slower ten-minute response and export its assumptions.",
+        "Write a native study plan specifying graph dimensions, conductances, boundary mode, solver settings, seed, source revision, and energy-accounting checks."
       ],
-      "parameters": {
-        "PredictionHorizon_sec": 30.0,
-        "ControlHorizon_sec": 10.0,
-        "MaxPumpingPower_W": 450.0
+      "preset": {
+        "heatW": 600,
+        "coolingWK": 30,
+        "capacityJPerK": 24000,
+        "ambientC": 35
       },
       "checkpoints": [
-        "Prevent cell peak temperature exceeding 45\u00b0C",
-        "Achieve 28% auxiliary energy reduction compared to baseline bang-bang control"
-      ]
+        {
+          "label": "Higher-inertia scalar temperature after ten minutes",
+          "metric": "temperatureC",
+          "operator": "==",
+          "expected": 45.552669,
+          "tolerance": 0.02,
+          "atTime": 10
+        },
+        {
+          "label": "Residual net heating after ten minutes",
+          "metric": "residualW",
+          "operator": "==",
+          "expected": 283.419932,
+          "tolerance": 0.02,
+          "atTime": 10
+        }
+      ],
+      "reflection": "Why would reproducible scenario hashes and small energy residuals still not establish predictive accuracy for a physical battery?",
+      "source_paths": [
+        "docs/validation.md",
+        "PROVENANCE.md",
+        "tests/unit/TestConfigAndPhysics.m",
+        "examples/run3DStudy.m"
+      ],
+      "level": "Transfer to source"
     }
-  ]
+  ],
+  "source": {
+    "commit": "1e8eb66a767104cffbb5c7d921228d9f0b6419fd",
+    "audited_at": "2026-10-19T08:39:24Z",
+    "url": "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/tree/1e8eb66a767104cffbb5c7d921228d9f0b6419fd",
+    "calibration_status": "synthetic-analytical-fixtures",
+    "scope": "This browser lab is a standalone teaching approximation. Use the linked source for the project implementation."
+  },
+  "dashboard_url": "https://mohammadrezwankhan.github.io/thermoweave-battery-digital-twin/"
 }

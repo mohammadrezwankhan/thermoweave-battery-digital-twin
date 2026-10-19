@@ -1,0 +1,353 @@
+{
+  "schema_version": 1,
+  "repository": {
+    "name": "thermoweave-battery-digital-twin",
+    "name_with_owner": "mohammadrezwankhan/thermoweave-battery-digital-twin",
+    "url": "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin"
+  },
+  "native_source": {
+    "commit": "e62c0d720aa92273e4b8c9a2b03977ba06045fd2",
+    "url": "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/tree/e62c0d720aa92273e4b8c9a2b03977ba06045fd2",
+    "source_path_override": null
+  },
+  "browser_lab_package_provenance": {
+    "commit": "1e8eb66a767104cffbb5c7d921228d9f0b6419fd",
+    "url": "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/tree/1e8eb66a767104cffbb5c7d921228d9f0b6419fd",
+    "scope": "This browser lab is a standalone teaching approximation. Use the linked source for the project implementation.",
+    "calibration_status": "synthetic-analytical-fixtures",
+    "config_path": "docs/lesson-config.json"
+  },
+  "native_catalog_source": "Tracked Markdown in source lesson, example, study-case, concept, model, and documentation paths.",
+  "native_material_count": 9,
+  "reproduction_command_count": 3,
+  "materials": [
+    {
+      "id": "doc-a1f6cda7d3c6",
+      "title": "Publication and deployment status",
+      "path": "docs/deployment.md",
+      "line": 1,
+      "source_paths": [
+        "docs/deployment.md"
+      ],
+      "source_url": "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/e62c0d720aa92273e4b8c9a2b03977ba06045fd2/docs/deployment.md#L1",
+      "source_revision": "e62c0d720aa92273e4b8c9a2b03977ba06045fd2",
+      "source_kind": "audited-native-source",
+      "source_label": "Source at e62c0d720aa9",
+      "catalog_url": null,
+      "native_url": null,
+      "excerpt": "The source repository and static documentation site were published on 2026-08-14:",
+      "type": "Native reading",
+      "section": "question",
+      "tags": [
+        "native-reading"
+      ],
+      "track": null,
+      "lesson_id": null
+    },
+    {
+      "id": "doc-934b9ea2ece0",
+      "title": "Social preview generation record",
+      "path": "docs/assets/og-prompt.md",
+      "line": 1,
+      "source_paths": [
+        "docs/assets/og-prompt.md"
+      ],
+      "source_url": "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/e62c0d720aa92273e4b8c9a2b03977ba06045fd2/docs/assets/og-prompt.md#L1",
+      "source_revision": "e62c0d720aa92273e4b8c9a2b03977ba06045fd2",
+      "source_kind": "audited-native-source",
+      "source_label": "Source at e62c0d720aa9",
+      "catalog_url": null,
+      "native_url": null,
+      "excerpt": "og.png was generated on 2026-08-13 with OpenAI's built-in image-generation tool for this repository. It did not use an input image.",
+      "type": "Native reading",
+      "section": "question",
+      "tags": [
+        "native-reading"
+      ],
+      "track": null,
+      "lesson_id": null
+    },
+    {
+      "id": "doc-8ec9a00bfd09",
+      "title": "ThermoWeave",
+      "path": "README.md",
+      "line": 1,
+      "source_paths": [
+        "README.md"
+      ],
+      "source_url": "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/1e8eb66a767104cffbb5c7d921228d9f0b6419fd/README.md#L1",
+      "source_revision": "1e8eb66a767104cffbb5c7d921228d9f0b6419fd",
+      "source_kind": "historical-reconciled-readme",
+      "source_label": "Historical README/source guide at 1e8eb66a7671",
+      "catalog_url": null,
+      "native_url": null,
+      "excerpt": "ThermoWeave is an independent MATLAB implementation for exploring how spatially and temporally varying cooling boundaries affect a synthetic multi-cell assembly. Its portable graph core supports deterministic 2-D and 3-D Cartesian lattices without Simscape Battery; an optional adapter is kept behind explicit product, library-policy, and generated-model gates.",
+      "type": "Native overview",
+      "section": "equations",
+      "tags": [
+        "model"
+      ],
+      "track": null,
+      "lesson_id": null,
+      "source_blob_path": "README.md",
+      "source_blob_sha256": "182c9e538244e698bcdb075e213d9d851dad63d845260408466a0b761f3235b2",
+      "source_blob_retrieval": "git-show",
+      "source_blob_cache": null
+    },
+    {
+      "id": "doc-6638c2be0d78",
+      "title": "Reproducibility guide",
+      "path": "docs/reproducibility.md",
+      "line": 1,
+      "source_paths": [
+        "docs/reproducibility.md"
+      ],
+      "source_url": "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/e62c0d720aa92273e4b8c9a2b03977ba06045fd2/docs/reproducibility.md#L1",
+      "source_revision": "e62c0d720aa92273e4b8c9a2b03977ba06045fd2",
+      "source_kind": "audited-native-source",
+      "source_label": "Source at e62c0d720aa9",
+      "catalog_url": null,
+      "native_url": null,
+      "excerpt": "ThermoWeave is a synthetic electrothermal demonstrator. Reproduction means regenerating the same declared scenario, result contract, metrics, and manifests; it does not establish real-cell accuracy, safety, lifetime, or certification.",
+      "type": "Native reading",
+      "section": "verification",
+      "tags": [
+        "model",
+        "reproduction",
+        "verification"
+      ],
+      "track": null,
+      "lesson_id": null
+    },
+    {
+      "id": "doc-cae6b20bd629",
+      "title": "ThermoWeave",
+      "path": "docs/profile-readme-entry.md",
+      "line": 1,
+      "source_paths": [
+        "docs/profile-readme-entry.md"
+      ],
+      "source_url": "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/e62c0d720aa92273e4b8c9a2b03977ba06045fd2/docs/profile-readme-entry.md#L1",
+      "source_revision": "e62c0d720aa92273e4b8c9a2b03977ba06045fd2",
+      "source_kind": "audited-native-source",
+      "source_label": "Source at e62c0d720aa9",
+      "catalog_url": null,
+      "native_url": null,
+      "excerpt": "Adaptive spatial electrothermal digital twin for exploring scalar, vectorized, zonal, and coolant-propagation battery boundaries in MATLAB. The portable graph core includes bounded adaptive cooling, seeded fault/variability studies, 31 local tests, and a traceable animated case study.",
+      "type": "Native reading",
+      "section": "verification",
+      "tags": [
+        "model",
+        "verification"
+      ],
+      "track": null,
+      "lesson_id": null
+    },
+    {
+      "id": "doc-56f5e3896d9a",
+      "title": "Verification and numerical evidence",
+      "path": "docs/validation.md",
+      "line": 1,
+      "source_paths": [
+        "docs/validation.md"
+      ],
+      "source_url": "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/e62c0d720aa92273e4b8c9a2b03977ba06045fd2/docs/validation.md#L1",
+      "source_revision": "e62c0d720aa92273e4b8c9a2b03977ba06045fd2",
+      "source_kind": "audited-native-source",
+      "source_label": "Source at e62c0d720aa9",
+      "catalog_url": null,
+      "native_url": null,
+      "excerpt": "ThermoWeave separates implementation consistency from real-cell validation. The current evidence demonstrates behavior of the independently authored synthetic model; it does not establish predictive accuracy for a physical battery.",
+      "type": "Native reading",
+      "section": "verification",
+      "tags": [
+        "model",
+        "verification"
+      ],
+      "track": null,
+      "lesson_id": null
+    },
+    {
+      "id": "doc-ea7fd4279c40",
+      "title": "ThermoWeave portfolio case study",
+      "path": "docs/portfolio-case-study.md",
+      "line": 1,
+      "source_paths": [
+        "docs/portfolio-case-study.md"
+      ],
+      "source_url": "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/e62c0d720aa92273e4b8c9a2b03977ba06045fd2/docs/portfolio-case-study.md#L1",
+      "source_revision": "e62c0d720aa92273e4b8c9a2b03977ba06045fd2",
+      "source_kind": "audited-native-source",
+      "source_label": "Source at e62c0d720aa9",
+      "catalog_url": null,
+      "native_url": null,
+      "excerpt": "Pack averages hide the spatial behavior that often drives thermal decisions. A single boundary temperature cannot explain inlet-to-outlet coolant warming, localized restrictions, uneven cell resistance, or a controller acting on zones. The project needed a transparent way to make those effects inspectable without requiring Simscape Battery for the core workflow.",
+      "type": "Native reading",
+      "section": "scope",
+      "tags": [
+        "model",
+        "reproduction"
+      ],
+      "track": null,
+      "lesson_id": null
+    },
+    {
+      "id": "doc-a5940e4ecbbe",
+      "title": "ThermoWeave predeclared experiment matrix (E0-E10)",
+      "path": "docs/scenarios.md",
+      "line": 1,
+      "source_paths": [
+        "docs/scenarios.md"
+      ],
+      "source_url": "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/e62c0d720aa92273e4b8c9a2b03977ba06045fd2/docs/scenarios.md#L1",
+      "source_revision": "e62c0d720aa92273e4b8c9a2b03977ba06045fd2",
+      "source_kind": "audited-native-source",
+      "source_label": "Source at e62c0d720aa9",
+      "catalog_url": null,
+      "native_url": null,
+      "excerpt": "These IDs and settings define the synthetic demonstration suite. They are independent of the cited MathWorks example. Every run uses thermoweave.result/v1, records the resolved configuration and scenario hash, and reports normalized energy residual. Thresholds are engineering-demo assumptions, not validated battery limits.",
+      "type": "Native reading",
+      "section": "scope",
+      "tags": [
+        "model",
+        "native-lesson",
+        "scope",
+        "verification"
+      ],
+      "track": null,
+      "lesson_id": null
+    },
+    {
+      "id": "doc-9197ef63e505",
+      "title": "ThermoWeave scientific and controls specification",
+      "path": "docs/model.md",
+      "line": 1,
+      "source_paths": [
+        "docs/model.md"
+      ],
+      "source_url": "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/e62c0d720aa92273e4b8c9a2b03977ba06045fd2/docs/model.md#L1",
+      "source_revision": "e62c0d720aa92273e4b8c9a2b03977ba06045fd2",
+      "source_kind": "audited-native-source",
+      "source_label": "Source at e62c0d720aa9",
+      "catalog_url": null,
+      "native_url": null,
+      "excerpt": "ThermoWeave is a reproducible, reduced-order model for a synthetic battery-like assembly. Every numerical value in this document is an assumption for software experiments. It is not fitted to a named cell and must not be presented as validated real-cell accuracy.",
+      "type": "Native reading",
+      "section": "scope",
+      "tags": [
+        "model",
+        "reproduction",
+        "scope"
+      ],
+      "track": null,
+      "lesson_id": null
+    }
+  ],
+  "commands": [
+    {
+      "command": "tasks: test",
+      "label": "Source-defined MATLAB build task input",
+      "path": ".github/workflows/core-ci.yml",
+      "line": 30,
+      "execution_context": "MATLAB build task input (matlab-actions/run-build; not shell)",
+      "copyable": false,
+      "evidence_kind": "matlab-run-build",
+      "source_url": "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/e62c0d720aa92273e4b8c9a2b03977ba06045fd2/.github/workflows/core-ci.yml#L30"
+    },
+    {
+      "command": "tasks: package",
+      "label": "Source-defined MATLAB build task input",
+      "path": ".github/workflows/release.yml",
+      "line": 40,
+      "execution_context": "MATLAB build task input (matlab-actions/run-build; not shell)",
+      "copyable": false,
+      "evidence_kind": "matlab-run-build",
+      "source_url": "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/e62c0d720aa92273e4b8c9a2b03977ba06045fd2/.github/workflows/release.yml#L40"
+    },
+    {
+      "command": "tasks: integration",
+      "label": "Source-defined MATLAB build task input",
+      "path": ".github/workflows/simscape-integration.yml",
+      "line": 28,
+      "execution_context": "MATLAB build task input (matlab-actions/run-build; self-hosted licensed Simscape runner; not shell)",
+      "copyable": false,
+      "evidence_kind": "matlab-run-build",
+      "source_url": "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/e62c0d720aa92273e4b8c9a2b03977ba06045fd2/.github/workflows/simscape-integration.yml#L28"
+    }
+  ],
+  "engineering_curriculum_exclusions": [],
+  "visuals": {
+    "mapped_diagrams": [],
+    "section_banners": [
+      "section-01-question.svg",
+      "section-02-equations.svg",
+      "section-03-reproduce.svg",
+      "section-04-verification.svg",
+      "section-05-scope.svg"
+    ]
+  },
+  "native_document_banner_insertions": [
+    {
+      "path": "docs/portfolio-case-study.md",
+      "section": "verification",
+      "section_title": "Verification / output",
+      "banner": "docs/visuals/sections/section-04-verification.svg",
+      "markdown_relative_banner": "visuals/sections/section-04-verification.svg",
+      "insert_after_heading": "Demonstrated results",
+      "heading_line": 20,
+      "source_link": "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/e62c0d720aa92273e4b8c9a2b03977ba06045fd2/docs/portfolio-case-study.md#L20",
+      "reason": "The existing heading 'Demonstrated results' matches the verification / output section."
+    },
+    {
+      "path": "docs/portfolio-case-study.md",
+      "section": "scope",
+      "section_title": "Scope / limitations",
+      "banner": "docs/visuals/sections/section-05-scope.svg",
+      "markdown_relative_banner": "visuals/sections/section-05-scope.svg",
+      "insert_after_heading": "Limitations",
+      "heading_line": 24,
+      "source_link": "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/e62c0d720aa92273e4b8c9a2b03977ba06045fd2/docs/portfolio-case-study.md#L24",
+      "reason": "The existing heading 'Limitations' matches the scope / limitations section."
+    }
+  ],
+  "native_document_banner_audit": {
+    "schema_version": 1,
+    "eligibility_rule": "Tracked indexed Markdown in an examples, tutorials, lessons, studies, study-cases, concepts or notes directory, or whose path/title explicitly names a lesson, tutorial, example, walkthrough, study case or study. Banners are based only on existing semantic heading text, never directory names.",
+    "eligible_document_count": 1,
+    "lesson_document_candidates": 1,
+    "modified_document_count": 1,
+    "banner_insertion_count": 2,
+    "audit_gap_count": 0,
+    "banners": [
+      {
+        "path": "docs/portfolio-case-study.md",
+        "section": "verification",
+        "section_title": "Verification / output",
+        "banner": "docs/visuals/sections/section-04-verification.svg",
+        "markdown_relative_banner": "visuals/sections/section-04-verification.svg",
+        "insert_after_heading": "Demonstrated results",
+        "heading_line": 20,
+        "source_link": "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/e62c0d720aa92273e4b8c9a2b03977ba06045fd2/docs/portfolio-case-study.md#L20",
+        "reason": "The existing heading 'Demonstrated results' matches the verification / output section."
+      },
+      {
+        "path": "docs/portfolio-case-study.md",
+        "section": "scope",
+        "section_title": "Scope / limitations",
+        "banner": "docs/visuals/sections/section-05-scope.svg",
+        "markdown_relative_banner": "visuals/sections/section-05-scope.svg",
+        "insert_after_heading": "Limitations",
+        "heading_line": 24,
+        "source_link": "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/blob/e62c0d720aa92273e4b8c9a2b03977ba06045fd2/docs/portfolio-case-study.md#L24",
+        "reason": "The existing heading 'Limitations' matches the scope / limitations section."
+      }
+    ],
+    "audit_gaps": [],
+    "explicit_exclusions": []
+  },
+  "dashboard": {
+    "browser_lab_is_surrogate": true,
+    "native_execution_in_browser": false,
+    "localStorage_or_existing_dashboard_scripts_preserved": true
+  }
+}
