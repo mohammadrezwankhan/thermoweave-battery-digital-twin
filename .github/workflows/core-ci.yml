@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Set up MATLAB R2024a
-        uses: matlab-actions/setup-matlab@2323adb8243827ea460b0def4c413545aaec46a9 # v3
+        uses: matlab-actions/setup-matlab@f9e43010f1ae678f7cfa0542fe2a4f60f7d1ad8d # v3
         with:
           release: R2024a
 
