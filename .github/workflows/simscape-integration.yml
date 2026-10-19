@@ -23,6 +23,6 @@ jobs:
           release: R2024a
 
       - name: Run gated integration build
-        uses: matlab-actions/run-build@ed1a00aeaf0b3e7946e28e8263eb5fe5ec232106 # v3
+        uses: matlab-actions/run-build@cf54c2229a74d57eb4e6ba1bbebd45793d37797e # v3
         with:
           tasks: integration
