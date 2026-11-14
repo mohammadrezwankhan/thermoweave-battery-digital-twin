@@ -1,4 +1,4 @@
-![ThermoWeave Spatial Battery Lab: original vector system illustration](assets/hero-25d.svg)
+![ThermoWeave Spatial Battery Lab: original vector system illustration](assets/brand-uniformity/hero-25d.svg)
 
 ThermoWeave models a synthetic battery assembly with thermal graphs, spatial boundaries, control, and deterministic fault studies. This companion introduces a one-node balance before the native multi-node experiments.
 
