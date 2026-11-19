@@ -198,3 +198,13 @@ The project is an **independent implementation informed only by high-level therm
 Citation metadata is in [`CITATION.cff`](CITATION.cff). Contributions should follow [`CONTRIBUTING.md`](CONTRIBUTING.md), the security policy in [`SECURITY.md`](SECURITY.md), and the evidence rules in the project charter. Planned work is recorded in [`ROADMAP.md`](ROADMAP.md).
 
 </details>
+
+## Source-backed reference review — 2026-11-19
+
+The [documentation index](docs/INDEX.md) and [reading handbook](docs/reference/index.html) cover Developer, Maintainer and Owner workflows at source `5f29e34788b0f7ee58e2feeafc4df5d48a9a687a`. Start with [setup](docs/developer/SETUP_AND_REPRODUCIBILITY.md), [native and browser contracts](docs/developer/API_CLI_AND_INTERFACES.md), [equations and units](docs/math-and-physics/EQUATIONS_AND_DERIVATIONS.md), and the [evidence ledger](docs/maintainer/VERIFICATION_EVIDENCE_LEDGER.md).
+
+The preserved 37/37 badge and R2026a outputs above are historical. Current source defines 40 test methods; that count is not a new native execution result. The dated provider snapshot reports success for the pinned source's R2024a core job, with candidate CI/merge/publication handled separately. MATLAB/Octave and actual browser interaction were not run locally for this documentation package.
+
+The main browser lesson evaluates one thermal mass; native MATLAB evolves a multi-cell graph. Its `residualW` is net heating, while the native residual is an algebraic RHS consistency check. Neither establishes measured battery fidelity. Current-source clarifications for controller timing, deadband units, variability and export timebase are in [known debt](docs/maintainer/FAILURE_MODES_AND_TECH_DEBT.md). The [dated twelve-month roadmap](ROADMAP.md#proposed-twelve-month-plan-2026-11-19-through-2027-11-18) gives follow-up acceptance criteria without claiming those changes are implemented.
+
+Run examples from the repository root with `startup`; functions in `examples/` additionally require `addpath(fullfile(pwd,'examples'))`. Use `thermoweave.simulate([])` for full defaults or `runDemo()` for its shortened demo. Existing attribution, release metadata, scientific code, scenarios, results and workflow guards remain unchanged.
