@@ -38,3 +38,14 @@ All notable changes to ThermoWeave are recorded here. Release notes describe evi
 
 - Simscape integration remains optional and manual, and must report an explicit skip when the required product is unavailable.
 - No public release tag has been created by this initial repository record.
+
+## Documentation working-tree review — 2026-11-19
+
+This is a documentation snapshot, not a new semantic release or tag.
+
+- Added canonical Developer, Maintainer and Owner guides, source/interface inventories, explicit scientific derivations and a proposed twelve-month roadmap.
+- Added a script-free reference reading view and narrow navigation from the existing site, plus a bounded offline teaching-fixture checker.
+- Clarified current 40 test-method definitions versus historical 37-test results, native residual/control-clock/deadband/variability limits, and the separation of browser teaching calculations from native graph results.
+- Preserved all scientific/application/model/test/scenario/workflow/dependency/license and generated-result content. Kept original CFF author/version/date and security policy.
+
+Actual author check receipts, independent QA, candidate CI, merge and deployed-content outcomes are separate records; this entry does not claim they are all complete.
