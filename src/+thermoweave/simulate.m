@@ -171,7 +171,7 @@ function target=parseTarget(value)
 if isnumeric(value),target=round(value);return;end
 token=regexp(char(value),'\d+','match','once');target=str2double(token);
 end
- function [dy,b,q,I,cp,res] = derivative(tt,yy,cmd,activationTime)
+ function [dy,b,q,I,cp,res] = derivative(~,yy,cmd,activationTime)
   temp=yy(1:N); soc=yy(N+1:end);
   % Current profiles are piecewise constant, and their transitions are
   % explicitly included in the integration mesh.
