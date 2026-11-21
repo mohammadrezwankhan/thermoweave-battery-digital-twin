@@ -30,6 +30,7 @@ classdef TestAuditRegressions < matlab.unittest.TestCase
             cfg = thermoweave.config.defaultConfig();
             cfg.simulation.duration_s = 6;
             cfg.simulation.outputStep_s = 1;
+            cfg.controller.samplePeriod_s = 1; % Exercise one clock update per output sample.
             cfg.cell.initialTemperature_K = 350;
             cfg.boundary.temperature_K = 350;
             cfg.thermal.ambientTemperature_K = 350;
