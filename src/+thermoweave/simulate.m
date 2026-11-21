@@ -8,6 +8,7 @@ T(1,:)=expand(cfg.cell.initialTemperature_K,N)'; S(1,:)=expand(cfg.cell.initialS
 opts=odeset('RelTol',cfg.simulation.relativeTolerance,'AbsTol',cfg.simulation.absoluteTolerance,'MaxStep',cfg.simulation.maxStep_s);
 for k=1:Nt-1
   t0=t(k); t1=t(k+1); y0=[T(k,:)';S(k,:)'];
+  previousCommand=state.command(:); % Last *executed* zero-order-held command.
   mode=lower(char(getField(cfg.controller,'mode','baseline'))); sensed=T(k,:)';
   sensed=applySensorFaults(sensed,cfg,t0,topo); ci=struct('temperature_K',sensed,'zoneId',topo.zoneId,'zoneWeights',ones(N,1),'referenceTemperature_K',cfg.controller.referenceTemperature_K,'elapsedStep_s',t1-t0);
   switch mode
@@ -15,7 +16,8 @@ for k=1:Nt-1
    case {'advanced','ac'}, [cmd,adv,state]=thermoweave.control.advancedController(ci,cfg,state); if adv.usedFallback,events(end+1)=struct('type','controller_fallback','time_s',t0,'details',adv);end %#ok<AGROW>
    otherwise, [cmd,state]=thermoweave.control.baselineController(ci,cfg,state);
   end
-  cmd=applyActuatorFaults(cmd,cfg,t0);
+  cmd=applyActuatorFaults(cmd,cfg,t0,previousCommand);
+  state.command=cmd(:); % Rate limits and recovery use executed, not proposed, values.
   U(k,:)=cmd(:)';
   rhs=@(tt,yy) derivative(tt,yy,cmd);
   switch lower(char(cfg.simulation.solver)), case 'ode45', [~,ys]=ode45(rhs,[t0 t1],y0,opts); otherwise, [~,ys]=ode15s(rhs,[t0 t1],y0,opts); end
@@ -31,14 +33,17 @@ if numel(scale)~=topo.edgeCount,error('thermoweave:variability:Dimension','Edge 
 topo.edgeConductance_W_per_K=topo.edgeConductance_W_per_K.*scale;
 topo.laplacian_W_per_K=topo.incidence'*diag(topo.edgeConductance_W_per_K)*topo.incidence;
 end
-function command=applyActuatorFaults(command,cfg,t)
+function command=applyActuatorFaults(command,cfg,t,previousCommand)
 if ~isfield(cfg.faults,'events')||isempty(cfg.faults.events),return;end
 for index=1:numel(cfg.faults.events)
     event=cfg.faults.events(index);
     if strcmpi(char(getField(event,'type','')),'stuck_actuator')&& ...
             t>=getField(event,'start_s',0)&&t<=getField(event,'end_s',Inf)
         target=parseTarget(getField(event,'target',[]));
-        command(target)=max(0,min(1,getField(event,'magnitude',0)));
+        if isempty(target),target=1:numel(command);end
+        % A stuck actuator freezes the last applied command at fault onset;
+        % magnitude remains legacy event metadata, not a forced setpoint.
+        command(target)=previousCommand(target);
     end
 end
 end
