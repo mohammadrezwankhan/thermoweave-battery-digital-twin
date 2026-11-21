@@ -190,6 +190,12 @@ if ~isempty(segmentNodes)
     end
 end
 
+cellScale = getField(coolant, 'cellConductanceScale', []);
+if ~isempty(cellScale)
+    mustNonnegativeFinite(cellScale, ...
+        'boundary.coolant.cellConductanceScale', cellCount);
+end
+
 cfg.controller.zoneCount = layout.zoneCount;
 if ~ismember(lower(string(cfg.controller.mode)), ...
         ["openloop", "ol", "none", "baseline", "advanced", "ac"])
@@ -208,7 +214,7 @@ mustPositiveFinite(cfg.controller.samplePeriod_s, ...
 mustPositiveFinite(cfg.controller.referenceTemperature_K, ...
     'controller.referenceTemperature_K');
 mustNonnegativeFinite(cfg.controller.deadband_K, ...
-    'controller.deadband_K');
+    'controller.deadband_K', layout.zoneCount);
 if any(isnan(cfg.controller.rateLimit_per_s(:))) || ...
         any(cfg.controller.rateLimit_per_s(:) < 0)
     error('thermoweave:config:Range', ...
@@ -220,6 +226,10 @@ mustRangeFinite(cfg.variability.uniformFraction, 0, 1, ...
     'variability.uniformFraction');
 mustFinite(cfg.variability.seed, 'variability.seed');
 edgeCount = thermoweave.thermal.buildTopology(layout).edgeCount;
+edgeScale = getField(cfg.thermal, 'edgeConductanceScale', []);
+if ~isempty(edgeScale)
+    mustNonnegativeFinite(edgeScale, 'thermal.edgeConductanceScale', edgeCount);
+end
 cfg = validateFaults(cfg, cellCount, layout.zoneCount, ...
     coolant.segments, edgeCount);
 
