@@ -61,3 +61,7 @@ The human-authorship policy is a required `main` status context. Protected-branc
 | Governance claims | **NOT VERIFIED** | Independent licensing/provenance confirmation |
 
 **CI/Simscape conclusion:** R2024a baseline CI succeeds with a documented optional incomplete test. This cannot certify candidate fixes or optional Simscape parity; remaining scientific assurance is **INCOMPLETE**.
+
+## Candidate pull request provider visibility (initial check)
+
+[Draft PR #20](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/pull/20) was opened from this audit branch into protected `main`. Immediately after PR creation, a provider read of the source head `98209edcff50a7da139675113cd6ec76de2055f5` returned **no GitHub Actions workflow runs** and no test check runs yet. Three external check suites (Sentry, Codemagic CI/CD, Buildkite) were visible as **queued**. Queued check suites are **not** test execution and may never result in runnable MATLAB jobs. This initial snapshot is transitory; refresh the exact PR head SHA, workflows and logs rather than relying on these initial states. No failed or pending candidate test has been described as passed.
