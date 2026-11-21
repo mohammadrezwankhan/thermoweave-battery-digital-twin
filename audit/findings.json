@@ -1,0 +1,353 @@
+{
+  "schemaVersion": "thermoweave.audit-findings/v1",
+  "createdUtc": "2026-11-21",
+  "baselineSha": "6b48646da2f6f8b60a13b14e19c4c65e45b17383",
+  "candidateBranch": "audit/thermoweave-engineering-20261121",
+  "verificationNote": "Patch status reflects GitHub write acceptance only; MATLAB runtime verification is not yet completed.",
+  "findings": [
+    {
+      "id": "TW-PHY-001",
+      "domain": "Electrothermal physics",
+      "severity": "High",
+      "classification": "Confirmed Defect",
+      "status": "open",
+      "source": {
+        "file": "src/+thermoweave/simulate.m",
+        "line": 64
+      },
+      "expected_behavior": "Numerically independent integrated energy balance, correctly normalized",
+      "observed_behavior": "Energy residual algebraically recomputes the same RHS as dT and divides by maximum per-cell heat generation; near-zero is tautological",
+      "reproduction": "Run a conservation case with independently integrated source/boundary terms and compare stored energy rather than the RHS closure scalar",
+      "root_cause": "Both sides derive from one derivative call, with no independently accumulated heat ledger",
+      "remediation": "Implement independently integrated flux/source histories and justified tolerance convergence; retain existing metric for compatibility until migration",
+      "regression_risk": "High: numerical baselines and metrics must be recalibrated",
+      "verification": {
+        "status": "NOT VERIFIED",
+        "evidence": [
+          "src/+thermoweave/simulate.m:56,64",
+          "docs/model.md:130"
+        ],
+        "responsible": "GitHub-connected engineering review",
+        "before": "Static source inspection on baseline 6b48646; no local MATLAB execution",
+        "after": "Audit-branch tests not yet executed"
+      }
+    },
+    {
+      "id": "TW-PHY-002",
+      "domain": "Coolant physics",
+      "severity": "Medium",
+      "classification": "Confirmed Defect",
+      "status": "patched_awaiting_ci",
+      "source": {
+        "file": "src/+thermoweave/+coolant/evaluate.m",
+        "line": 17
+      },
+      "expected_behavior": "Fully inactive zero-flow/zero-conductance segment preserves defined inlet/previous temperature",
+      "observed_behavior": "Original division by eps yields an artificial 0 K temperature when both numerator and physical denominator are zero",
+      "reproduction": "Set massFlow=0 and all segment conductances=0 in evaluate and march; assert outlet remains inlet",
+      "root_cause": "Unconditional denominator eps replacement instead of a no-exchange branch",
+      "remediation": "Added inactive-segment hold behavior in evaluate.m and march.m, with focused regression",
+      "regression_risk": "Low: only singular inactive branch",
+      "verification": {
+        "status": "NOT VERIFIED",
+        "evidence": [
+          "tests/unit/TestAuditRegressions.m:inactiveCoolantSegmentsKeepLastDefinedTemperature"
+        ],
+        "responsible": "GitHub-connected engineering review",
+        "before": "Static source inspection on baseline 6b48646; no local MATLAB execution",
+        "after": "Audit-branch tests not yet executed"
+      }
+    },
+    {
+      "id": "TW-CTRL-001",
+      "domain": "Controls and faults",
+      "severity": "High",
+      "classification": "Confirmed Defect",
+      "status": "patched_awaiting_ci",
+      "source": {
+        "file": "src/+thermoweave/simulate.m",
+        "line": 36
+      },
+      "expected_behavior": "Stuck actuator holds last executed command from onset through recovery; slew limits use actual commands",
+      "observed_behavior": "Original fault overwrote output with magnitude, and state.command retained the proposed instead of executed command",
+      "reproduction": "Demand saturated rising control at 0.1/s, trigger stuck actuator at t=2s with magnitude=1, check hold and release bound",
+      "root_cause": "Fault injected as prescribed setpoint after controller state update",
+      "remediation": "Freeze previous executed command and synchronize state.command with actual command each step; regression added",
+      "regression_risk": "Medium: changes declared legacy magnitude semantics; documented",
+      "verification": {
+        "status": "NOT VERIFIED",
+        "evidence": [
+          "tests/unit/TestAuditRegressions.m:stuckActuatorHoldsAppliedCommandWithoutSlewJump"
+        ],
+        "responsible": "GitHub-connected engineering review",
+        "before": "Static source inspection on baseline 6b48646; no local MATLAB execution",
+        "after": "Audit-branch tests not yet executed"
+      }
+    },
+    {
+      "id": "TW-CTRL-002",
+      "domain": "Controls",
+      "severity": "Medium",
+      "classification": "Confirmed Defect",
+      "status": "patched_awaiting_ci",
+      "source": {
+        "file": "src/+thermoweave/+control/baselineController.m",
+        "line": 7
+      },
+      "expected_behavior": "Deadband_K is subtracted from temperature error before K^-1 proportional gain",
+      "observed_behavior": "Original code subtracted deadband_K from dimensionless normalized command after gain",
+      "reproduction": "Use deltaT=2 K, deadband=1 K, gain=0.2/K; expect 0.2 command, not zero",
+      "root_cause": "Dimensional inconsistency in gain/deadband operation order",
+      "remediation": "Apply max(0,Tzone-Tref-deadband) before gain and add unit regression",
+      "regression_risk": "Low: zero-deadband default unchanged; nonzero scenarios corrected",
+      "verification": {
+        "status": "NOT VERIFIED",
+        "evidence": [
+          "tests/unit/TestAuditRegressions.m:deadbandUsesKelvinBeforeProportionalGain"
+        ],
+        "responsible": "GitHub-connected engineering review",
+        "before": "Static source inspection on baseline 6b48646; no local MATLAB execution",
+        "after": "Audit-branch tests not yet executed"
+      }
+    },
+    {
+      "id": "TW-CTRL-003",
+      "domain": "Controls and numerical solver",
+      "severity": "High",
+      "classification": "Confirmed Defect",
+      "status": "open",
+      "source": {
+        "file": "src/+thermoweave/simulate.m",
+        "line": 10
+      },
+      "expected_behavior": "Controller samplePeriod_s determines actual zero-order-hold update times independent of result output spacing",
+      "observed_behavior": "Controller is executed every outputStep_s, although default samplePeriod_s is 2s and outputStep_s is 1s",
+      "reproduction": "Compare command transitions while changing outputStep_s with samplePeriod_s fixed; inspect control loop at simulate.m:10-24",
+      "root_cause": "No independent controller clock/event scheduler",
+      "remediation": "Add event-grid integration and controller sample scheduler; regenerate benchmark artifacts and rerun solver/stiffness tests",
+      "regression_risk": "High: materially changes published control trajectories and artifact hashes",
+      "verification": {
+        "status": "NOT VERIFIED",
+        "evidence": [
+          "src/+thermoweave/+config/defaultConfig.m",
+          "docs/model.md:106"
+        ],
+        "responsible": "GitHub-connected engineering review",
+        "before": "Static source inspection on baseline 6b48646; no local MATLAB execution",
+        "after": "Audit-branch tests not yet executed"
+      }
+    },
+    {
+      "id": "TW-FAULT-001",
+      "domain": "Stochastic fault timing",
+      "severity": "Medium",
+      "classification": "Test Coverage Gap",
+      "status": "open",
+      "source": {
+        "file": "src/+thermoweave/simulate.m",
+        "line": 25
+      },
+      "expected_behavior": "Fault transitions at exact declared event times regardless of result sampling",
+      "observed_behavior": "ODE chunks are split only at output times; derivative reads fault timeline at solver evaluation points",
+      "reproduction": "Place a heat fault onset at t=1.5s with outputStep=2s and compare to event-aligned reference",
+      "root_cause": "Fault boundaries are not merged with solver event mesh",
+      "remediation": "Add event-time subdivision with one-sided semantics and adversarial onset/recovery tests",
+      "regression_risk": "High: may alter time histories and benchmarks",
+      "verification": {
+        "status": "NOT VERIFIED",
+        "evidence": [
+          "src/+thermoweave/simulate.m:10-28"
+        ],
+        "responsible": "GitHub-connected engineering review",
+        "before": "Static source inspection on baseline 6b48646; no local MATLAB execution",
+        "after": "Audit-branch tests not yet executed"
+      }
+    },
+    {
+      "id": "TW-CFG-001",
+      "domain": "Configuration and physical constraints",
+      "severity": "High",
+      "classification": "Confirmed Defect",
+      "status": "patched_awaiting_ci",
+      "source": {
+        "file": "src/+thermoweave/+config/validateConfig.m",
+        "line": 229
+      },
+      "expected_behavior": "Thermal edge and coolant-cell conductance scales must be finite nonnegative with valid dimensions",
+      "observed_behavior": "Original validator did not check user-provided optional scale vectors; negative factors reached runtime",
+      "reproduction": "Provide edgeConductanceScale=-1 or coolant.cellConductanceScale=-0.1 in a config override",
+      "root_cause": "Optional physical scale fields omitted from validation",
+      "remediation": "Validate optional edge and coolant interface scale fields; add rejection regression",
+      "regression_risk": "Low: rejects previously accepted invalid inputs",
+      "verification": {
+        "status": "NOT VERIFIED",
+        "evidence": [
+          "tests/unit/TestAuditRegressions.m:rejectsNonphysicalInterfaceScaling"
+        ],
+        "responsible": "GitHub-connected engineering review",
+        "before": "Static source inspection on baseline 6b48646; no local MATLAB execution",
+        "after": "Audit-branch tests not yet executed"
+      }
+    },
+    {
+      "id": "TW-DATA-001",
+      "domain": "Result schema and serialization",
+      "severity": "Medium",
+      "classification": "Confirmed Defect",
+      "status": "patched_awaiting_ci",
+      "source": {
+        "file": "src/+thermoweave/+results/exportJSON.m",
+        "line": 17
+      },
+      "expected_behavior": "Downsampling preserves final sample and metadata timeBase aligns to exported sample grid",
+      "observed_behavior": "Original stride omitted final time for mismatched lengths and retained unsampled metadata time base",
+      "reproduction": "Export a 6-sample result with stride=2; inspect last time and timeBase",
+      "root_cause": "Incomplete stride selection and metadata not subsetted",
+      "remediation": "Append terminal index, update metadata, reject invalid noninteger strides, add regression",
+      "regression_risk": "Low: only optional downsample exports",
+      "verification": {
+        "status": "NOT VERIFIED",
+        "evidence": [
+          "tests/unit/TestAuditRegressions.m:downsampleExportRetainsTerminalStateAndMatchingTimebase"
+        ],
+        "responsible": "GitHub-connected engineering review",
+        "before": "Static source inspection on baseline 6b48646; no local MATLAB execution",
+        "after": "Audit-branch tests not yet executed"
+      }
+    },
+    {
+      "id": "TW-DATA-002",
+      "domain": "Scenario reproducibility",
+      "severity": "High",
+      "classification": "Unverified Claim",
+      "status": "open",
+      "source": {
+        "file": "src/+thermoweave/+util/hashStruct.m",
+        "line": 1
+      },
+      "expected_behavior": "Semantically identical nested configurations have a stable, versioned hash independent of field insertion order",
+      "observed_behavior": "hashStruct hashes raw jsonencode(s), with no explicit recursive key canonicalization or negative-zero policy",
+      "reproduction": "Compare hashStruct(struct('a',1,'b',2)) and hashStruct(struct('b',2,'a',1)), including nested structs and arrays",
+      "root_cause": "Canonicalization is not defined before serialization",
+      "remediation": "Design and version canonical hash contract and migrate/regenerate all dependent artifacts before replacing v1 hashes",
+      "regression_risk": "High: existing published scenario hashes may change",
+      "verification": {
+        "status": "NOT VERIFIED",
+        "evidence": [
+          "src/+thermoweave/+util/hashStruct.m:1",
+          "docs/reproducibility.md"
+        ],
+        "responsible": "GitHub-connected engineering review",
+        "before": "Static source inspection on baseline 6b48646; no local MATLAB execution",
+        "after": "Audit-branch tests not yet executed"
+      }
+    },
+    {
+      "id": "TW-DOC-001",
+      "domain": "Documentation and CI evidence",
+      "severity": "Low",
+      "classification": "Documentation Error",
+      "status": "patched_awaiting_ci",
+      "source": {
+        "file": "README.md",
+        "line": 65
+      },
+      "expected_behavior": "Current CI evidence cites source/date and distinguishes optional skipped tests",
+      "observed_behavior": "Static 37/37 local badge was stale relative to 2026-11-19 40 total/39 passed/1 incomplete run",
+      "reproduction": "Read Core CI job 135921365013 test summary",
+      "root_cause": "Historical counts presented without prominent latest run",
+      "remediation": "Replace with live workflow badge and dated baseline counts, amend validation guide",
+      "regression_risk": "Very low",
+      "verification": {
+        "status": "NOT VERIFIED",
+        "evidence": [
+          "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44626427308"
+        ],
+        "responsible": "GitHub-connected engineering review",
+        "before": "Static source inspection on baseline 6b48646; no local MATLAB execution",
+        "after": "Audit-branch tests not yet executed"
+      }
+    },
+    {
+      "id": "TW-DOC-002",
+      "domain": "Scientific documentation",
+      "severity": "Medium",
+      "classification": "Documentation Error",
+      "status": "patched_awaiting_ci",
+      "source": {
+        "file": "README.md",
+        "line": 110
+      },
+      "expected_behavior": "Three loss terms render as subtraction in GitHub Markdown display equation",
+      "observed_behavior": "Original newline-prefixed '-' terms were susceptible to Markdown list interpretation",
+      "reproduction": "Inspect rendered README equation on GitHub after branch publication",
+      "root_cause": "Multiline formula used list-marker-shaped line starts",
+      "remediation": "Use aligned math with line-leading alignment markers, preserving all negative signs",
+      "regression_risk": "Low; rendered visual check pending",
+      "verification": {
+        "status": "NOT VERIFIED",
+        "evidence": [
+          "README.md:110-117"
+        ],
+        "responsible": "GitHub-connected engineering review",
+        "before": "Static source inspection on baseline 6b48646; no local MATLAB execution",
+        "after": "Audit-branch tests not yet executed"
+      }
+    },
+    {
+      "id": "TW-SIM-001",
+      "domain": "MATLAB/Simscape",
+      "severity": "High",
+      "classification": "Environmental Limitation",
+      "status": "blocked",
+      "source": {
+        "file": "simscape/buildThermoWeaveModel.m",
+        "line": 1
+      },
+      "expected_behavior": "Licensed Simscape model executes on independently validated equivalent inputs, outputs, and units",
+      "observed_behavior": "Adapter intentionally skips when custom library policy is unresolved; no parity run in evidence",
+      "reproduction": "Execute manual integration workflow on thermoweave-simscape runner with resolved library policy",
+      "root_cause": "No accessible licensed runtime or authorized generated model in this audit environment",
+      "remediation": "Retain explicit skip, resolve policy and run authenticated optional integration before parity claims",
+      "regression_risk": "None for core, high for Simscape assurance",
+      "verification": {
+        "status": "BLOCKED",
+        "evidence": [
+          "simscape/runSimscapeScenario.m",
+          "docs/validation.md"
+        ],
+        "responsible": "GitHub-connected engineering review",
+        "before": "Static source inspection on baseline 6b48646; no local MATLAB execution",
+        "after": "Audit-branch tests not yet executed"
+      }
+    },
+    {
+      "id": "TW-GOV-001",
+      "domain": "Governance and provenance",
+      "severity": "Medium",
+      "classification": "Unverified Claim",
+      "status": "open",
+      "source": {
+        "file": "PROVENANCE.md",
+        "line": 1
+      },
+      "expected_behavior": "IP/source and dependency provenance supported by inspected rights and attribution evidence",
+      "observed_behavior": "Governance files exist, but code review cannot independently establish originality or all third-party rights",
+      "reproduction": "Review dependency and asset origins, licenses, and external authorizations with a legal/provenance reviewer",
+      "root_cause": "Legal clearance requires external evidence beyond repository assertions",
+      "remediation": "Document inspected files and maintain unresolved provenance risk; do not certify legal cleanliness",
+      "regression_risk": "Noncode risk",
+      "verification": {
+        "status": "NOT VERIFIED",
+        "evidence": [
+          "PROVENANCE.md",
+          "THIRD_PARTY_NOTICES.md",
+          "LICENSE"
+        ],
+        "responsible": "GitHub-connected engineering review",
+        "before": "Static source inspection on baseline 6b48646; no local MATLAB execution",
+        "after": "Audit-branch tests not yet executed"
+      }
+    }
+  ]
+}
