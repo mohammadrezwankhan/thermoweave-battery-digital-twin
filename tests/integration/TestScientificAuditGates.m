@@ -135,5 +135,46 @@ classdef TestScientificAuditGates < matlab.unittest.TestCase
             testCase.verifyTrue(all(isnan(objectives(~advanced))));
         end
 
+        function numericCurrentProfileTransitionsAreIntegratedExactly(testCase)
+            cfg=thermoweave.config.defaultConfig();
+            cfg.simulation.duration_s=3;
+            cfg.simulation.outputStep_s=3;
+            cfg.simulation.maxStep_s=0.05;
+            cfg.controller.mode='openloop';
+            cfg.electrical.current_A=0;
+            cfg.electrical.currentProfile=[0;10;0;0];
+            cfg.electrical.alphaT_per_K=0;
+            cfg.electrical.alphaSOC=0;
+            cfg.electrical.entropicHeat=false;
+            cfg.boundary.conductance_W_per_K=0;
+            cfg.thermal.ambientConductance_W_per_K=0;
+            result=thermoweave.simulate(cfg);
+            expected_J=cfg.cell.count*(10^2)*cfg.electrical.R0_Ohm*1;
+            testCase.verifyEqual(result.energyLedger.generatedHeat_J, ...
+                expected_J,'AbsTol',1e-4);
+            testCase.verifyEqual(result.energyLedger.storedEnergyChange_J, ...
+                expected_J,'AbsTol',1e-3);
+        end
+
+        function downsampledControlHistoriesAlignWithTimeVector(testCase)
+            cfg=thermoweave.config.defaultConfig();
+            cfg.simulation.duration_s=5;
+            cfg.simulation.outputStep_s=1;
+            cfg.controller.samplePeriod_s=2;
+            result=thermoweave.simulate(cfg);
+            output=[tempname '.json'];
+            testCase.addTeardown(@() delete(output));
+            thermoweave.results.exportJSON(result,output,2);
+            compact=jsondecode(fileread(output));
+            expectedSamples=numel(compact.time_s);
+            testCase.verifyEqual(expectedSamples,4);
+            testCase.verifyEqual(numel(compact.control.methodHistory), ...
+                expectedSamples);
+            testCase.verifyEqual(numel(compact.control.statusHistory), ...
+                expectedSamples);
+            testCase.verifyEqual(numel(compact.control.objectiveHistory), ...
+                expectedSamples);
+        end
+
     end
 end

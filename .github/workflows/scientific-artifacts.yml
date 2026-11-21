@@ -1,0 +1,64 @@
+name: Scientific artifact reproduction
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scientific-artifacts-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  scientific-artifacts:
+    name: MATLAB R2024a regenerate evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up MATLAB R2024a
+        uses: matlab-actions/setup-matlab@f9e43010f1ae678f7cfa0542fe2a4f60f7d1ad8d # v3
+        with:
+          release: R2024a
+
+      - name: Record regeneration start
+        shell: bash
+        run: |
+          mkdir -p results
+          touch results/artifact-regeneration-start.flag
+
+      - name: Run tests and regenerate figures and data
+        uses: matlab-actions/run-build@cf54c2229a74d57eb4e6ba1bbebd45793d37797e # v3
+        with:
+          tasks: artifacts
+
+      - name: Verify fresh scientific data and provenance
+        if: always()
+        env:
+          EXPECTED_MATLAB_RELEASE: '2024a'
+        run: |
+          python3 scripts/verify_scientific_artifacts.py
+          git status --short -- artifacts/ docs/assets/
+          git diff --stat -- artifacts/ docs/assets/
+
+      - name: Publish exact test and artifact receipts for review
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: thermoweave-matlab-evidence
+          path: |
+            results/*.xml
+            results/*.sarif
+            artifacts/reports/*.json
+            artifacts/data/*.csv
+            artifacts/web-data/*.json
+            docs/assets/thermoweave-demo.json
+          if-no-files-found: warn
+          retention-days: 14

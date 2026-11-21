@@ -23,4 +23,19 @@ if isfield(r,'metadata')
 end
 f={'temperature_K','soc'}; for k=1:numel(f),r.state.(f{k})=r.state.(f{k})(idx,:);end
 r.boundary.temperature_K=r.boundary.temperature_K(idx,:);r.boundary.conductance_W_per_K=r.boundary.conductance_W_per_K(idx,:);r.control.zoneCommand=r.control.zoneCommand(idx,:);r.signals.current_A=r.signals.current_A(idx);r.signals.heatGeneration_W=r.signals.heatGeneration_W(idx,:);r.signals.coolingPowerProxy_W=r.signals.coolingPowerProxy_W(idx);
+% Controller provenance must be sampled at exactly the exported time grid.
+% Otherwise JSON consumers can display solver identities for absent samples.
+for k=1:numel({'methodHistory','statusHistory','objectiveHistory'})
+    names={'methodHistory','statusHistory','objectiveHistory'};
+    name=names{k};
+    if isfield(r.control,name)
+        history=r.control.(name);
+        if numel(history)~=sourceSampleCount
+            error('thermoweave:results:Downsample', ...
+                'Control history %s has %d entries; expected %d.', ...
+                name,numel(history),sourceSampleCount);
+        end
+        r.control.(name)=history(idx(:));
+    end
+end
 end

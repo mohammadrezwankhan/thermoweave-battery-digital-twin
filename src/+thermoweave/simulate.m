@@ -36,6 +36,10 @@ end
 profile=getField(cfg.electrical,'currentProfile',[]);
 if isstruct(profile)&&~isempty(profile)&&isfield(profile,'time_s')
     mesh=[mesh;profile.time_s(:)];
+elseif isnumeric(profile)&&numel(profile)>1
+    % Numeric current profiles use integer-second piecewise-constant knots.
+    % Split the ODE at each knot even when outputStep_s is much larger.
+    mesh=[mesh;(0:numel(profile)-1)'];
 end
 mesh=unique(mesh(isfinite(mesh)&mesh>=0&mesh<=cfg.simulation.duration_s));
 ledgerTerms_J=zeros(1,4); % generated, signed boundary, signed coolant, external
