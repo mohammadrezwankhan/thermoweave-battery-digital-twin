@@ -10,27 +10,29 @@
       "domain": "Electrothermal physics",
       "severity": "High",
       "classification": "Confirmed Defect",
-      "status": "open",
+      "status": "implemented_partial_ci_verified",
       "source": {
         "file": "src/+thermoweave/simulate.m",
-        "line": 64
+        "line": 137
       },
       "expected_behavior": "Numerically independent integrated energy balance, correctly normalized",
-      "observed_behavior": "Energy residual algebraically recomputes the same RHS as dT and divides by maximum per-cell heat generation; near-zero is tautological",
+      "observed_behavior": "At the baseline SHA the residual was a same-RHS algebraic identity. Candidate adds a separate integrated signed source/ambient/coolant/external heat ledger and independent endpoint CΔT, while retaining the legacy metric for v1 compatibility.",
       "reproduction": "Run a conservation case with independently integrated source/boundary terms and compare stored energy rather than the RHS closure scalar",
       "root_cause": "Both sides derive from one derivative call, with no independently accumulated heat ledger",
-      "remediation": "Implement independently integrated flux/source histories and justified tolerance convergence; retain existing metric for compatibility until migration",
+      "remediation": "Candidate: integrate source/boundary histories on accepted ODE states. Still required: tolerance/stiffness convergence, dynamic coolant model-form checks and candidate artifact regeneration.",
       "regression_risk": "High: numerical baselines and metrics must be recalibrated",
       "verification": {
         "status": "NOT VERIFIED",
         "evidence": [
           "src/+thermoweave/simulate.m:56,64",
           "docs/model.md:130",
-          "The independent constant-source energy fixture passed in candidate R2024a run 44945399849; general integrated energy balance is still missing."
+          "The independent constant-source energy fixture passed in candidate R2024a run 44945399849; general integrated energy balance is still missing.",
+          "2026-11-21 R2024a Core CI run 44959047806, job 137013536188, source/test SHA a4d424d971fe14d59df6a9e3a9339cca4a437598, 54 total / 53 PASS / 0 FAIL / 1 INCOMPLETE",
+          "Signed closed/ambient/coolant energy ledger tests PASS but broad scientific ledger and cross-solver convergence are not certified."
         ],
         "responsible": "GitHub-connected engineering review",
         "before": "Static source inspection on baseline 6b48646; no local MATLAB execution",
-        "after": "Audit-branch tests not yet executed"
+        "after": "Candidate signed-ledger scoped tests executed; general scientific gate remains NOT VERIFIED."
       }
     },
     {
@@ -119,26 +121,28 @@
       "domain": "Controls and numerical solver",
       "severity": "High",
       "classification": "Confirmed Defect",
-      "status": "open",
+      "status": "fixed_verified_core_ci",
       "source": {
         "file": "src/+thermoweave/simulate.m",
-        "line": 10
+        "line": 27
       },
       "expected_behavior": "Controller samplePeriod_s determines actual zero-order-hold update times independent of result output spacing",
-      "observed_behavior": "Controller is executed every outputStep_s, although default samplePeriod_s is 2s and outputStep_s is 1s",
+      "observed_behavior": "Baseline executed controller per output interval. Candidate creates an independent samplePeriod_s controller clock and zero-order-held commands over a merged event mesh.",
       "reproduction": "Compare command transitions while changing outputStep_s with samplePeriod_s fixed; inspect control loop at simulate.m:10-24",
       "root_cause": "No independent controller clock/event scheduler",
-      "remediation": "Add event-grid integration and controller sample scheduler; regenerate benchmark artifacts and rerun solver/stiffness tests",
+      "remediation": "Implemented independent controller clock and output-grid-independent zero-order hold; broader fault interactions and artifact regeneration still need validation.",
       "regression_risk": "High: materially changes published control trajectories and artifact hashes",
       "verification": {
-        "status": "NOT VERIFIED",
+        "status": "PASS",
         "evidence": [
           "src/+thermoweave/+config/defaultConfig.m",
-          "docs/model.md:106"
+          "docs/model.md:106",
+          "2026-11-21 R2024a Core CI run 44959047806, job 137013536188, source/test SHA a4d424d971fe14d59df6a9e3a9339cca4a437598, 54 total / 53 PASS / 0 FAIL / 1 INCOMPLETE",
+          "TestScientificAuditGates/controlClockDoesNotFollowOutputSpacing PASS."
         ],
         "responsible": "GitHub-connected engineering review",
         "before": "Static source inspection on baseline 6b48646; no local MATLAB execution",
-        "after": "Audit-branch tests not yet executed"
+        "after": "Focused clock acceptance PASS; full system/control acceptance remains NOT VERIFIED."
       }
     },
     {
@@ -146,25 +150,27 @@
       "domain": "Stochastic fault timing",
       "severity": "Medium",
       "classification": "Test Coverage Gap",
-      "status": "open",
+      "status": "implemented_partial_ci_verified",
       "source": {
         "file": "src/+thermoweave/simulate.m",
-        "line": 25
+        "line": 40
       },
       "expected_behavior": "Fault transitions at exact declared event times regardless of result sampling",
-      "observed_behavior": "ODE chunks are split only at output times; derivative reads fault timeline at solver evaluation points",
+      "observed_behavior": "Baseline solver chunks followed output times only. Candidate adds exact fault transition boundaries and one-sided interval activation; a mid-output heat fault duration test passes.",
       "reproduction": "Place a heat fault onset at t=1.5s with outputStep=2s and compare to event-aligned reference",
       "root_cause": "Fault boundaries are not merged with solver event mesh",
-      "remediation": "Add event-time subdivision with one-sided semantics and adversarial onset/recovery tests",
+      "remediation": "Implemented merged fault/event solver mesh, with remaining compound sensor/actuator fault and numerical convergence coverage.",
       "regression_risk": "High: may alter time histories and benchmarks",
       "verification": {
         "status": "NOT VERIFIED",
         "evidence": [
-          "src/+thermoweave/simulate.m:10-28"
+          "src/+thermoweave/simulate.m:10-28",
+          "2026-11-21 R2024a Core CI run 44959047806, job 137013536188, source/test SHA a4d424d971fe14d59df6a9e3a9339cca4a437598, 54 total / 53 PASS / 0 FAIL / 1 INCOMPLETE",
+          "TestScientificAuditGates/faultBetweenOutputTimesHasExactHeatDuration PASS; not a complete all-fault scheduling proof."
         ],
         "responsible": "GitHub-connected engineering review",
         "before": "Static source inspection on baseline 6b48646; no local MATLAB execution",
-        "after": "Audit-branch tests not yet executed"
+        "after": "Thermal fault timing regression PASS; general event/fault gate remains NOT VERIFIED."
       }
     },
     {
@@ -226,26 +232,28 @@
       "domain": "Scenario reproducibility",
       "severity": "High",
       "classification": "Unverified Claim",
-      "status": "open",
+      "status": "implemented_canonical_hash_unmigrated",
       "source": {
-        "file": "src/+thermoweave/+util/hashStruct.m",
+        "file": "src/+thermoweave/+util/hashCanonicalStruct.m",
         "line": 1
       },
       "expected_behavior": "Semantically identical nested configurations have a stable, versioned hash independent of field insertion order",
-      "observed_behavior": "hashStruct hashes raw jsonencode(s), with no explicit recursive key canonicalization or negative-zero policy",
+      "observed_behavior": "Legacy scenarioHash continues to use raw jsonencode order. Candidate adds separate recursively ordered thermoweave.canonical-json/v1 digest, explicit Infinity tagging and NaN rejection without silently changing legacy artifacts.",
       "reproduction": "Compare hashStruct(struct('a',1,'b',2)) and hashStruct(struct('b',2,'a',1)), including nested structs and arrays",
       "root_cause": "Canonicalization is not defined before serialization",
-      "remediation": "Design and version canonical hash contract and migrate/regenerate all dependent artifacts before replacing v1 hashes",
+      "remediation": "Implement versioned canonical digest (done, bounded unit test PASS); still migrate generated artifacts under controlled policy and verify cross-release stability.",
       "regression_risk": "High: existing published scenario hashes may change",
       "verification": {
         "status": "NOT VERIFIED",
         "evidence": [
           "src/+thermoweave/+util/hashStruct.m:1",
-          "docs/reproducibility.md"
+          "docs/reproducibility.md",
+          "2026-11-21 R2024a Core CI run 44959047806, job 137013536188, source/test SHA a4d424d971fe14d59df6a9e3a9339cca4a437598, 54 total / 53 PASS / 0 FAIL / 1 INCOMPLETE",
+          "TestScientificAuditGates/canonicalHashIgnoresObjectFieldInsertionOrder PASS; no R2026a comparison or hash migration executed."
         ],
         "responsible": "GitHub-connected engineering review",
         "before": "Static source inspection on baseline 6b48646; no local MATLAB execution",
-        "after": "Audit-branch tests not yet executed"
+        "after": "Canonical algorithm scope verified R2024a; public artifact migration and cross-release hash stability NOT VERIFIED."
       }
     },
     {
