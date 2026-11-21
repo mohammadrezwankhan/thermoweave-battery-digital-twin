@@ -62,7 +62,7 @@ The detailed project guide below remains the source for installation, supported 
 
 > Adaptive spatial electrothermal digital twin for battery cooling design
 
-![Local tests: 37/37](https://img.shields.io/badge/local_tests-37%2F37_passed-b7ff58?labelColor=071019)
+[![Core CI](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/workflows/core-ci.yml/badge.svg?branch=main)](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/workflows/core-ci.yml)
 ![MATLAB: R2024a+](https://img.shields.io/badge/MATLAB-R2024a%2B-b7ff58?labelColor=071019)
 ![License: MIT](https://img.shields.io/badge/license-MIT-58d8ff?labelColor=071019)
 ![Source: published](https://img.shields.io/badge/source-published-b7ff58?labelColor=071019)
@@ -107,12 +107,14 @@ flowchart LR
 
 The cell energy balance is
 
-$$
-C_i\dot T_i = Q_{\mathrm{gen},i}
-- \sum_j G_{ij}(T_i-T_j)
-- G_{b,i}(T_i-T_{b,i})
-- G_{c,i}(T_i-T_{c,i}).
-$$
+$
+\begin{aligned}
+C_i\dot T_i &= Q_{\mathrm{gen},i} \\
+&\quad {}- \sum_j G_{ij}(T_i-T_j) \\
+&\quad {}- G_{b,i}(T_i-T_{b,i}) \\
+&\quad {}- G_{c,i}(T_i-T_{c,i}).
+\end{aligned}
+$
 
 Temperatures are kelvin internally, current is positive on discharge, and heat flow is positive into a cell. The complete derivation, coolant balance, controller objective, units, and limitations are in [`docs/model.md`](docs/model.md).
 
@@ -162,7 +164,7 @@ The generated website bundle includes actual scalar, vector, zonal, coolant-rest
 
 ## Testing and CI
 
-The published baseline records a local class-based test run of **37/37**, with 0 failed and 0 incomplete. That run covered strict configuration failure modes, equilibrium, relaxation, energy accounting and solver convergence, uniform scalar/vector equivalence, graph relabelling, coolant conservation and flow reversal, fault targeting, per-segment conductance, baseline/advanced controller bounds and a predeclared synthetic benefit, multi-interface variability, deterministic result export, schema mapping, honest Simscape status, and the 3-D topology/reduction/rendering contracts. This historical count does not include later source changes or newly added tests.
+The published baseline records a local class-based test run of **37/37**, with 0 failed and 0 incomplete. That run covered strict configuration failure modes, equilibrium, relaxation, energy accounting and solver convergence, uniform scalar/vector equivalence, graph relabelling, coolant conservation and flow reversal, fault targeting, per-segment conductance, baseline/advanced controller bounds and a predeclared synthetic benefit, multi-interface variability, deterministic result export, schema mapping, honest Simscape status, and the 3-D topology/reduction/rendering contracts. This historical count does not include later source changes or newly added tests. At baseline `6b48646`, the [19 November 2026 MATLAB R2024a Core CI](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44626427308) executed 40 tests: **39 passed, 0 failed, 1 incomplete** (the optional advanced-controller test was filtered by an unmet Optimization Toolbox assumption). These are baseline results, not execution evidence for subsequent audit changes.
 
 ```matlab
 results = runtests("tests", IncludeSubfolders=true)
