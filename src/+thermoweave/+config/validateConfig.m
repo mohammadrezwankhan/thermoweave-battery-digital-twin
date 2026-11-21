@@ -329,6 +329,10 @@ end
 end
 
 function target = parseTarget(value)
+if isempty(value)
+    target = []; % Empty target means the fault applies globally.
+    return
+end
 if isnumeric(value) && isscalar(value)
     target = value;
     return
