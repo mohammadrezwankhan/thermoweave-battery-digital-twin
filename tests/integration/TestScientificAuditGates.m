@@ -88,5 +88,52 @@ classdef TestScientificAuditGates < matlab.unittest.TestCase
             testCase.verifyTrue(isfield(result.metadata,'scenarioCanonicalHash'));
             testCase.verifyEqual(numel(char(result.metadata.scenarioCanonicalHash)),64);
         end
+        function signedBoundaryEnergyShowsNetCooling(testCase)
+            cfg=thermoweave.config.defaultConfig();
+            cfg.simulation.duration_s=4;cfg.simulation.outputStep_s=2;
+            cfg.controller.mode='openloop';cfg.electrical.current_A=0;
+            cfg.cell.initialTemperature_K=330;
+            cfg.boundary.temperature_K=298.15;
+            cfg.boundary.conductance_W_per_K=0.25;
+            result=thermoweave.simulate(cfg);
+            ledger=result.energyLedger;
+            testCase.verifyLessThan(ledger.ambientHeat_J,0);
+            testCase.verifyEqual(ledger.generatedHeat_J,0,'AbsTol',1e-12);
+            testCase.verifyLessThan(ledger.storedEnergyChange_J,0);
+            testCase.verifyLessThan(ledger.normalizedResidual,5e-4);
+        end
+
+        function signedCoolantEnergyShowsNetCooling(testCase)
+            cfg=thermoweave.config.defaultConfig();
+            cfg.simulation.duration_s=4;cfg.simulation.outputStep_s=2;
+            cfg.controller.mode='openloop';cfg.electrical.current_A=0;
+            cfg.cell.initialTemperature_K=330;
+            cfg.thermal.ambientConductance_W_per_K=0;
+            cfg.boundary.mode='coolant';
+            result=thermoweave.simulate(cfg);
+            ledger=result.energyLedger;
+            testCase.verifyLessThan(ledger.coolantHeat_J,0);
+            testCase.verifyEqual(ledger.ambientHeat_J,0,'AbsTol',1e-12);
+            testCase.verifyLessThan(ledger.storedEnergyChange_J,0);
+            testCase.verifyLessThan(ledger.normalizedResidual,5e-4);
+        end
+
+        function advancedExecutionMetadataCannotClaimUnexecutedQP(testCase)
+            cfg=thermoweave.config.defaultConfig();
+            cfg.simulation.duration_s=1;cfg.simulation.outputStep_s=1;
+            cfg.controller.mode='advanced';
+            result=thermoweave.simulate(cfg);
+            methods=string(result.control.methodHistory);
+            objectives=result.control.objectiveHistory;
+            advanced=(methods=="advanced_quadratic_program");
+            if any(advanced)
+                testCase.verifyTrue(all(isfinite(objectives(advanced))));
+                testCase.verifyTrue(all(string(result.control.statusHistory(advanced))=="OPTIMAL"));
+            end
+            testCase.verifyTrue(all(methods=="advanced_quadratic_program" | ...
+                methods=="baseline_fallback"));
+            testCase.verifyTrue(all(isnan(objectives(~advanced))));
+        end
+
     end
 end
