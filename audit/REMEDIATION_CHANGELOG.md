@@ -33,9 +33,23 @@
 | `audit/SCIENTIFIC_VERIFICATION_MATRIX.md` | Acceptance matrix with actual evidence and unresolved FAIL / NOT VERIFIED categories |
 | `audit/THERMOWEAVE_FULL_TECHNICAL_AUDIT.md` | Domain-specific audit, evidence boundaries, limitations, and assurance verdict |
 
+## Second engineering remediation batch (21 November 2026)
+
+| Scientific issue | Candidate change | Focused independent evidence | Remaining qualification |
+|---|---|---|---|
+| TW-CTRL-003 | Independent `controller.samplePeriod_s` scheduler and zero-order hold across merged simulation mesh | `controlClockDoesNotFollowOutputSpacing` | Asynchronous mixed sensor/actuator fault envelope not exhaustive |
+| TW-FAULT-001 | Split solver integration at declared thermal fault transitions; sample physical fault state one-sided within each interval | `faultBetweenOutputTimesHasExactHeatDuration` | Compound and stiff transient event convergence unverified |
+| TW-PHY-001 | Integrate signed generated, ambient, coolant and external power over accepted ODE states and compare with independently calculated stored-energy change | `signedIntegratedLedgerMatchesIndependentAdiabaticCase`, `signedBoundaryEnergyShowsNetCooling`, `signedCoolantEnergyShowsNetCooling` | Dynamic coolant model form, tolerance convergence, physical calibration and artifacts unverified |
+| TW-DATA-002 | Add separate `thermoweave.canonical-json/v1` recursive stable-field hash, preserving legacy `scenarioHash` | `canonicalHashIgnoresObjectFieldInsertionOrder` | Cross-release reproducibility and controlled public artifact migration unverified |
+| QP execution provenance | Add per-result `methodHistory`, `objectiveHistory`, `statusHistory` and distinguish actual fallback | `controllerExecutionIdentityIsRecorded`, `advancedExecutionMetadataCannotClaimUnexecutedQP` | Successful licensed QP branch unexecuted on current runner |
+
+**Verified code/test SHA:** `a4d424d971fe14d59df6a9e3a9339cca4a437598`, [MATLAB R2024a Core CI run 44959047806](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44959047806), job `137013536188`: **54 total, 53 PASS, 0 FAIL, 1 INCOMPLETE**. [Human-authorship policy run 44959047829](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44959047829) passed at the same SHA. The one incomplete test is an Optimization Toolbox-dependent QP case, **not** an acceptance PASS.
+
+No physical parameter, legacy result/v1 scenario hash, reference numerical artifact, protective CI rule, protected-main branch, or proprietary-license state was modified to force a pass. The independent scientific gate matrix remains **INCOMPLETE**.
+
 ## Deliberately unresolved material findings
 
-The following are **not** patched and are not disguised as remediated: `TW-PHY-001` integrated energy accounting and power-scale normalization; `TW-CTRL-003` independent controller sample clock; `TW-FAULT-001` off-output-grid event alignment; `TW-DATA-002` versioned canonical scenario hashing; optional QP execution metadata; licensed Simscape numerical parity; and independent IP/provenance clearance. Correcting these requires additional mathematical acceptance or a controlled artifact/hash migration and re-run.
+The previously missing integrated signed energy ledger, independent controller clock, off-output-grid thermal fault integration and versioned nested canonical hash **now have scoped implementations and passing R2024a tests**. They are not declared system-wide scientific PASS: tolerance/stiffness and dynamic coolant validation, artifact/hash migration, licensed QP success, authorized Simscape parity and independent IP/provenance clearance remain outstanding. The existing optional incomplete QP check is not a pass.
 
 ## Commit/verification policy
 
