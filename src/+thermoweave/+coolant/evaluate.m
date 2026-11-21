@@ -14,7 +14,15 @@ switch mode
         c=cfg.boundary.coolant; K=getField(c,'segments',4); flow=getField(c,'massFlow_kg_per_s',0.01); cp=getField(c,'specificHeat_J_per_kgK',3800); inlet=getField(c,'inletTemperature_K',Ta(1));
         Hcool=makeH(c,N,K,topo); Hcool=Hcool.*coolantScale(cfg,t,K); coolantT=zeros(K,1); prev=inlet;
         for k=1:K
-            hk=Hcool(:,k); denom=max(flow*cp+sum(hk),eps); coolantT(k)=(flow*cp*prev+sum(hk.*T))/denom; qCool=qCool+hk.*(coolantT(k)-T); prev=coolantT(k);
+            hk=Hcool(:,k); denom=flow*cp+sum(hk);
+            % With zero flow and no active interface the segment has no
+            % thermodynamic constraint: retain its last/inlet temperature.
+            if denom<=eps
+                coolantT(k)=prev;
+            else
+                coolantT(k)=(flow*cp*prev+sum(hk.*T))/denom;
+            end
+            qCool=qCool+hk.*(coolantT(k)-T); prev=coolantT(k);
         end
         outlet=prev; Ta=expand(getField(cfg.thermal,'ambientTemperature_K',inlet),N); H=expand(getField(cfg.thermal,'ambientConductance_W_per_K',0),N);
 end
