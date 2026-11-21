@@ -190,9 +190,10 @@ classdef TestScientificAuditGates < matlab.unittest.TestCase
             cfg.cell.initialTemperature_K=330;
             cfg.thermal.ambientTemperature_K=300;
             cfg.boundary.temperature_K=300;
-            cfg.thermal.ambientConductance_W_per_K=0.2;
+            cfg.thermal.ambientConductance_W_per_K=0;
             cfg.boundary.conductance_W_per_K=0.3;
-            decay=(0.2+0.3)/cfg.cell.thermalCapacity_J_per_K;
+            % In scalar mode boundary H replaces the ambient conductance.
+            decay=cfg.boundary.conductance_W_per_K/cfg.cell.thermalCapacity_J_per_K;
             for solverName=["ode15s" "ode45"]
                 cfg.simulation.solver=char(solverName);
                 result=thermoweave.simulate(cfg);
