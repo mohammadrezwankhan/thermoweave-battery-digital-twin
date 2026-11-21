@@ -23,17 +23,17 @@ States refer to the **candidate**, except where a note explicitly identifies a h
 | FAULT-02 | **NOT VERIFIED** | Solver mesh now splits at declared fault start/end times; off-grid heat-multiplier duration regression PASS; mixed fault modes and full convergence unresolved |
 | FAULT-03 | **PASS** | Static source confirms controller receives applySensorFaults(sensed,...) rather than true T |
 | FAULT-04 | **NOT VERIFIED** | Stuck-command sample-clock recovery and provenance PASS; arbitrary mid-clock actuator onset/end and compound faults not comprehensively tested |
-| SCN-01 | **NOT VERIFIED** | docs/scenarios.md declares E0-E10; all programmatic paths/overrides not comprehensively replayed |
+| SCN-01 | **NOT VERIFIED** | Candidate R2024a full artifact run: E0–E8 PASS, E10 3D sweep reproduced; E9 explicitly SKIPPED_MISSING_PRODUCT, exhaustive overrides still unverified |
 | SCN-02 | **PASS** | Independent 3x4x3 count gives N=36, E=24+27+24=75; baseline TestTopology3D passed |
-| SCN-03 | **NOT VERIFIED** | Historical 3-D artifact available; conductance sweep not regenerated on candidate |
+| SCN-03 | **NOT VERIFIED** | E10 regenerated at candidate PR head 63f0a09: three g_z cases 0.10/0.25/0.75 W/K, each 36 nodes / 75 edges; independent convergence and cross-release reproduction outstanding |
 | SCN-04 | **NOT VERIFIED** | New thermoweave.canonical-json/v1 nested key-order regression PASS; legacy hash deliberately retained, cross-release reproducibility and controlled artifact migration remain unverified |
 | DATA-01 | **NOT VERIFIED** | makeResult emits result/v1; edge/fault/runtime validation incomplete |
-| DATA-02 | **NOT VERIFIED** | Web JSON and report data were not regenerated with MATLAB after changes |
+| DATA-02 | **NOT VERIFIED** | Fresh R2024a reports and two byte-identical web JSON files verified at candidate head 63f0a09, artifact run #44961412929; published Pages/browser parity and hash migration outstanding |
 | DATA-03 | **NOT VERIFIED** | exportWebData uses result.metrics; complete browser-display parity not independently inspected |
-| TEST-01 | **PASS** | R2024a code/test SHA a4d424d: 54 total / 53 PASS / 0 FAIL / 1 optional INCOMPLETE; [run 44959047806](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44959047806) |
+| TEST-01 | **PASS** | Candidate head 63f0a09 [MATLAB R2024a Core #44961412965](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44961412965): 56 total / 55 PASS / 0 FAIL / 1 optional INCOMPLETE; analyzer 0 errors/0 warnings |
 | TEST-02 | **NOT VERIFIED** | All six focused audit regressions and eight new integration methods PASS; comprehensive invalid-input and stiff solver coverage unverified |
 | TEST-03 | **PASS** | Optional adapter skips explicitly rather than returning fabricated Simscape parity; parity itself remains BLOCKED |
-| CI-01 | **PASS** | R2024a Core CI at a4d424d passed, human-authorship-policy passed; both required checks executed on code/test SHA 2026-11-21 |
+| CI-01 | **PASS** | Candidate head 63f0a09 Core #44961412965, scientific artifact #44961412929, human-authorship #44961412934 all succeeded; external vendor checks and deployment independently unverified |
 | GOV-01 | **NOT VERIFIED** | Governance files exist, but no independent rights/asset provenance review |
 | DOC-01 | **PASS** | Repo homepage, docs/deployment and 2026-11-19 Pages logs identify same GitHub Pages URL |
 | DOC-02 | **NOT VERIFIED** | README math rewritten as aligned subtraction; final GitHub renderer review pending |
@@ -52,3 +52,10 @@ States refer to the **candidate**, except where a note explicitly identifies a h
 **Verified candidate-source MATLAB R2024a CI:** [run 44945399849](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44945399849), job `136971493310`, on source/test SHA `0287e46ed273d3154e0bed9309a318a809702683`: **46 total, 45 PASSED, 0 FAILED, 1 INCOMPLETE** (optional advanced-controller test filtered by unmet Optimization Toolbox assumption). Code Analyzer reports 0 errors and 0 warnings. The six new regression methods executed in this passing run; unrun scientific acceptance gates remain unverified. The report-update commit follows this receipt and must itself be checked at its final SHA.
 
 **Scientific verdict stays INCOMPLETE.** Tested regressions do not clear PHY-05, CTRL-03, or SCN-04.
+
+
+### Executed artifact integration receipt — 21 November 2026 (UTC)
+
+Primary audit source head `63f0a09b13197955f90bc8166157509d1ec79874` passed [Core R2024a #44961412965](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44961412965), [artifact reproduction #44961412929](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44961412929), and [human-authorship #44961412934](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44961412934), all on the same candidate source SHA. GitHub Actions checked out test merge SHA `8693f51415c1bbf917a21570adf1ce7d7fced44f`, **not** a protected-main merge. Both MATLAB workflows: 56 tests, 55 PASS, 0 FAIL, 1 optional Optimization Toolbox INCOMPLETE; zero MATLAB Code Analyzer errors/warnings. Independently inspected [artifact ZIP #14729727027](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44961412929/artifacts/14729727027): SHA-256 `a1f154b411a2279f97de2281cfe34931e1cabfb700d9e131cb89f3eff5c80c58`, 56 distinct JUnit test cases with the two new regressions executed, six JSON outputs bearing MATLAB release `2024a`, E0–E8 PASS and E9 `SKIPPED_MISSING_PRODUCT`, E10 three 36-node/75-edge cases at g_z 0.10/0.25/0.75 W/K. Website JSON equals docs copy (221607 bytes; SHA-256 `d119392a892dbb27dc5415b0b556f2df83b484c5098ac3e6500605851d63620f` matching the manifest).
+
+**This is scoped synthetic-source and artifact consistency evidence, not real-cell safety validation, licensed QP/Simscape parity, cross-release canonical hashing, legal clearance or browser deployment validation.** Updating these reports and hardening Code Analyzer warning threshold will change the final candidate SHA; inspect the NEW final SHA checks before any later scientific verdict. Earlier statements of “not regenerated” reflect a superseded pre-integration snapshot.

@@ -5,6 +5,13 @@
 **Audit branch:** `audit/thermoweave-engineering-20261121`  
 **State:** **INCOMPLETE — R2024a candidate tests executed; required scientific/licensed reproducibility contracts remain unverified**
 
+
+### Executed artifact integration receipt — 21 November 2026 (UTC)
+
+Primary audit source head `63f0a09b13197955f90bc8166157509d1ec79874` passed [Core R2024a #44961412965](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44961412965), [artifact reproduction #44961412929](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44961412929), and [human-authorship #44961412934](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44961412934), all on the same candidate source SHA. GitHub Actions checked out test merge SHA `8693f51415c1bbf917a21570adf1ce7d7fced44f`, **not** a protected-main merge. Both MATLAB workflows: 56 tests, 55 PASS, 0 FAIL, 1 optional Optimization Toolbox INCOMPLETE; zero MATLAB Code Analyzer errors/warnings. Independently inspected [artifact ZIP #14729727027](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44961412929/artifacts/14729727027): SHA-256 `a1f154b411a2279f97de2281cfe34931e1cabfb700d9e131cb89f3eff5c80c58`, 56 distinct JUnit test cases with the two new regressions executed, six JSON outputs bearing MATLAB release `2024a`, E0–E8 PASS and E9 `SKIPPED_MISSING_PRODUCT`, E10 three 36-node/75-edge cases at g_z 0.10/0.25/0.75 W/K. Website JSON equals docs copy (221607 bytes; SHA-256 `d119392a892dbb27dc5415b0b556f2df83b484c5098ac3e6500605851d63620f` matching the manifest).
+
+**This is scoped synthetic-source and artifact consistency evidence, not real-cell safety validation, licensed QP/Simscape parity, cross-release canonical hashing, legal clearance or browser deployment validation.** Updating these reports and hardening Code Analyzer warning threshold will change the final candidate SHA; inspect the NEW final SHA checks before any later scientific verdict. Earlier statements of “not regenerated” reflect a superseded pre-integration snapshot.
+
 ## 1. Environment and evidence classes
 
 | Source | Environment / version | Execution status | What it can establish |

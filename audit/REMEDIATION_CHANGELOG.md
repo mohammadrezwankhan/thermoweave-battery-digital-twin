@@ -61,3 +61,8 @@ The previously missing integrated signed energy ledger, independent controller c
 - Reconcile candidate CI, diff and any test failures before promotion to protected `main`.
 
 **Verified candidate-source MATLAB R2024a CI:** [run 44945399849](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44945399849), job `136971493310`, on source/test SHA `0287e46ed273d3154e0bed9309a318a809702683`: **46 total, 45 PASSED, 0 FAILED, 1 INCOMPLETE** (optional advanced-controller test filtered by unmet Optimization Toolbox assumption). Code Analyzer reports 0 errors and 0 warnings. The six new regression methods executed in this passing run; unrun scientific acceptance gates remain unverified. The report-update commit follows this receipt and must itself be checked at its final SHA.
+
+
+### Proven artifact branch integration, 21 November 2026 (UTC)
+
+Primary PR #20 received six selectively reviewed additions from supporting PR #21 at `63f0a09b13197955f90bc8166157509d1ec79874`: pinned R2024a artifact workflow, independent Python provenance verifier, scalar numeric current-profile event mesh correction, per-sample controller history export alignment, MATLAB R2024a-safe experiment metrics validation, and two RED→GREEN regression methods. All three candidate checks succeeded at `63f0a09b13197955f90bc8166157509d1ec79874` (Core #44961412965, artifact #44961412929, authorship #44961412934); QP and Simscape remain incomplete/skipped. This follow-up tightens `buildfile.m` from `WarningThreshold=Inf` to `WarningThreshold=0`; no checks were bypassed, validation PR #21 remains unmerged, and PR #20 remains draft. See scientific matrix for evidence hashes and unresolved limits.
