@@ -176,5 +176,60 @@ classdef TestScientificAuditGates < matlab.unittest.TestCase
                 expectedSamples);
         end
 
+
+        function uniformCoolingMatchesIndependentAnalyticSolution(testCase)
+            % Uniform no-current cooling is an independently soluble RC law.
+            cfg=thermoweave.config.defaultConfig();
+            cfg.simulation.duration_s=12;
+            cfg.simulation.outputStep_s=3;
+            cfg.simulation.maxStep_s=0.25;
+            cfg.simulation.relativeTolerance=1e-9;
+            cfg.simulation.absoluteTolerance=1e-11;
+            cfg.controller.mode='openloop';
+            cfg.electrical.current_A=0;
+            cfg.cell.initialTemperature_K=330;
+            cfg.thermal.ambientTemperature_K=300;
+            cfg.boundary.temperature_K=300;
+            cfg.thermal.ambientConductance_W_per_K=0.2;
+            cfg.boundary.conductance_W_per_K=0.3;
+            decay=(0.2+0.3)/cfg.cell.thermalCapacity_J_per_K;
+            for solverName=["ode15s" "ode45"]
+                cfg.simulation.solver=char(solverName);
+                result=thermoweave.simulate(cfg);
+                expected=300+30*exp(-decay*result.time_s);
+                deviations=abs(result.state.temperature_K-expected);
+                testCase.verifyLessThan(max(deviations,[],'all'),1e-4);
+                testCase.verifyLessThan(result.energyLedger.normalizedResidual,1e-3);
+            end
+        end
+
+        function simultaneousCurrentAndOffGridHeatEventsConserveEnergy(testCase)
+            % Direct piecewise integral of I^2*R times the fault multiplier.
+            cfg=thermoweave.config.defaultConfig();
+            cfg.simulation.duration_s=3;
+            cfg.simulation.outputStep_s=3;
+            cfg.simulation.maxStep_s=0.05;
+            cfg.controller.mode='openloop';
+            cfg.electrical.current_A=0;
+            cfg.electrical.currentProfile=struct('time_s',[0;1;2;3], ...
+                'current_A',[2;4;0;0]);
+            cfg.electrical.alphaT_per_K=0;
+            cfg.electrical.alphaSOC=0;
+            cfg.electrical.entropicHeat=false;
+            cfg.boundary.conductance_W_per_K=0;
+            cfg.thermal.ambientConductance_W_per_K=0;
+            cfg.faults.events=struct('type','heat_multiplier', ...
+                'start_s',0.5,'end_s',1.5,'target',[], 'magnitude',3);
+            result=thermoweave.simulate(cfg);
+            expectedPerCell_J=cfg.electrical.R0_Ohm*( ...
+                2^2*(0.5+3*0.5)+4^2*(3*0.5+0.5));
+            expectedTotal_J=cfg.cell.count*expectedPerCell_J;
+            testCase.verifyEqual(result.energyLedger.generatedHeat_J, ...
+                expectedTotal_J,'AbsTol',1e-4);
+            testCase.verifyEqual(result.energyLedger.storedEnergyChange_J, ...
+                expectedTotal_J,'AbsTol',1e-3);
+            testCase.verifyLessThan(result.energyLedger.normalizedResidual,1e-4);
+        end
+
     end
 end
