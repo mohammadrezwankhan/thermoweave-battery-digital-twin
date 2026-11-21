@@ -13,7 +13,10 @@ Tested on MATLAB R2026a Update 4 on Windows 11. The class-based suite contains 3
 
 Result: **37 passed, 0 failed, 0 incomplete** in the local run. Code Analyzer reported 0 errors, 0 warnings, and 0 informational findings over the prior configured source/adapter/example/tool check; the final 3-D branch is rechecked before publication. Statement coverage remains below the advisory 80% target; the exact regenerated rate is recorded in `artifacts/reports/verification.json`. This is a declared coverage gap, not a pass claim. The Simscape test accepts a real mapped result only when execution succeeds; otherwise it requires an explicit `SKIPPED_*` status. In the current repository state the adapter reports `SKIPPED_LIBRARY_POLICY_UNRESOLVED`.
 
-## Numerical tolerances
+## Latest public CI baseline (19 November 2026)
+
+At source SHA `6b48646da2f6f8b60a13b14e19c4c65e45b17383`, [Core CI run 44626427308](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44626427308) executed MATLAB R2024a with **40 total tests, 39 passed, 0 failed, 1 incomplete**. The incomplete test was `TestSimulationIntegration/advancedControllerCoolsHotZonesAndHonorsRate`, filtered by an unmet Optimization Toolbox assumption. The Code Analyzer reported 0 errors and 0 warnings across 47 checked files. This supersedes the *test count* in the dated local summary above, but does not supersede its numerical result values or constitute verification of later audit-branch changes. The [Pages deployment run](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44626427373) also reported success for that SHA.
+
 
 The energy accounting test requires a finite normalized residual and compares `ode15s` with `ode45` at an absolute temperature tolerance of $10^{-4}$ K for the declared short convergence case. The deterministic demo produced a normalized residual of approximately $4.39\times10^{-15}$ on R2026a. This residual is a consistency measure for the implemented flux bookkeeping, not an accuracy comparison against measurements.
 
@@ -26,6 +29,10 @@ buildtool test
 ```
 
 The build task emits JUnit and Cobertura-compatible files under `results/`. On 2026-08-14, the public GitHub Core CI workflow provisioned MATLAB R2024a and completed the configured core build and tests successfully. This establishes the declared core path on the minimum release; it does not validate optional Simscape integration or physical-cell accuracy.
+
+## Important interpretation of the energy diagnostic
+
+The current core's `energyResidualNormalized` is an **instantaneous, algebraic RHS-closure check**: it computes both sides from the same derivative/flux calculation. Its normalization also uses the maximum individual generated-heat sample, not the global power scale described in the formal model specification. A near-machine-precision value therefore does **not** independently establish integrated conservation, accuracy of coolant energy transport, or correct event timing. Independent stored-energy experiments and a subsequently implemented integrated energy audit are needed before granting the scientific energy-conservation gate. The audit-branch independent constant-heat regression is a targeted improvement, not yet a general proof.
 
 ## Remaining validation work
 
