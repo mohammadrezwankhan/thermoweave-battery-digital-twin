@@ -3,7 +3,7 @@
 **Prepared:** 2026-11-21  
 **Frozen baseline:** `6b48646da2f6f8b60a13b14e19c4c65e45b17383`  
 **Audit branch:** `audit/thermoweave-engineering-20261121`  
-**State:** **INCOMPLETE — candidate execution and several scientific contracts remain unverified**
+**State:** **INCOMPLETE — R2024a candidate tests executed; required scientific/licensed reproducibility contracts remain unverified**
 
 ## 1. Environment and evidence classes
 
@@ -20,8 +20,8 @@ Do not combine results from different SHAs, MATLAB releases or optional products
 
 - `thermoweave.simulate` validates/merges configuration via `thermoweave.config.loadScenario`, applies seeded variability, constructs thermal topology and integrates coupled temperature/SOC states with `ode15s` or `ode45`.
 - `thermoweave.uncertainty.applyVariability` uses a local `RandStream('mt19937ar','Seed',double(seed))`. The documented E4 seeds are **4401–4403**; E8 default `runMonteCarloStudy(20)` seeds are **6100–6119**. These are declared inputs, not newly executed Monte Carlo evidence.
-- `thermoweave.util.hashStruct` is currently the one-line `hashText(jsonencode(s))`. This hashes the serialized field order without a documented independent canonicalization policy. Stable equality under semantically equivalent nested fields, negative zero and release differences is **NOT VERIFIED**.
-- An exact scenario hash is meaningful only alongside the resolved configuration, serialization policy, code SHA, MATLAB release, seed and solver/tolerance manifest. Do **not** publish a new canonical hash algorithm without a versioned migration and full artifact regeneration.
+- Legacy `thermoweave.util.hashStruct` still hashes raw `jsonencode(s)` for `scenarioHash`. The audit candidate adds `hashCanonicalStruct` with explicit `thermoweave.canonical-json/v1` version, recursively sorted object fields, normalized negative zero, explicit Infinity tags and NaN rejection. Nested-field equality passes in R2024a; **cross-release equivalence and artifact migration remain NOT VERIFIED**.
+- A reproducible scenario identifier requires the resolved configuration, hash algorithm/version, code SHA, MATLAB release, seed and solver/tolerance manifest. The new canonical digest is **additional metadata only**; legacy/public artifact hashes have not been replaced. Controlled migration and full regeneration are still required before treating it as a public canonical identifier.
 - The source result schema is `thermoweave.result/v1`; the website compact export is `thermoweave.web/v1`. Data values exposed in `tools/exportWebData.m` are converted from internal kelvin to degrees Celsius for browser presentation.
 
 ## 3. Algebraic E10 geometry, separated from execution
@@ -44,7 +44,7 @@ The committed `artifacts/reports/verification.json` lists:
 - statement coverage 0.63351;
 - optional adapter `SKIPPED_LIBRARY_POLICY_UNRESOLVED`.
 
-**Do not treat 4.39e-15 as an integrated-energy acceptance threshold:** source `simulate.m` computes that scalar as an RHS closure using the same flux terms as `dT`, divided by a maximum individual heat input. A new independent constant-source energy test is committed, but a general integrated signed source/boundary/coolant energy ledger is still missing.
+**Do not treat 4.39e-15 as an integrated-energy acceptance threshold:** source `simulate.m` computes that scalar as an RHS closure using the same flux terms as `dT`, divided by a maximum individual heat input. An integrated signed source/ambient/coolant/external heat ledger and separate endpoint CΔT now exist and pass independent synthetic R2024a adiabatic, ambient and coolant tests. Broad timestep/stiffness convergence and dynamic coolant-model accuracy remain NOT VERIFIED.
 
 ## 5. Exact reproducibility commands
 
@@ -89,7 +89,7 @@ Source code diff, verification of reviewed modifications and Pages identity
 
 | Check | R2024a baseline | R2026a historical | Audit branch |
 |---|---|---|---|
-| MATLAB class suite | 39 PASS, 1 INCOMPLETE at Nov 19 baseline | 37 PASS in Aug 14 stored report | **46 total / 45 PASS / 0 FAIL / 1 optional INCOMPLETE** in [2026-11-21 R2024a CI](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44945399849) at source/test SHA 0287e46 |
+| MATLAB class suite | 39 PASS, 1 INCOMPLETE at Nov 19 baseline | 37 PASS in Aug 14 stored report | **54 total / 53 PASS / 0 FAIL / 1 optional INCOMPLETE** in [2026-11-21 R2024a CI](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44959047806) at code/test SHA a4d424d |
 | 3-D node/edge identity | Baseline test passed | Historical study metadata reported | Mathematically 36/75; candidate 3-D regression suite passed |
 | Seeded repeated result | Baseline deterministic seed test included | Historical report claims stable demo | **NOT VERIFIED cross-release** |
 | E10 0.10–0.75 W/K sensitivity | No candidate reproduction | Historical README figures | **NOT REGENERATED** |
@@ -97,7 +97,11 @@ Source code diff, verification of reviewed modifications and Pages identity
 | Static website data | Pages published baseline docs | Published synthetic web payload | **NOT REGENERATED / NOT browser-verified** |
 | QP/MPC / optional Simscape parity | QP test incomplete; Simscape skip accepted | Adapter skip recorded | **NOT RUN / BLOCKED** |
 
-**Reproducibility verdict:** Essential cross-release, physical/energy integration, time-event, hash canonicalization and generated-artifact checks remain unverified. Do not infer PASS from matching old numerical constants.
+**Reproducibility verdict:** Focused R2024a source/clock/fault/energy/hash checks pass; cross-release, full physical and numerical convergence, canonical hash migration, licensed Simscape/QP and published-artifact regeneration remain NOT VERIFIED. Do not infer PASS from old numerical constants or an optional skip.
+
+## New source/test receipt and hash migration boundary
+
+[GitHub Actions R2024a Core CI run 44959047806](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44959047806), job `137013536188`, executed code/test SHA `a4d424d971fe14d59df6a9e3a9339cca4a437598`: **54 total / 53 passed / 0 failed / 1 optional incomplete**. [Human authorship run 44959047829](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44959047829) was also successful on that SHA. The acceptance package changed after this code/test receipt; the final documentation SHA still requires its own exact-SHA check. No published JSON, R2026a result or Simscape model has been regenerated.
 
 ## Executed candidate check and independent E10 cross-check
 
