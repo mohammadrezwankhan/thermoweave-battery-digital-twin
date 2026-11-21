@@ -7,7 +7,7 @@ The source repository and static documentation site were published on 2026-08-14
 
 All external GitHub Actions are pinned to immutable commits recorded in `THIRD_PARTY_NOTICES.md`. Local MATLAB R2026a verification passes 37/37 tests after the 3-D extension. The first private-repository R2024a attempt could not obtain a MathWorks license; after the original publication, the public GitHub Core CI workflow provisioned R2024a and completed the then-current core build. The new 3-D extension must complete the same CI path after publication.
 
-GitHub Pages uses **GitHub Actions** as its source; `.github/workflows/pages.yml` publishes `docs/` after a push to `main`.
+GitHub Pages uses **GitHub Actions** as its source; `.github/workflows/pages.yml` publishes `docs/` after a push to `main`. The [19 November 2026 Pages deployment run](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44626427373) successfully published source `6b48646da2f6f8b60a13b14e19c4c65e45b17383` to `https://mohammadrezwankhan.github.io/thermoweave-battery-digital-twin/` according to the deployment job log. This is verified provider deployment evidence, not a real-time browser availability or accessibility audit. The separately referenced `chatgpt.site` host, if present in metadata, is not proof of a GitHub Pages deployment.
 
 No semantic-version release is currently claimed. Before creating one, run:
 
