@@ -17,20 +17,28 @@ The baseline Core CI uses pinned immutable revisions of `actions/checkout`, `mat
 
 The human-authorship policy is a required `main` status context. Protected-branch configuration was readable only in limited form; no rules were modified or bypassed.
 
+## Latest candidate code/test checks — 21 November 2026
+
+- [Core CI run 44959047806](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44959047806): MATLAB R2024a **SUCCESS**, 54 total, 53 passed, 0 failed, one optional Optimization Toolbox test incomplete.
+- [Human-authorship policy run 44959047829](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44959047829): **SUCCESS** at the identical code/test SHA `a4d424d971fe14d59df6a9e3a9339cca4a437598`.
+- Documentation Pages, Portfolio guide checks and flagged secondary dashboard jobs are **not executed for this science-only PR SHA** because of their configured `main` or path filters. Historical Pages success is not proof of candidate deployment. No CircleCI or Buildkite candidate result was demonstrated by this review. Preserve existing protection and do not manufacture additional check contexts.
+- A live branch-protection REST read returned integration permission denial (403); the workflow files and existing protected-main status were inspected, but no protection setting was changed or inferred from that denied read.
+- PR #20 remains draft, unmerged and unpublished. Simscape integration remains unexecuted on a licensed authorized `thermoweave-simscape` runner.
+
 ## Baseline versus candidate execution
 
 - **Baseline MATLAB tests:** 40 total, **39 PASS / 0 FAIL / 1 INCOMPLETE**; **not** 40 clean passes.
-- **Candidate MATLAB tests:** Six new regression tests were authored in `tests/unit/TestAuditRegressions.m` for scientific, control and serialization defects. **The six methods passed in [candidate CI run 44945399849](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44945399849), job 136971493310: 46 total, 45 PASS, 0 FAIL, 1 optional INCOMPLETE at source/test SHA 0287e46.** A PR creation or green historical badge is not candidate execution evidence.
+- **Candidate MATLAB tests:** Six focused regressions and eight new scientific integration tests passed at code/test SHA `a4d424d971fe14d59df6a9e3a9339cca4a437598` in [Core CI run 44959047806](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44959047806), job `137013536188`: **54 total, 53 PASS, 0 FAIL, 1 optional INCOMPLETE**. The single Optimization Toolbox-dependent test remains filtered. This is provider-executed code/test evidence, not final report-head evidence.
 - **Local MATLAB execution:** **BLOCKED_ENVIRONMENT**. No MATLAB/Octave executable is provided to the connected audit session.
 - **Enhanced R2026a verification:** **NOT RUN** against the audit branch. Committed 2026-08-14 JSON documents a different SHA.
 - **Artifact regeneration:** **NOT RUN** against the branch. Existing `artifacts/` values may be historical.
-- **Independent energy and control checks:** Six focused new tests PASS on R2024a candidate; broad independent integrated energy, event timing, and controller clock **remain NOT VERIFIED**.
+- **Independent energy and control checks:** Signed, solver-time-integrated stored-energy/ambient/coolant ledgers, separate controller sample clock, an off-grid heat fault, recursive canonical hashing and method provenance all have focused passing R2024a tests. Broad solver convergence, dynamic coolant-model fidelity, license-dependent QP, cross-release reproduction and artifact migration remain **NOT VERIFIED**.
 
 ## Why optional advanced and Simscape checks remain blocked
 
 ### Advanced controller
 
-`src/+thermoweave/+control/advancedController.m` invokes `quadprog` only if available, otherwise deliberately calls the bounded baseline. The test `advancedControllerCoolsHotZonesAndHonorsRate` uses `assumeEqual(info.status,'OPTIMAL')`, which marks missing `quadprog` as an **incomplete/filtered test**, not a passing optimized-control run. Recorded controller success metadata should identify actual QP execution vs fallback. The current result schema does not preserve successful per-update QP status/objective.
+`src/+thermoweave/+control/advancedController.m` invokes `quadprog` only if available, otherwise deliberately calls the bounded baseline. The test `advancedControllerCoolsHotZonesAndHonorsRate` uses `assumeEqual(info.status,'OPTIMAL')`, which marks missing `quadprog` as an **incomplete/filtered test**, not a passing optimized-control run. Candidate result now records `control.methodHistory`, `control.statusHistory` and `control.objectiveHistory`, distinguishing successful QP execution from bounded fallback at individual output times. A no-false-QP-identity regression passes, **but actual optimized execution remains INCOMPLETE** on the current unlicensed runner.
 
 ### Simscape
 
@@ -51,13 +59,13 @@ The human-authorship policy is a required `main` status context. Protected-branc
 | Gate | Status | Next required evidence |
 |---|---|---|
 | Core R2024a baseline | **PASS** within tested baseline scope | Existing provider job logs |
-| New audit-branch regression suite | **PASS** for six new tests (46 total, 45 PASS, 0 FAIL, 1 optional INCOMPLETE) | [Core CI run 44945399849](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44945399849), job 136971493310, source/test SHA 0287e46 |
+| New audit-branch regression suite | **PASS** for 14 new audit test methods (54 total, 53 PASS, 0 FAIL, 1 optional INCOMPLETE) | [Core CI run 44959047806](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44959047806), job 137013536188, code/test SHA a4d424d |
 | Optional QP-specific algorithm | **SKIP_OPTIONAL_DEPENDENCY** baseline | Authorized licensed Optimization Toolbox `quadprog` trial |
 | Licensed Simscape core parity | **BLOCKED_ENVIRONMENT** | Licensed authorized runner, resolved custom-library policy, generated model and numerical comparison |
 | Dynamic coolant validation | **NOT VERIFIED** | Model-form specification and physically independent energy tests |
 | Pages provider deployment baseline | **PASS** provider workflow | Browser/site accessibility and source-artifact parity separately |
 | Dashboard numerical parity | **NOT VERIFIED** | Rebuild from canonical result under same MATLAB version and inspect site values |
-| Full physics acceptance | **FAIL / NOT VERIFIED** | Integrated energy residual, controller sample/event alignment and solver convergence |
+| Full physics acceptance | **NOT VERIFIED** | Focused integrated ledger and event/clock tests pass; still need independent solver/stiffness convergence and model-form validation |
 | Governance claims | **NOT VERIFIED** | Independent licensing/provenance confirmation |
 
 **CI/Simscape conclusion:** R2024a baseline CI succeeds with a documented optional incomplete test. This cannot certify candidate fixes or optional Simscape parity; remaining scientific assurance is **INCOMPLETE**.
