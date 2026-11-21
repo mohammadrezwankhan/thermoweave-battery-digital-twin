@@ -20,11 +20,11 @@ The human-authorship policy is a required `main` status context. Protected-branc
 ## Baseline versus candidate execution
 
 - **Baseline MATLAB tests:** 40 total, **39 PASS / 0 FAIL / 1 INCOMPLETE**; **not** 40 clean passes.
-- **Candidate MATLAB tests:** Six new regression tests were authored in `tests/unit/TestAuditRegressions.m` for scientific, control and serialization defects. **Candidate run and final counts must be filled from the actual PR CI provider log.** A PR creation or green historical badge is not candidate execution evidence.
+- **Candidate MATLAB tests:** Six new regression tests were authored in `tests/unit/TestAuditRegressions.m` for scientific, control and serialization defects. **The six methods passed in [candidate CI run 44945399849](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44945399849), job 136971493310: 46 total, 45 PASS, 0 FAIL, 1 optional INCOMPLETE at source/test SHA 0287e46.** A PR creation or green historical badge is not candidate execution evidence.
 - **Local MATLAB execution:** **BLOCKED_ENVIRONMENT**. No MATLAB/Octave executable is provided to the connected audit session.
 - **Enhanced R2026a verification:** **NOT RUN** against the audit branch. Committed 2026-08-14 JSON documents a different SHA.
 - **Artifact regeneration:** **NOT RUN** against the branch. Existing `artifacts/` values may be historical.
-- **Independent energy and control checks:** **NOT VERIFIED** until new tests and broader verification are executed.
+- **Independent energy and control checks:** Six focused new tests PASS on R2024a candidate; broad independent integrated energy, event timing, and controller clock **remain NOT VERIFIED**.
 
 ## Why optional advanced and Simscape checks remain blocked
 
@@ -51,7 +51,7 @@ The human-authorship policy is a required `main` status context. Protected-branc
 | Gate | Status | Next required evidence |
 |---|---|---|
 | Core R2024a baseline | **PASS** within tested baseline scope | Existing provider job logs |
-| New audit-branch regression suite | **NOT_RUN** at report creation | PR run/job log, exact head SHA, 46-test inventory reconciliation |
+| New audit-branch regression suite | **PASS** for six new tests (46 total, 45 PASS, 0 FAIL, 1 optional INCOMPLETE) | [Core CI run 44945399849](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44945399849), job 136971493310, source/test SHA 0287e46 |
 | Optional QP-specific algorithm | **SKIP_OPTIONAL_DEPENDENCY** baseline | Authorized licensed Optimization Toolbox `quadprog` trial |
 | Licensed Simscape core parity | **BLOCKED_ENVIRONMENT** | Licensed authorized runner, resolved custom-library policy, generated model and numerical comparison |
 | Dynamic coolant validation | **NOT VERIFIED** | Model-form specification and physically independent energy tests |
@@ -65,3 +65,9 @@ The human-authorship policy is a required `main` status context. Protected-branc
 ## Candidate pull request provider visibility (initial check)
 
 [Draft PR #20](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/pull/20) was opened from this audit branch into protected `main`. Immediately after PR creation, a provider read of the source head `98209edcff50a7da139675113cd6ec76de2055f5` returned **no GitHub Actions workflow runs** and no test check runs yet. Three external check suites (Sentry, Codemagic CI/CD, Buildkite) were visible as **queued**. Queued check suites are **not** test execution and may never result in runnable MATLAB jobs. This initial snapshot is transitory; refresh the exact PR head SHA, workflows and logs rather than relying on these initial states. No failed or pending candidate test has been described as passed.
+
+## Verified post-PR MATLAB execution
+
+**Verified candidate-source MATLAB R2024a CI:** [run 44945399849](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44945399849), job `136971493310`, on source/test SHA `0287e46ed273d3154e0bed9309a318a809702683`: **46 total, 45 PASSED, 0 FAILED, 1 INCOMPLETE** (optional advanced-controller test filtered by unmet Optimization Toolbox assumption). Code Analyzer reports 0 errors and 0 warnings. The six new regression methods executed in this passing run; unrun scientific acceptance gates remain unverified. The report-update commit follows this receipt and must itself be checked at its final SHA.
+
+This updates the **initial** check-suite snapshot above, which captured statuses before the provider queued/ran Actions. The optional Simscape workflow remains unexecuted and no CI badge constitutes physical safety validation.

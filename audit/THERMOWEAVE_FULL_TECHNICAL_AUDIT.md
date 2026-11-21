@@ -5,13 +5,13 @@
 **Frozen baseline:** `6b48646da2f6f8b60a13b14e19c4c65e45b17383` (`main`)  
 **Candidate branch:** `audit/thermoweave-engineering-20261121`  
 **Scope:** Electrothermal physics, numerical solver, controllers, uncertainty/faults, topology/scenarios, data contract/site, tests/Simscape, CI/security/governance.  
-**Method:** Direct GitHub tree/file review, exact source-path inspection, dated Actions job-log checks, independent analytical oracles, focused candidate edits and proposed MATLAB regression tests. **No native Gemini Carbon / Antigravity multi-agent environment was available.** Domain review was coordinated in this GitHub-connected session; it is not represented as 10 independently executed agents.
+**Method:** Direct GitHub tree/file review, exact source-path inspection, dated Actions job-log checks, independent analytical oracles, focused candidate edits, six executed R2024a regression tests, and separately executed independent Python/SciPy E10 checks. **No native Gemini Carbon / Antigravity multi-agent environment was available.** Domain review was coordinated in this GitHub-connected session; it is not represented as 10 independently executed agents.
 
 ## Executive summary and assurance decision
 
 The repository's latest available **baseline** Core CI run at the frozen SHA is legitimately green: MATLAB R2024a ran 40 tests, of which **39 passed, 0 failed, and 1 was incomplete**, filtered by an Optimization Toolbox assumption. The run also reported Code Analyzer **0 errors and 0 warnings** across 47 files. The [19 November 2026 Core CI log](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44626427308) establishes this **for the baseline**, not this candidate. The [same-date Pages run](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44626427373) deployed that SHA to the GitHub Pages project URL. Repository metadata currently points to the same GitHub Pages URL; the older separately hosted URL is not proof of Pages deployment.
 
-The source review identified concrete, bounded implementation defects and added focused fixes for **temperature-deadband units**, **stuck-command actual-value holding**, **singular coolant segments**, **negative optional interface scaling**, and **downsampled result integrity**. Six new regression tests include an **independent total stored-energy versus known constant electrical-heat input** check. These changes require a fresh CI run before being treated as empirically verified.
+The source review identified concrete, bounded implementation defects and added focused fixes for **temperature-deadband units**, **stuck-command actual-value holding**, **singular coolant segments**, **negative optional interface scaling**, and **downsampled result integrity**. Six new regression tests include an **independent total stored-energy versus known constant electrical-heat input** check. All six new regression tests passed in the candidate R2024a Core CI (45 PASS / 0 FAIL / 1 optional INCOMPLETE). This does not establish broad scientific verification.
 
 **Three material assurance gaps remain open:** (1) the reported energy residual is a near-tautological RHS check, not an independently integrated energy balance; (2) controller updates follow the result output grid rather than the declared independent `samplePeriod_s`; and (3) `hashStruct` hashes raw `jsonencode` without an explicitly canonical, versioned key-order contract. No real licensed Simscape parity has been observed. Therefore: **INCOMPLETE — essential scientific verification remains unavailable**, not PASS or a safety-certification statement.
 
@@ -55,7 +55,7 @@ The bounded baseline controller uses zero-to-one saturation and per-step slew li
 
 ### A7 — Tests and licensed Simscape
 
-The baseline test evidence is precisely **40 total / 39 pass / 0 fail / 1 incomplete** on R2024a, not the historically committed 37/37 local snapshot. Six new unit tests cover deadband unit contract, applied-value fault freeze and recovery, inactive coolant singularity, independent energy accumulation, nonnegative interface validation, and terminal JSON sample/timebase. They should count as executed only after an audit-branch CI log is obtained. `simscape/runSimscapeScenario.m` returns explicit `SKIPPED_*` when model/licensing/policy is not ready; this is not Core/Simscape physical parity.
+The baseline test evidence is precisely **40 total / 39 pass / 0 fail / 1 incomplete** on R2024a, not the historically committed 37/37 local snapshot. Six new unit tests cover deadband unit contract, applied-value fault freeze and recovery, inactive coolant singularity, independent energy accumulation, nonnegative interface validation, and terminal JSON sample/timebase. All six methods were executed in the verified R2024a audit-branch Core CI run 44945399849 (46 total, 45 PASS, 0 FAIL, 1 optional INCOMPLETE). `simscape/runSimscapeScenario.m` returns explicit `SKIPPED_*` when model/licensing/policy is not ready; this is not Core/Simscape physical parity.
 
 ### A8 — CI, security, governance and documentation
 
@@ -63,7 +63,7 @@ Core CI runs on `push(main)`, `pull_request(main)` and manual dispatch; pinned a
 
 ## Independent challenge and evidence boundaries (A9 role)
 
-The adversarial review uses a constant-source, zero-boundary stored-energy oracle that does not reuse `simulate.m`'s RHS residual; separate zero-flow/zero-interface, fault-onset and terminal-time assertions are added. Algebraic E10 geometry is checked independently of a site visualization. The new tests are authored but **not independent executed evidence** until the provider CI completes. Remaining priority counterexamples include flow reversal with unequal branches, charge/discharge switching, sample-clock mismatch, sensor failure on control boundary, near-isolated nodes and stiff graphs. All high issues are tracked in `audit/findings.json`.
+The adversarial review uses a constant-source, zero-boundary stored-energy oracle that does not reuse `simulate.m`'s RHS residual; separate zero-flow/zero-interface, fault-onset and terminal-time assertions are added. Algebraic E10 geometry is checked independently of a site visualization. The six newly authored regression methods executed under the verified R2024a GitHub Actions run; the mathematical test fixtures remain authored by the same engineering reviewer, not independently operated MATLAB validation. Remaining priority counterexamples include flow reversal with unequal branches, charge/discharge switching, sample-clock mismatch, sensor failure on control boundary, near-isolated nodes and stiff graphs. All high issues are tracked in `audit/findings.json`.
 
 ## Confirmed patches and regression risk
 
@@ -89,3 +89,9 @@ The exact line-level register contains reproduction steps, root cause, evidence 
 7. Obtain independent source/asset provenance review before any blanket IP-cleared assertion.
 
 **Verdict: INCOMPLETE.** The applied changes are bounded engineering remediation, not a claim of full model validation, real-cell predictive accuracy or certified safety. A green build alone is insufficient to overturn remaining FAIL/NOT VERIFIED gates.
+
+## Verified candidate source/test receipt
+
+**Verified candidate-source MATLAB R2024a CI:** [run 44945399849](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44945399849), job `136971493310`, on source/test SHA `0287e46ed273d3154e0bed9309a318a809702683`: **46 total, 45 PASSED, 0 FAILED, 1 INCOMPLETE** (optional advanced-controller test filtered by unmet Optimization Toolbox assumption). Code Analyzer reports 0 errors and 0 warnings. The six new regression methods executed in this passing run; unrun scientific acceptance gates remain unverified. The report-update commit follows this receipt and must itself be checked at its final SHA.
+
+Independent Python/SciPy E10 sensitivity checks yielded layer spreads **4.590248617, 3.884283666, 2.450641915 K** for through-layer conductances 0.10/0.25/0.75 W/K, within 0.0014 K of historical artifact values. These are approximate independent synthetic-model calculations, not exact regenerated MATLAB artifacts. Overall verdict remains **INCOMPLETE**.

@@ -25,7 +25,8 @@
         "status": "NOT VERIFIED",
         "evidence": [
           "src/+thermoweave/simulate.m:56,64",
-          "docs/model.md:130"
+          "docs/model.md:130",
+          "The independent constant-source energy fixture passed in candidate R2024a run 44945399849; general integrated energy balance is still missing."
         ],
         "responsible": "GitHub-connected engineering review",
         "before": "Static source inspection on baseline 6b48646; no local MATLAB execution",
@@ -37,7 +38,7 @@
       "domain": "Coolant physics",
       "severity": "Medium",
       "classification": "Confirmed Defect",
-      "status": "patched_awaiting_ci",
+      "status": "fixed_verified_core_ci",
       "source": {
         "file": "src/+thermoweave/+coolant/evaluate.m",
         "line": 17
@@ -49,13 +50,14 @@
       "remediation": "Added inactive-segment hold behavior in evaluate.m and march.m, with focused regression",
       "regression_risk": "Low: only singular inactive branch",
       "verification": {
-        "status": "NOT VERIFIED",
+        "status": "PASS",
         "evidence": [
-          "tests/unit/TestAuditRegressions.m:inactiveCoolantSegmentsKeepLastDefinedTemperature"
+          "tests/unit/TestAuditRegressions.m:inactiveCoolantSegmentsKeepLastDefinedTemperature",
+          "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44945399849"
         ],
         "responsible": "GitHub-connected engineering review",
         "before": "Static source inspection on baseline 6b48646; no local MATLAB execution",
-        "after": "Audit-branch tests not yet executed"
+        "after": "Candidate MATLAB R2024a Core CI on 2026-11-21, source/test SHA 0287e46: 46 total, 45 PASS, 0 FAIL, 1 optional INCOMPLETE. Targeted regression passed."
       }
     },
     {
@@ -63,7 +65,7 @@
       "domain": "Controls and faults",
       "severity": "High",
       "classification": "Confirmed Defect",
-      "status": "patched_awaiting_ci",
+      "status": "fixed_verified_core_ci",
       "source": {
         "file": "src/+thermoweave/simulate.m",
         "line": 36
@@ -75,13 +77,14 @@
       "remediation": "Freeze previous executed command and synchronize state.command with actual command each step; regression added",
       "regression_risk": "Medium: changes declared legacy magnitude semantics; documented",
       "verification": {
-        "status": "NOT VERIFIED",
+        "status": "PASS",
         "evidence": [
-          "tests/unit/TestAuditRegressions.m:stuckActuatorHoldsAppliedCommandWithoutSlewJump"
+          "tests/unit/TestAuditRegressions.m:stuckActuatorHoldsAppliedCommandWithoutSlewJump",
+          "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44945399849"
         ],
         "responsible": "GitHub-connected engineering review",
         "before": "Static source inspection on baseline 6b48646; no local MATLAB execution",
-        "after": "Audit-branch tests not yet executed"
+        "after": "Candidate MATLAB R2024a Core CI on 2026-11-21, source/test SHA 0287e46: 46 total, 45 PASS, 0 FAIL, 1 optional INCOMPLETE. Targeted regression passed."
       }
     },
     {
@@ -89,7 +92,7 @@
       "domain": "Controls",
       "severity": "Medium",
       "classification": "Confirmed Defect",
-      "status": "patched_awaiting_ci",
+      "status": "fixed_verified_core_ci",
       "source": {
         "file": "src/+thermoweave/+control/baselineController.m",
         "line": 7
@@ -101,13 +104,14 @@
       "remediation": "Apply max(0,Tzone-Tref-deadband) before gain and add unit regression",
       "regression_risk": "Low: zero-deadband default unchanged; nonzero scenarios corrected",
       "verification": {
-        "status": "NOT VERIFIED",
+        "status": "PASS",
         "evidence": [
-          "tests/unit/TestAuditRegressions.m:deadbandUsesKelvinBeforeProportionalGain"
+          "tests/unit/TestAuditRegressions.m:deadbandUsesKelvinBeforeProportionalGain",
+          "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44945399849"
         ],
         "responsible": "GitHub-connected engineering review",
         "before": "Static source inspection on baseline 6b48646; no local MATLAB execution",
-        "after": "Audit-branch tests not yet executed"
+        "after": "Candidate MATLAB R2024a Core CI on 2026-11-21, source/test SHA 0287e46: 46 total, 45 PASS, 0 FAIL, 1 optional INCOMPLETE. Targeted regression passed."
       }
     },
     {
@@ -168,7 +172,7 @@
       "domain": "Configuration and physical constraints",
       "severity": "High",
       "classification": "Confirmed Defect",
-      "status": "patched_awaiting_ci",
+      "status": "fixed_verified_core_ci",
       "source": {
         "file": "src/+thermoweave/+config/validateConfig.m",
         "line": 229
@@ -180,13 +184,14 @@
       "remediation": "Validate optional edge and coolant interface scale fields; add rejection regression",
       "regression_risk": "Low: rejects previously accepted invalid inputs",
       "verification": {
-        "status": "NOT VERIFIED",
+        "status": "PASS",
         "evidence": [
-          "tests/unit/TestAuditRegressions.m:rejectsNonphysicalInterfaceScaling"
+          "tests/unit/TestAuditRegressions.m:rejectsNonphysicalInterfaceScaling",
+          "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44945399849"
         ],
         "responsible": "GitHub-connected engineering review",
         "before": "Static source inspection on baseline 6b48646; no local MATLAB execution",
-        "after": "Audit-branch tests not yet executed"
+        "after": "Candidate MATLAB R2024a Core CI on 2026-11-21, source/test SHA 0287e46: 46 total, 45 PASS, 0 FAIL, 1 optional INCOMPLETE. Targeted regression passed."
       }
     },
     {
@@ -194,7 +199,7 @@
       "domain": "Result schema and serialization",
       "severity": "Medium",
       "classification": "Confirmed Defect",
-      "status": "patched_awaiting_ci",
+      "status": "fixed_verified_core_ci",
       "source": {
         "file": "src/+thermoweave/+results/exportJSON.m",
         "line": 17
@@ -206,13 +211,14 @@
       "remediation": "Append terminal index, update metadata, reject invalid noninteger strides, add regression",
       "regression_risk": "Low: only optional downsample exports",
       "verification": {
-        "status": "NOT VERIFIED",
+        "status": "PASS",
         "evidence": [
-          "tests/unit/TestAuditRegressions.m:downsampleExportRetainsTerminalStateAndMatchingTimebase"
+          "tests/unit/TestAuditRegressions.m:downsampleExportRetainsTerminalStateAndMatchingTimebase",
+          "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44945399849"
         ],
         "responsible": "GitHub-connected engineering review",
         "before": "Static source inspection on baseline 6b48646; no local MATLAB execution",
-        "after": "Audit-branch tests not yet executed"
+        "after": "Candidate MATLAB R2024a Core CI on 2026-11-21, source/test SHA 0287e46: 46 total, 45 PASS, 0 FAIL, 1 optional INCOMPLETE. Targeted regression passed."
       }
     },
     {
@@ -247,7 +253,7 @@
       "domain": "Documentation and CI evidence",
       "severity": "Low",
       "classification": "Documentation Error",
-      "status": "patched_awaiting_ci",
+      "status": "patched_verified_source_ci",
       "source": {
         "file": "README.md",
         "line": 65
@@ -259,13 +265,14 @@
       "remediation": "Replace with live workflow badge and dated baseline counts, amend validation guide",
       "regression_risk": "Very low",
       "verification": {
-        "status": "NOT VERIFIED",
+        "status": "PASS",
         "evidence": [
-          "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44626427308"
+          "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44626427308",
+          "https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44945399849"
         ],
         "responsible": "GitHub-connected engineering review",
         "before": "Static source inspection on baseline 6b48646; no local MATLAB execution",
-        "after": "Audit-branch tests not yet executed"
+        "after": "Latest Core CI evidence checked: 46 total, 45 PASS / 0 FAIL / 1 optional INCOMPLETE at audit source/test SHA 0287e46."
       }
     },
     {
@@ -349,5 +356,19 @@
         "after": "Audit-branch tests not yet executed"
       }
     }
-  ]
+  ],
+  "auditSourceTestSha": "0287e46ed273d3154e0bed9309a318a809702683",
+  "auditTestEvidence": {
+    "dateUtc": "2026-11-21",
+    "MATLABRelease": "R2024a",
+    "runId": 44945399849,
+    "jobId": 136971493310,
+    "total": 46,
+    "passed": 45,
+    "failed": 0,
+    "incomplete": 1,
+    "optionalIncompleteTest": "TestSimulationIntegration/advancedControllerCoolsHotZonesAndHonorsRate",
+    "executedSourceTestSha": "0287e46ed273d3154e0bed9309a318a809702683",
+    "note": "General physical gates remain unresolved; later audit-only report commit requires final-head CI."
+  }
 }

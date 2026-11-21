@@ -89,12 +89,18 @@ Source code diff, verification of reviewed modifications and Pages identity
 
 | Check | R2024a baseline | R2026a historical | Audit branch |
 |---|---|---|---|
-| MATLAB class suite | 39 PASS, 1 INCOMPLETE at Nov 19 baseline | 37 PASS in Aug 14 stored report | **NOT RUN / candidate CI pending** |
-| 3-D node/edge identity | Baseline test passed | Historical study metadata reported | Mathematically 36/75; code still needs candidate CI |
+| MATLAB class suite | 39 PASS, 1 INCOMPLETE at Nov 19 baseline | 37 PASS in Aug 14 stored report | **46 total / 45 PASS / 0 FAIL / 1 optional INCOMPLETE** in [2026-11-21 R2024a CI](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44945399849) at source/test SHA 0287e46 |
+| 3-D node/edge identity | Baseline test passed | Historical study metadata reported | Mathematically 36/75; candidate 3-D regression suite passed |
 | Seeded repeated result | Baseline deterministic seed test included | Historical report claims stable demo | **NOT VERIFIED cross-release** |
 | E10 0.10–0.75 W/K sensitivity | No candidate reproduction | Historical README figures | **NOT REGENERATED** |
-| Full `result/v1` schema / JSON | Some baseline tests passed | Artifact committed | Added downsample fix; candidate check pending |
+| Full `result/v1` schema / JSON | Some baseline tests passed | Artifact committed | Added downsample fix; focused new export regression passed in R2024a CI |
 | Static website data | Pages published baseline docs | Published synthetic web payload | **NOT REGENERATED / NOT browser-verified** |
 | QP/MPC / optional Simscape parity | QP test incomplete; Simscape skip accepted | Adapter skip recorded | **NOT RUN / BLOCKED** |
 
 **Reproducibility verdict:** Essential cross-release, physical/energy integration, time-event, hash canonicalization and generated-artifact checks remain unverified. Do not infer PASS from matching old numerical constants.
+
+## Executed candidate check and independent E10 cross-check
+
+**Verified candidate-source MATLAB R2024a CI:** [run 44945399849](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44945399849), job `136971493310`, on source/test SHA `0287e46ed273d3154e0bed9309a318a809702683`: **46 total, 45 PASSED, 0 FAILED, 1 INCOMPLETE** (optional advanced-controller test filtered by unmet Optimization Toolbox assumption). Code Analyzer reports 0 errors and 0 warnings. The six new regression methods executed in this passing run; unrun scientific acceptance gates remain unverified. The report-update commit follows this receipt and must itself be checked at its final SHA.
+
+A separately implemented 36-node/75-edge Python SciPy BDF solve (`rtol=1e-10, atol=1e-12`) produced final layer-mean spreads of **4.590248617 K**, **3.884283666 K**, and **2.450641915 K** at `g_z=0.10,0.25,0.75 W/K`. Committed historical MATLAB values are **4.588879025 K**, **3.883132142 K**, and **2.450127386 K**, so differences are **+0.001370, +0.001152, +0.000515 K**. This is independent approximate sensitivity support, **not** exact MATLAB artifact re-execution, hash parity, or real-cell validation.
