@@ -101,7 +101,9 @@ At sample time $t_j$, measure weighted zone means and apply zero-order hold betw
 
 $$u_k=\operatorname{sat}_{[0,1]}\left(K_{p,k}(T_{z,k}-T_{\mathrm{ref}})\right),\qquad q_{\mathrm{rem},k}=u_kq_{\mathrm{max},k}.\tag{5}$$
 
-Cooling is distributed as $q_{\mathrm{ext},i}=-w_{ik}q_{\mathrm{rem},k}$, with nonnegative weights summing to one in each zone. Any deadband, first-order sensor filter, rate limit, and sensor noise are fixed in the scenario manifest.
+Cooling is distributed as $q_{\mathrm{ext},i}=-w_{ik}q_{\mathrm{rem},k}$, with nonnegative weights summing to one in each zone. The deadband is measured in **kelvin** and applied to $(T_{z,k}-T_{\mathrm{ref}})$ **before** the proportional gain. Any deadband, first-order sensor filter, rate limit, and sensor noise are fixed in the scenario manifest.
+
+**Current implementation limitation:** the simulation currently invokes the controller at each `simulation.outputStep_s` interval, rather than maintaining an independent `controller.samplePeriod_s` event clock. Thus the configured sample period is not enforced when these intervals differ; controller timing is **not verified** under misaligned grids. Reproduction of a nominal 2-second controller assumes an output step of 2 seconds. This is tracked as an unresolved numerical/control issue, not a claim of sample-period conformance.
 
 ### Optional advanced controller
 
@@ -113,7 +115,7 @@ The implemented constraints are actuator bounds and rate limits. A full MPC woul
 
 ## Uncertainty and fault injection
 
-Uncertainty is sampled from declared distributions with recorded seeds. A reference dispersion is lognormal $R_0$ with 5% coefficient of variation and independent uniform +/-10% perturbations for $C$, $g$, and $H$; correlations, if any, must be explicit. Faults are records $(t_{\mathrm{start}},t_{\mathrm{end}},\mathrm{target},\mathrm{type},\mathrm{magnitude})$. Examples include blocked channel (multiply $H$ or $\dot m$), pump loss, sensor bias/dropout, stuck actuator, contact-conductance change, current imbalance, and localized heat multiplier. Runs declare single-fault versus seeded combined-fault mode.
+Uncertainty is sampled from declared distributions with recorded seeds. A reference dispersion is lognormal $R_0$ with 5% coefficient of variation and independent uniform +/-10% perturbations for $C$, $g$, and $H$; correlations, if any, must be explicit. Faults are records $(t_{\mathrm{start}},t_{\mathrm{end}},\mathrm{target},\mathrm{type},\mathrm{magnitude})$. Examples include blocked channel (multiply $H$ or $\dot m$), pump loss, sensor bias/dropout, stuck actuator, contact-conductance change, current imbalance, and localized heat multiplier. Runs declare single-fault versus seeded combined-fault mode. On a `stuck_actuator` event the affected zone command is held at the **last actually executed** zero-order-held command; it is not forced to the legacy `magnitude` metadata value. On recovery, slew limits use the held command. Fault transitions are presently applied at controller/output-grid evaluations, so arbitrary mid-interval event-time exactness remains unverified.
 
 ## Canonical metrics and energy residual
 
@@ -124,6 +126,8 @@ For the solid, define stored energy $U_s=\sum_iC_iT_i$, ambient export $q_{a,i}=
 $$r_s(t)=\frac{dU_s}{dt}-\left[\sum_iq_{\mathrm{gen},i}+\sum_iq_{\mathrm{ext},i}-\sum_iq_{a,i}-\sum_kq_{\mathrm{solid}\to c,k}\right].$$
 
 Report $\epsilon_E=\max_t|r_s(t)|/\max(P_{\mathrm{scale}},10^{-9}\ \mathrm W)$, where $P_{\mathrm{scale}}$ is the largest absolute bracketed power, plus integrated and sign-separated residual totals. For dynamic coolant, add $U_c=\sum_kC_{c,k}T_{c,k}$ and inlet/outlet enthalpy. A large residual invalidates controller comparisons.
+
+**Implementation/evidence gap:** `src/+thermoweave/simulate.m` currently computes the instantaneous residual from the same RHS terms used to compute $\dot T$ and normalizes by the maximum absolute **individual-cell heat generation**, rather than by the specified total power scale. Its near-zero value is a flux-bookkeeping identity, not independent integrated-energy validation. The integrated and sign-separated diagnostics above remain an unimplemented acceptance target.
 
 ## Synthetic default parameters (assumptions)
 
