@@ -20,6 +20,10 @@ At source SHA `6b48646da2f6f8b60a13b14e19c4c65e45b17383`, [Core CI run 446264273
 
 The energy accounting test requires a finite normalized residual and compares `ode15s` with `ode45` at an absolute temperature tolerance of $10^{-4}$ K for the declared short convergence case. The deterministic demo produced a normalized residual of approximately $4.39\times10^{-15}$ on R2026a. This residual is a consistency measure for the implemented flux bookkeeping, not an accuracy comparison against measurements.
 
+## Audit candidate execution (21 November 2026)
+
+At audit source/test SHA `a4d424d971fe14d59df6a9e3a9339cca4a437598`, [GitHub Core CI run 44959047806](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44959047806) executed MATLAB R2024a: **54 total, 53 passed, 0 failed, 1 incomplete**. The original Optimization Toolbox-dependent advanced-controller test was still filtered; this is not an optional QP pass. Nine additional integration audit methods verify bounded clock behavior, exact off-grid thermal fault duration, independent adiabatic/ambient/coolant signed heat ledgers, versioned nested canonical hash behavior and truthful controller method/objective metadata. The six preexisting focused audit regressions also pass. This CI receipt does not verify proprietary Simscape parity, multi-release reproducibility, published data regeneration or legal provenance.
+
 ## Commands
 
 ```matlab
@@ -32,7 +36,7 @@ The build task emits JUnit and Cobertura-compatible files under `results/`. On 2
 
 ## Important interpretation of the energy diagnostic
 
-The current core's `energyResidualNormalized` is an **instantaneous, algebraic RHS-closure check**: it computes both sides from the same derivative/flux calculation. Its normalization also uses the maximum individual generated-heat sample, not the global power scale described in the formal model specification. A near-machine-precision value therefore does **not** independently establish integrated conservation, accuracy of coolant energy transport, or correct event timing. Independent stored-energy experiments and a subsequently implemented integrated energy audit are needed before granting the scientific energy-conservation gate. The audit-branch independent constant-heat regression is a targeted improvement, not yet a general proof.
+The current core's `energyResidualNormalized` is an **instantaneous, algebraic RHS-closure check**: it computes both sides from the same derivative/flux calculation. Its normalization also uses the maximum individual generated-heat sample, not the global power scale described in the formal model specification. A near-machine-precision value therefore does **not** independently establish integrated conservation, accuracy of coolant energy transport, or correct event timing. The audit candidate additionally reports a signed, solver-time-integrated energy ledger and an endpoint-temperature stored-energy delta; adiabatic, ambient and coolant signed cases pass in R2024a. Broad solver tolerance/stiffness convergence and independently validated coolant-model physics remain open; neither metric proves measured-cell accuracy.
 
 ## Remaining validation work
 
