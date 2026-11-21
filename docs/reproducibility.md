@@ -33,7 +33,7 @@ For each run, preserve:
 5. the canonical result schema version and source/configuration hashes; and
 6. event records for fallbacks, skipped optional products, disturbances, and faults.
 
-Compare summary values and hashes from manifests before comparing down-sampled JSON or visual exports. JSON exports may be down-sampled, but they must retain summary values and the source manifest hash.
+The candidate adds `metadata.scenarioCanonicalHash` with algorithm `thermoweave.canonical-json/v1`, which recursively sorts object keys, normalizes signed zero and uses explicit tags for intentional infinite limits; NaN and complex values are rejected. The existing `metadata.scenarioHash` remains the legacy raw-`jsonencode` hash to avoid an undeclared compatibility break. The targeted canonical equality regression passes in R2024a, but cross-MATLAB-release hashing and controlled artifact migration remain NOT VERIFIED. Compare the *algorithm identifier*, canonical payload, source SHA, release, seed and solver metadata together. JSON exports may be down-sampled, but must preserve terminal state, source sample count, relevant summary values and timebase.
 
 ## Optional Simscape behavior
 
