@@ -171,10 +171,6 @@ function target=parseTarget(value)
 if isnumeric(value),target=round(value);return;end
 token=regexp(char(value),'\d+','match','once');target=str2double(token);
 end
-U(end,:)=U(max(1,end-1),:); [~,bd,qq,ii,cc,rr]=derivative(t(end),[T(end,:)';S(end,:)'],U(end,:)'); BT(end,:)=bd.temperature_K'; BH(end,:)=bd.conductance_W_per_K'; QHist(end,:)=qq'; IHist(end)=mean(ii); CHist(end)=cc; residual(end)=rr;
-meta=metadata(cfg,varInfo,t); data=struct('time_s',t,'temperature_K',T,'soc',S,'boundaryTemperature_K',BT,'boundaryConductance_W_per_K',BH,'zoneCommand',U,'current_A',IHist,'heatGeneration_W',QHist,'coolingPower_W',CHist,'events',events);
-result=thermoweave.results.makeResult(data,cfg,topo,meta); result.energyResidualNormalized=max(abs(residual))/max(max(abs(QHist(:))),1e-9); result.metrics.energyResidualNormalized=result.energyResidualNormalized;
-
  function [dy,b,q,I,cp,res] = derivative(tt,yy,cmd,activationTime)
   temp=yy(1:N); soc=yy(N+1:end);
   % Current profiles are piecewise constant, and their transitions are
