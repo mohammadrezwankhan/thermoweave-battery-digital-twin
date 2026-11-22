@@ -17,6 +17,23 @@ def _finite_number(value):
     return type(value) in (int, float) and math.isfinite(value)
 
 
+# A correct aggregate count is not proof that the intended scientific
+# regressions actually ran. Require these named cases as well as green totals.
+# These are synthetic/model/provenance tests, NOT licensed Simscape or
+# real-cell validation.
+REQUIRED_SCIENTIFIC_TESTS = frozenset({
+    ("TestScientificAuditGates", "downsampledControlHistoriesAlignWithTimeVector"),
+    ("TestAuditRegressions", "downsampleExportRetainsTerminalStateAndMatchingTimebase"),
+    ("TestScientificAuditGates", "controllerExecutionIdentityIsRecorded"),
+    ("TestScientificAuditGates", "faultBetweenOutputTimesHasExactHeatDuration"),
+    ("TestIndependentEnergyAcceptance", "forgedLegacyZeroCannotHideIncorrectHeat"),
+    ("Test3DStudy", "canonicalResultHasThreeDimensionalState"),
+    ("TestSimscapeModelProvenance", "modifiedModelBytesFailClosed"),
+    ("TestIndependentEnergyAcceptance", "coolantEnergyResidualConvergesUnderRefinement"),
+    ("TestScientificAuditGates", "advancedExecutionMetadataCannotClaimUnexecutedQP"),
+})
+
+
 def verify():
     root = Path(__file__).resolve().parents[1]
     expected_release = os.environ.get("EXPECTED_MATLAB_RELEASE", "2024a")
@@ -260,6 +277,12 @@ def verify():
     if tuple(counts) != junit_counts:
         raise AssertionError("JUnit summary disagrees with MATLAB verification JSON: "
                              + str(junit_counts) + " vs " + str(tuple(counts)))
+    missing_required = REQUIRED_SCIENTIFIC_TESTS - seen_test_ids
+    if missing_required:
+        missing_names = ", ".join(
+            f"{class_name}/{case_name}"
+            for class_name, case_name in sorted(missing_required))
+        raise AssertionError("JUnit missing required scientific regression: " + missing_names)
     if verification.get("testCount", 0) < 51:
         raise AssertionError("Missing the audited MATLAB regression inventory")
     if verification.get("codeAnalyzerFindings") != 0:
