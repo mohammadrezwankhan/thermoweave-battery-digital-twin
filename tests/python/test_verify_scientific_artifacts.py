@@ -1,4 +1,5 @@
 """Adversarial regression tests for provenance acceptance (no MATLAB required)."""
+import copy
 import hashlib
 import importlib.util
 import json
@@ -95,6 +96,16 @@ class ArtifactAcceptanceTests(unittest.TestCase):
             ("experiments", self.experiments), ("study", self.study)
         ]:
             self.write(key, item)
+        self.manifest["experiments"] = {
+            "path": self.names["experiments"],
+            "sha256": hashlib.sha256(
+                (self.root / self.names["experiments"]).read_bytes()
+            ).hexdigest(),
+            "scenarioCount": len(self.experiments["records"]),
+        }
+        self.manifest["verification"] = copy.deepcopy(self.verification)
+        self.manifest["study3d"] = copy.deepcopy(self.study)
+        self.write("manifest", self.manifest)
 
     def verify(self):
         with mock.patch.object(
@@ -158,6 +169,25 @@ class ArtifactAcceptanceTests(unittest.TestCase):
             with self.assertRaises(AssertionError):
                 self.verify()
 
+
+
+    def test_rejects_wrong_experiment_manifest_digest(self):
+        self.manifest["experiments"]["sha256"] = "0" * 64
+        self.write("manifest", self.manifest)
+        with self.assertRaisesRegex(AssertionError, "Experiment.*SHA"):
+            self.verify()
+
+    def test_rejects_conflicting_embedded_verification_result(self):
+        self.manifest["verification"]["passed"] = 55
+        self.write("manifest", self.manifest)
+        with self.assertRaisesRegex(AssertionError, "verification.*mismatch"):
+            self.verify()
+
+    def test_rejects_conflicting_manifest_e10_study(self):
+        self.manifest["study3d"]["cases"][1]["edgeCount"] = 1
+        self.write("manifest", self.manifest)
+        with self.assertRaisesRegex(AssertionError, "study.*mismatch"):
+            self.verify()
 
 if __name__ == "__main__":
     unittest.main()
