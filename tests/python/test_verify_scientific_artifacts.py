@@ -171,7 +171,8 @@ class ArtifactAcceptanceTests(unittest.TestCase):
     def test_rejects_e10_csv_measurement_inconsistent_with_json(self):
         # A different peak temperature must not be published as verified.
         path = self.root / "artifacts/data/3d-study-results.csv"
-        rows = list(csv.DictReader(path.open(encoding="utf-8", newline="")))
+        with path.open(encoding="utf-8", newline="") as stream:
+            rows = list(csv.DictReader(stream))
         rows[1]["peakTemperature_K"] = "999"
         with path.open("w", encoding="utf-8", newline="") as stream:
             writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
