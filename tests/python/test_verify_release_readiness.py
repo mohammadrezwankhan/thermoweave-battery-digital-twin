@@ -45,6 +45,10 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.write("audit/SCIENTIFIC_VERIFICATION_MATRIX.md",
                    "# Scientific verification matrix\n\n" +
                    "".join(f"| {g} | **PASS** | Reviewed evidence |\n" for g in REQUIRED))
+        self.write_json("audit/findings.json", {"schemaVersion": "thermoweave.audit-findings/v1",
+                        "findings": [{"id": identity, "verification": {"status": "PASS",
+                                      "evidence": ["test-only fixture"]}}
+                                     for identity in release.REQUIRED_FINDINGS]})
         self.write_json("artifacts/reports/verification.json", self.verification)
         self.write_json("artifacts/reports/experiment-summary.json", self.experiments)
         self.write_json("artifacts/reports/3d-study-summary.json", self.study)
