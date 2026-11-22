@@ -344,6 +344,26 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         with self.assertRaisesRegex(AssertionError, "JUnit"):
             self.verify()
 
+    def test_rejects_missing_qp_regression_disguised_as_all_green(self):
+        # 58/58 PASS is not proof that the licensed advanced-controller
+        # regression ran. A replaced JUnit testcase must fail provenance even
+        # if both the XML and regenerated JSON totals agree exactly.
+        self.verification["passed"] += 1
+        self.verification["incomplete"] = 0
+        self.write_fixture()
+        path = self.root / "results/test-results.xml"
+        junit = ET.parse(path)
+        case = next(case for case in junit.iter("testcase")
+                    if case.get("name") == "advancedControllerCoolsHotZonesAndHonorsRate")
+        case.set("name", "unrelatedPassingQPPlaceholder")
+        case.remove(case.find("skipped"))
+        suite = next(suite for suite in junit.iter("testsuite")
+                     if suite.get("name") == "TestSimulationIntegration")
+        suite.set("skipped", "0")
+        junit.write(path, encoding="utf-8")
+        with self.assertRaisesRegex(AssertionError, "required scientific regression"):
+            self.verify()
+
     def test_rejects_omitted_downsampled_history_test_with_same_totals(self):
         # A misleading 57-pass/1-skip receipt can omit the critical
         # downsampled controller-history regression without changing counts.
