@@ -9,7 +9,12 @@ arguments
 end
 
 if isa(raw, "Simulink.SimulationOutput")
-    if ~raw.hasVariable("thermoweaveRaw")
+    % SimulationOutput exposes logged variable names through who(out).
+    % It does not implement hasVariable in the tested licensed R2026a
+    % runtime. Never infer PASS from another variable (e.g. nativeE9)
+    % until the generated model emits the reviewed canonical log.
+    recordedNames = string(who(raw));
+    if ~any(recordedNames == "thermoweaveRaw")
         error("thermoweave:simscape:MissingCanonicalLog", ...
             "SimulationOutput must contain a thermoweaveRaw structure.");
     end
