@@ -1,6 +1,10 @@
 name: Scientific artifact reproduction
 
 on:
+  # Reproduce and archive evidence for the exact protected-main merge SHA;
+  # PR-only evidence is not source-equivalent to a subsequent merge commit.
+  push:
+    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
