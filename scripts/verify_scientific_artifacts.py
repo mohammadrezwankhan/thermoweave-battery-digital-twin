@@ -98,6 +98,11 @@ def verify():
                 or not all(_finite_number(t) for t in times)
                 or any(right <= left for left, right in zip(times, times[1:]))):
             raise AssertionError("Invalid website time grid for " + str(scenario.get("id")))
+        # Matching the time-axis length alone can conceal a dropped cell or
+        # actuator in one downsampled record. Temperature and boundary vectors
+        # refer to the same physical cells; zone commands have their own fixed
+        # width and must remain consistent across samples.
+        cell_width = None
         for field in ("temperature_C", "boundaryTemperature_C", "zoneCommand"):
             series = scenario.get(field)
             if (not isinstance(series, list) or len(series) != len(times)
@@ -105,6 +110,13 @@ def verify():
                            or not all(_finite_number(value) for value in row)
                            for row in series)):
                 raise AssertionError("Unaligned/nonfinite website field " + field)
+            width = len(series[0])
+            if any(len(row) != width for row in series):
+                raise AssertionError("website " + field + " width changes over time")
+            if field == "temperature_C":
+                cell_width = width
+            elif field == "boundaryTemperature_C" and width != cell_width:
+                raise AssertionError("website boundaryTemperature_C width differs from cells")
     experiments = data["experiments"]
     if experiments.get("schemaVersion") != "thermoweave.experiments/v1":
         raise AssertionError("Experiment schema mismatch")
