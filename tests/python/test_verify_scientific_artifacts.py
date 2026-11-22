@@ -22,6 +22,10 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name)
+        self.expected_sha = "a" * 40
+        env_patch = mock.patch.dict("os.environ", {"EXPECTED_SOURCE_SHA": self.expected_sha})
+        env_patch.start()
+        self.addCleanup(env_patch.stop)
         marker = self.root / "results/artifact-regeneration-start.flag"
         marker.parent.mkdir(parents=True, exist_ok=True)
         marker.touch()
@@ -62,7 +66,7 @@ class ArtifactAcceptanceTests(unittest.TestCase):
             "schemaVersion": "thermoweave.verification/v1",
             "matlabRelease": "2024a", "testCount": 58,
             "passed": 57, "failed": 0, "incomplete": 1,
-            "codeAnalyzerFindings": 0,
+            "codeAnalyzerFindings": 0, "gitCommit": "a" * 40,
         }
         self.experiments = {
             "matlabRelease": "2024a", "schemaVersion": "thermoweave.experiments/v1",
@@ -170,6 +174,19 @@ class ArtifactAcceptanceTests(unittest.TestCase):
                 self.verify()
 
 
+
+    def test_rejects_missing_expected_source_sha(self):
+        # A standalone invocation must not silently disable commit binding.
+        with mock.patch.dict("os.environ", {"EXPECTED_SOURCE_SHA": ""}):
+            with self.assertRaisesRegex(AssertionError, "EXPECTED_SOURCE_SHA"):
+                self.verify()
+
+    def test_rejects_duplicated_web_scenario_ids(self):
+        # Five records are not five distinct selectable dashboard scenarios.
+        self.web["scenarios"][1]["id"] = self.web["scenarios"][0]["id"]
+        self.write_fixture()
+        with self.assertRaisesRegex(AssertionError, "scenario.*duplicate"):
+            self.verify()
 
     def test_rejects_wrong_experiment_manifest_digest(self):
         self.manifest["experiments"]["sha256"] = "0" * 64
