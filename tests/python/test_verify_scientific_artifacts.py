@@ -58,6 +58,7 @@ class ArtifactAcceptanceTests(unittest.TestCase):
             ],
         }
         self.verification = {
+            "schemaVersion": "thermoweave.verification/v1",
             "matlabRelease": "2024a", "testCount": 58,
             "passed": 57, "failed": 0, "incomplete": 1,
             "codeAnalyzerFindings": 0,
