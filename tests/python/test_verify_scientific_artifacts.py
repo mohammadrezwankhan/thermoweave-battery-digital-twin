@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+import xml.etree.ElementTree as ET
 from unittest import mock
 
 
@@ -110,6 +111,33 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         self.manifest["verification"] = copy.deepcopy(self.verification)
         self.manifest["study3d"] = copy.deepcopy(self.study)
         self.write("manifest", self.manifest)
+        self.write_junit_fixture()
+
+    def write_junit_fixture(self):
+        # Match the actual MATLAB JUnit shape: one suite has the optional
+        # Optimization Toolbox assumption, all other test cases succeed.
+        root = ET.Element("testsuites")
+        passing = ET.SubElement(root, "testsuite", {
+            "name": "TestAuditRegressions", "tests": "57",
+            "failures": "0", "errors": "0", "skipped": "0",
+        })
+        for index in range(57):
+            ET.SubElement(passing, "testcase", {
+                "classname": "TestAuditRegressions",
+                "name": f"fixtureCase{index:02d}",
+            })
+        incomplete = ET.SubElement(root, "testsuite", {
+            "name": "TestSimulationIntegration", "tests": "1",
+            "failures": "0", "errors": "0", "skipped": "1",
+        })
+        optional = ET.SubElement(incomplete, "testcase", {
+            "classname": "TestSimulationIntegration",
+            "name": "advancedControllerCoolsHotZonesAndHonorsRate",
+        })
+        ET.SubElement(optional, "skipped")
+        path = self.root / "results/test-results.xml"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(ET.tostring(root, encoding="utf-8"))
 
     def verify(self):
         with mock.patch.object(
@@ -204,6 +232,30 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         self.manifest["study3d"]["cases"][1]["edgeCount"] = 1
         self.write("manifest", self.manifest)
         with self.assertRaisesRegex(AssertionError, "study.*mismatch"):
+            self.verify()
+
+
+    def test_rejects_junit_claim_disagreement(self):
+        # A forged JSON claim of 58 green tests must not override the
+        # actual 57-pass/1-incomplete MATLAB JUnit evidence.
+        self.verification["passed"] = 58
+        self.verification["incomplete"] = 0
+        self.write_fixture()
+        with self.assertRaisesRegex(AssertionError, "JUnit"):
+            self.verify()
+
+    def test_rejects_missing_junit_test_evidence(self):
+        (self.root / "results/test-results.xml").unlink()
+        with self.assertRaisesRegex(AssertionError, "JUnit"):
+            self.verify()
+
+    def test_rejects_duplicate_junit_test_identity(self):
+        path = self.root / "results/test-results.xml"
+        xml = ET.parse(path)
+        cases = list(xml.iter("testcase"))
+        cases[1].set("name", cases[0].get("name"))
+        xml.write(path, encoding="utf-8")
+        with self.assertRaisesRegex(AssertionError, "JUnit"):
             self.verify()
 
 if __name__ == "__main__":
