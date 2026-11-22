@@ -28,7 +28,7 @@ classdef TestSimscapeModelProvenance < matlab.unittest.TestCase
             [root, manifest, digest] = fixture(testCase);
             path = fullfile(root, "simscape", "models", "native_e9.slx");
             fid = fopen(path, "ab");
-            fwrite(fid, uint8("tampered"), "uint8");
+            fwrite(fid, uint8('tampered'), "uint8");
             fclose(fid);
             testCase.verifyError(@() verifyGeneratedModelManifest(root, manifest, digest), ...
                 "thermoweave:simscape:ModelDigestMismatch");
@@ -58,7 +58,7 @@ root = string(tempname);
 modelDir = fullfile(root, "simscape", "models");
 mkdir(modelDir);
 testCase.addTeardown(@() rmdir(root, "s"));
-bytes = uint8("synthetic provenance fixture - not an approved Simscape model");
+bytes = uint8('synthetic provenance fixture - not an approved Simscape model');
 fid = fopen(fullfile(modelDir, "native_e9.slx"), "wb");
 assert(fid > 0);
 fwrite(fid, bytes, "uint8");
