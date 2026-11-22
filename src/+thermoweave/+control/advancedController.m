@@ -34,6 +34,11 @@ if exist('quadprog','file')==2
         lb=max(lb,previous-delta); ub=min(ub,previous+delta);
         opts=optimoptions('quadprog','Display','off');
         [u,~,exitflag]=quadprog(H,f,[],[],[],[],lb,ub,previous,opts);
+        if exitflag == 0
+            % Retry the same bounded QP if the interior-point solver exhausts its iterations.
+            opts = optimoptions('quadprog','Algorithm','active-set','Display','off');
+            [u,~,exitflag] = quadprog(H,f,[],[],[],[],lb,ub,previous,opts);
+        end
         if exitflag>0
             u=max(0,min(1,u)); info.usedFallback=false; info.status='OPTIMAL';
             info.objective=0.5*u'*H*u+f'*u; state.command=u;

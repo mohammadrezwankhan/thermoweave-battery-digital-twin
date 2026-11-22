@@ -20,8 +20,8 @@ animationResult = thermoweave.simulate(animationConfig);
 animationPath = fullfile(root, "artifacts", "animation", "thermal-field.gif");
 animationManifest = thermoweave.visualization.exportAnimation( ...
     animationResult, animationPath, FrameCount=24, Delay_s=0.09);
-verification = writeVerificationReport();
-experiments = runExperimentSuite();
+[experiments, simscapeExecution] = runExperimentSuite();
+verification = writeVerificationReport(SimscapeExecution=simscapeExecution);
 study3d = generate3DResearchArtifacts();
 evidence = struct( ...
     "schemaVersion", "thermoweave.artifacts/v1", ...

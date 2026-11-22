@@ -20,6 +20,7 @@ report = struct( ...
     "products", detectProducts(), ...
     "libraryPolicy", inspectLibraryPolicy(options.ProjectRoot), ...
     "generatedModel", "", ...
+    "modelSha256", "", ...
     "timestampUtc", string(datetime("now", "TimeZone", "UTC", ...
         "Format", "yyyy-MM-dd'T'HH:mm:ss'Z'")));
 
@@ -49,11 +50,15 @@ if ~isfile(manifestPath)
 end
 
 manifest = jsondecode(fileread(manifestPath));
+% A JSON file alone does not authorize model execution. Require actual
+% approved bytes and a confined path before declaring build readiness.
+[verifiedPath, actualDigest] = verifyGeneratedModelManifest( ...
+    options.ProjectRoot, manifest, approvedSimscapeModelDigests());
+[~, stem, ext] = fileparts(verifiedPath);
+report.generatedModel = fullfile("simscape", "models", string(stem) + string(ext));
+report.modelSha256 = actualDigest;
 report.status = "READY";
-report.message = "A generated-model manifest is present; verify it before execution.";
-if isfield(manifest, "modelFile")
-    report.generatedModel = string(manifest.modelFile);
-end
+report.message = "Generated SLX path, declared digest and source-pinned digest verified.";
 end
 
 function products = detectProducts()
