@@ -83,6 +83,16 @@ def verify():
     if experiments.get("schemaVersion") != "thermoweave.experiments/v1":
         raise AssertionError("Experiment schema mismatch")
     rows = experiments.get("records", [])
+    experiments_record = manifest.get("experiments", {})
+    if (not isinstance(experiments_record, dict)
+            or experiments_record.get("path") != required["experiments"]):
+        raise AssertionError("Experiment manifest path mismatch")
+    experiments_sha = hashlib.sha256(
+        (root / required["experiments"]).read_bytes()).hexdigest()
+    if experiments_record.get("sha256") != experiments_sha:
+        raise AssertionError("Experiment SHA256 mismatch with regenerated report")
+    if experiments_record.get("scenarioCount") != len(rows):
+        raise AssertionError("Experiment manifest count mismatch")
     if [r.get("id") for r in rows] != [f"E{i}" for i in range(10)]:
         raise AssertionError("E0-E9 incomplete or reordered")
     failed = [r.get("id") for r in rows[:9] if r.get("status") != "PASS"]
@@ -95,6 +105,11 @@ def verify():
     study = data["study"]
     if study.get("schemaVersion") != "thermoweave.study3d/v1":
         raise AssertionError("E10 study schema mismatch")
+    embedded_study = manifest.get("study3d")
+    if (not isinstance(embedded_study, dict)
+            or any(embedded_study.get(key) != value
+                   for key, value in study.items())):
+        raise AssertionError("Embedded study mismatch with regenerated E10 report")
     cases = study.get("cases", [])
     if len(cases) != 3 or any(
         c.get("nodeCount") != 36 or c.get("edgeCount") != 75 or
@@ -130,6 +145,8 @@ def verify():
                 + actual_commit + " vs " + expected_source_sha)
     if verification.get("schemaVersion") != "thermoweave.verification/v1":
         raise AssertionError("Unexpected MATLAB verification schema")
+    if manifest.get("verification") != verification:
+        raise AssertionError("Embedded verification mismatch with regenerated test report")
     counts = [verification.get(key) for key in
               ("testCount", "passed", "failed", "incomplete")]
     if any(type(n) is not int or n < 0 for n in counts):
