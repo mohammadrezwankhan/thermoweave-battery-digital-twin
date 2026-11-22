@@ -145,15 +145,36 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         # Match the actual MATLAB JUnit shape: one suite has the optional
         # Optimization Toolbox assumption, all other test cases succeed.
         root = ET.Element("testsuites")
-        passing = ET.SubElement(root, "testsuite", {
-            "name": "TestAuditRegressions", "tests": "57",
-            "failures": "0", "errors": "0", "skipped": "0",
-        })
-        for index in range(57):
-            ET.SubElement(passing, "testcase", {
-                "classname": "TestAuditRegressions",
-                "name": f"fixtureCase{index:02d}",
+        # These named MATLAB regressions are essential evidence, not merely
+        # interchangeable contributors to the aggregate pass count.
+        required_cases = [
+            ("TestScientificAuditGates", "downsampledControlHistoriesAlignWithTimeVector"),
+            ("TestAuditRegressions", "downsampleExportRetainsTerminalStateAndMatchingTimebase"),
+            ("TestScientificAuditGates", "controllerExecutionIdentityIsRecorded"),
+            ("TestScientificAuditGates", "faultBetweenOutputTimesHasExactHeatDuration"),
+            ("TestIndependentEnergyAcceptance", "forgedLegacyZeroCannotHideIncorrectHeat"),
+            ("Test3DStudy", "canonicalResultHasThreeDimensionalState"),
+            ("TestSimscapeModelProvenance", "modifiedModelBytesFailClosed"),
+            ("TestIndependentEnergyAcceptance", "coolantEnergyResidualConvergesUnderRefinement"),
+            ("TestScientificAuditGates", "advancedExecutionMetadataCannotClaimUnexecutedQP"),
+        ]
+        passing_by_class = {
+            "TestAuditRegressions": [
+                f"fixtureCase{index:02d}"
+                for index in range(57 - len(required_cases))
+            ],
+        }
+        for classname, name in required_cases:
+            passing_by_class.setdefault(classname, []).append(name)
+        for classname, names in passing_by_class.items():
+            passing = ET.SubElement(root, "testsuite", {
+                "name": classname, "tests": str(len(names)),
+                "failures": "0", "errors": "0", "skipped": "0",
             })
+            for name in names:
+                ET.SubElement(passing, "testcase", {
+                    "classname": classname, "name": name,
+                })
         incomplete = ET.SubElement(root, "testsuite", {
             "name": "TestSimulationIntegration", "tests": "1",
             "failures": "0", "errors": "0", "skipped": "1",
@@ -303,6 +324,30 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         cases[1].set("name", cases[0].get("name"))
         xml.write(path, encoding="utf-8")
         with self.assertRaisesRegex(AssertionError, "JUnit"):
+            self.verify()
+
+    def test_rejects_omitted_downsampled_history_test_with_same_totals(self):
+        # A misleading 57-pass/1-skip receipt can omit the critical
+        # downsampled controller-history regression without changing counts.
+        path = self.root / "results/test-results.xml"
+        junit = ET.parse(path)
+        case = next(case for case in junit.iter("testcase")
+                    if case.get("name") == "downsampledControlHistoriesAlignWithTimeVector")
+        case.set("name", "unrelatedPassingTest")
+        junit.write(path, encoding="utf-8")
+        with self.assertRaisesRegex(AssertionError, "required scientific regression"):
+            self.verify()
+
+    def test_rejects_omitted_model_provenance_regression_with_same_totals(self):
+        # A green aggregate count is not evidence that the model-byte
+        # tampering regression actually executed.
+        path = self.root / "results/test-results.xml"
+        junit = ET.parse(path)
+        case = next(case for case in junit.iter("testcase")
+                    if case.get("name") == "modifiedModelBytesFailClosed")
+        case.set("name", "otherPassingTest")
+        junit.write(path, encoding="utf-8")
+        with self.assertRaisesRegex(AssertionError, "required scientific regression"):
             self.verify()
 
     def test_rejects_missing_code_analyzer_sarif(self):
