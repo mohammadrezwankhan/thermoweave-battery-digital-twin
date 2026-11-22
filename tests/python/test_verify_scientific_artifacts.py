@@ -233,6 +233,21 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         with self.assertRaises((AssertionError, ValueError)):
             self.verify()
 
+    def test_rejects_e10_energy_residual_above_declared_limit(self):
+        # docs/scenarios.md sets <=1e-3 for the E10 synthetic model.
+        # A finite but unacceptably large residual must not be attested.
+        self.study["cases"][1]["energyResidualNormalized"] = 0.01
+        self.write_fixture()
+        with self.assertRaisesRegex(AssertionError, "E10 energy residual"):
+            self.verify()
+
+    def test_rejects_negative_e10_energy_residual(self):
+        # Normalized absolute residual is a nonnegative metric.
+        self.study["cases"][0]["energyResidualNormalized"] = -0.01
+        self.write_fixture()
+        with self.assertRaisesRegex(AssertionError, "E10 energy residual"):
+            self.verify()
+
     def test_rejects_inconsistent_matlab_test_inventory(self):
         self.verification["passed"] = 1
         self.write_fixture()
