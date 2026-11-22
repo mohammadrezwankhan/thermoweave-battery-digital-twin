@@ -9,6 +9,28 @@ classdef Test3DStudy < matlab.unittest.TestCase
     end
 
     methods (Test)
+        function tightSolverMatchesIndependentLayerSpreads(testCase)
+            % Limit is 10 percent of the 0.001 K reporting increment.
+            % Reference generation: python tools/e10_spread_reference.py
+            root = fileparts(fileparts(fileparts(mfilename('fullpath'))));
+            cfg = thermoweave.config.loadScenario(fullfile(root,'config','3d-intercell-study.json'));
+            cfg.simulation.relativeTolerance = 1e-10;
+            cfg.simulation.absoluteTolerance = 1e-12;
+            cfg.simulation.maxStep_s = 0.5;
+            conductance = [0.10 0.175 0.25 0.40 0.625 0.75];
+            reference = [4.590248804162 4.214811996535 3.884283913242 3.333741455837 2.715563185764 2.450642150373];
+            for k = 1:numel(conductance)
+                cfg.layout.gz_W_per_K = conductance(k);
+                result = thermoweave.simulate(cfg);
+                nodesPerLayer = cfg.layout.rows * cfg.layout.columns;
+                endpoint = reshape(result.state.temperature_K(end,:),nodesPerLayer,cfg.layout.layers);
+                layerMeans = mean(endpoint,1);
+                spread = max(layerMeans) - min(layerMeans);
+                testCase.verifyEqual(spread,reference(k),'AbsTol',1e-4, ...
+                    sprintf('Through-layer conductance %.3f W/K',conductance(k)));
+            end
+        end
+
         function canonicalResultHasThreeDimensionalState(testCase)
             root = fileparts(fileparts(fileparts(mfilename('fullpath'))));
             scenario = fullfile(root, 'config', '3d-intercell-study.json');
