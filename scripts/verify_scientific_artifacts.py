@@ -122,8 +122,12 @@ def verify():
     if failed:
         raise AssertionError("E0-E8 must PASS: " + ", ".join(failed))
     e9 = rows[9].get("status", "")
-    if not (e9 == "PASS" or e9.startswith("SKIPPED_")):
-        raise AssertionError("Untruthful optional Simscape status")
+    # The hosted license-free runner may report only missing products, not a
+    # model/policy/adapter defect disguised as an arbitrary SKIPPED_* success.
+    # A PASS here is just a consistency statement; licensed model parity and
+    # independent approval remain separate mandatory release gates.
+    if e9 not in ("PASS", "SKIPPED_MISSING_PRODUCT"):
+        raise AssertionError("Simscape E9 status is not an approved execution/skip result")
     print("E0-E8 PASS; E9 status", e9, "(not accepted as numerical parity if skipped)")
     study = data["study"]
     if study.get("schemaVersion") != "thermoweave.study3d/v1":
@@ -194,6 +198,15 @@ def verify():
         raise AssertionError("E10 CSV has malformed scientific values") from error
 
     verification = data["verification"]
+    # E9 is reported independently by the experiment, adapter evidence, and
+    # regenerated MATLAB verification report. None can silently overrule a
+    # missing-product skip or forge a licensed execution claim.
+    e9_evidence = rows[9].get("evidence")
+    if (not isinstance(e9_evidence, dict)
+            or e9_evidence.get("adapterStatus") != e9
+            or verification.get("simscapeAdapterStatus") != e9):
+        raise AssertionError(
+            "Simscape E9 experiment, adapter and verification statuses disagree")
     expected_source_sha = os.environ.get("EXPECTED_SOURCE_SHA", "").strip().lower()
     if len(expected_source_sha) != 40 or any(
             character not in "0123456789abcdef" for character in expected_source_sha):
