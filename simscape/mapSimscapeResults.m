@@ -9,7 +9,7 @@ arguments
 end
 
 if isa(raw, "Simulink.SimulationOutput")
-    if ~raw.hasVariable("thermoweaveRaw")
+    if ~ismember("thermoweaveRaw", string(who(raw)))
         error("thermoweave:simscape:MissingCanonicalLog", ...
             "SimulationOutput must contain a thermoweaveRaw structure.");
     end

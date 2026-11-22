@@ -98,6 +98,13 @@ classdef TestRegressionContracts < matlab.unittest.TestCase
             testCase.verifySize(result.signals.current_A, [3 1]);
         end
 
+        function simscapeMapperReadsSimulationOutput(testCase)
+            testCase.assumeTrue(exist('Simulink.SimulationOutput', 'class') == 8);
+            cfg = thermoweave.config.defaultConfig();
+            testCase.verifyError(@() mapSimscapeResults(Simulink.SimulationOutput, cfg), ...
+                'thermoweave:simscape:MissingCanonicalLog');
+        end
+
         function simscapeMapperRejectsNoncanonicalCurrent(testCase)
             cfg = thermoweave.config.defaultConfig();
             raw = struct('time_s', (0:2)', ...
