@@ -63,6 +63,10 @@ def verify():
     scenarios = website.get("scenarios", [])
     if len(scenarios) != 5 or web_record.get("scenarioCount") != 5:
         raise AssertionError("Expected five declared website scenarios")
+    ids = [s.get("id") for s in scenarios]
+    if (any(not isinstance(identifier, str) or not identifier.strip()
+            for identifier in ids) or len(set(ids)) != len(ids)):
+        raise AssertionError("Website scenario IDs missing or duplicate")
     if any(s.get("sourceSchema") != "thermoweave.result/v1"
            or not s.get("scenarioHash") for s in scenarios):
         raise AssertionError("Website scenario schema/hash invalid")
@@ -134,15 +138,14 @@ def verify():
             raise AssertionError("E10 final layer-spread contradicts layer temperatures")
     verification = data["verification"]
     expected_source_sha = os.environ.get("EXPECTED_SOURCE_SHA", "").strip().lower()
-    if expected_source_sha:
-        if len(expected_source_sha) != 40 or any(
-                character not in "0123456789abcdef" for character in expected_source_sha):
-            raise AssertionError("EXPECTED_SOURCE_SHA must be a full Git commit SHA")
-        actual_commit = str(verification.get("gitCommit", "")).strip().lower()
-        if actual_commit != expected_source_sha:
-            raise AssertionError(
-                "Regenerated MATLAB artifacts belong to a different source commit: "
-                + actual_commit + " vs " + expected_source_sha)
+    if len(expected_source_sha) != 40 or any(
+            character not in "0123456789abcdef" for character in expected_source_sha):
+        raise AssertionError("EXPECTED_SOURCE_SHA must be a full Git commit SHA")
+    actual_commit = str(verification.get("gitCommit", "")).strip().lower()
+    if actual_commit != expected_source_sha:
+        raise AssertionError(
+            "Regenerated MATLAB artifacts belong to a different source commit: "
+            + actual_commit + " vs " + expected_source_sha)
     if verification.get("schemaVersion") != "thermoweave.verification/v1":
         raise AssertionError("Unexpected MATLAB verification schema")
     if manifest.get("verification") != verification:
