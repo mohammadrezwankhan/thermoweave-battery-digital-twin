@@ -31,6 +31,9 @@ REQUIRED_SCIENTIFIC_TESTS = frozenset({
     ("TestSimscapeModelProvenance", "modifiedModelBytesFailClosed"),
     ("TestIndependentEnergyAcceptance", "coolantEnergyResidualConvergesUnderRefinement"),
     ("TestScientificAuditGates", "advancedExecutionMetadataCannotClaimUnexecutedQP"),
+    # Prove the optional licensed QP test was run or explicitly skipped;
+    # it must not disappear from an otherwise green synthetic test inventory.
+    ("TestSimulationIntegration", "advancedControllerCoolsHotZonesAndHonorsRate"),
 })
 
 
