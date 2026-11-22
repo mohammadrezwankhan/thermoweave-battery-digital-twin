@@ -1,7 +1,25 @@
-function report = writeVerificationReport()
+function report = writeVerificationReport(options)
 %WRITEVERIFICATIONREPORT Persist machine-readable local evidence.
 
+arguments
+    options.SimscapeExecution (1,1) struct = struct
+end
+
 root = fileparts(fileparts(mfilename("fullpath")));
+adapter = options.SimscapeExecution;
+if isempty(fieldnames(adapter))
+    adapter = runSimscapeScenario(thermoweave.config.defaultConfig(), ...
+        ProjectRoot=string(root));
+end
+if ~isfield(adapter, "schemaVersion") || ...
+        ~strcmp(adapter.schemaVersion, "thermoweave.simscape-run/v1") || ...
+        ~isfield(adapter, "status") || ~isfield(adapter, "result") || ...
+        strcmp(adapter.status, "READY") || ...
+        (strcmp(adapter.status, "PASS") && isempty(adapter.result))
+    error("thermoweave:verification:InvalidSimscapeExecution", ...
+        "Expected an executed adapter result or an explicit skip, not build readiness.");
+end
+
 resultFile = fullfile(root, "results", "test-results.xml");
 if ~isfile(resultFile) || sourceNewerThan(resultFile, root)
     testResults = runtests(fullfile(root, "tests"), IncludeSubfolders=true);
@@ -43,7 +61,6 @@ if isfile(codeIssueFile)
 end
 
 demo = runDemo();
-adapter = buildThermoWeaveModel(ProjectRoot=string(root));
 report = struct( ...
     "schemaVersion", "thermoweave.verification/v1", ...
     "matlabRelease", string(version("-release")), ...
