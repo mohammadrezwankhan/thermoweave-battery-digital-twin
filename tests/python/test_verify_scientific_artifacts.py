@@ -260,6 +260,30 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         with self.assertRaises(AssertionError):
             self.verify()
 
+    def test_rejects_downsampled_cell_width_change(self):
+        # A matching time-axis length is not sufficient: temperature vectors
+        # must retain one fixed physical-cell dimension after downsampling.
+        self.web["scenarios"][0]["temperature_C"][1] = [22]
+        self.write_fixture()
+        with self.assertRaisesRegex(AssertionError, "website.*width"):
+            self.verify()
+
+    def test_rejects_downsampled_boundary_cell_mismatch(self):
+        # The boundary temperature must address exactly the same physical
+        # cells as the model temperature at every exported timestamp.
+        self.web["scenarios"][0]["boundaryTemperature_C"] = [[20], [20]]
+        self.write_fixture()
+        with self.assertRaisesRegex(AssertionError, "website.*width"):
+            self.verify()
+
+    def test_rejects_downsampled_zone_command_width_change(self):
+        # Zone commands cannot silently gain or lose actuators between two
+        # downsampled samples even when the sample timestamps still align.
+        self.web["scenarios"][0]["zoneCommand"][1] = [0, 0]
+        self.write_fixture()
+        with self.assertRaisesRegex(AssertionError, "website.*width"):
+            self.verify()
+
     def test_rejects_incorrect_artifact_manifest_schema(self):
         self.manifest["schemaVersion"] = "thermoweave.artifacts/unknown"
         self.write_fixture()
