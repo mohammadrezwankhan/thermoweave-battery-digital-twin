@@ -29,6 +29,17 @@ end
 
 manifest = jsondecode(fileread(fullfile(options.ProjectRoot, "simscape", ...
     "models", "thermoweave-model-manifest.json")));
+% Revalidate immediately before loading: neither the manifest nor the
+% previously reported build READY state is authority to execute arbitrary SLX.
+[approvedPath, modelDigest] = verifyGeneratedModelManifest( ...
+    options.ProjectRoot, manifest, approvedSimscapeModelDigests());
+if approvedPath ~= string(char(java.io.File(char(modelPath)).getCanonicalPath())) || ...
+        modelDigest ~= buildReport.modelSha256
+    error("thermoweave:simscape:ModelDigestMismatch", ...
+        "The model changed between preflight and execution.");
+end
+modelPath = approvedPath;
+adapterResult.modelSha256 = modelDigest;
 nativeE9 = isfield(manifest, "outputContract") && ...
     strcmp(manifest.outputContract, "thermoweave.native-e9/v1");
 if nativeE9
@@ -45,6 +56,13 @@ if nativeE9
 end
 [~, modelName] = fileparts(modelPath);
 open_system(modelPath);
+% A preloaded, dirty or different same-named model is not the hashed SLX.
+loadedPath = string(char(java.io.File(char(get_param(modelName, ...
+    "FileName"))).getCanonicalPath()));
+if loadedPath ~= modelPath || strcmpi(get_param(modelName, "Dirty"), "on")
+    error("thermoweave:simscape:LoadedModelMismatch", ...
+        "Simulink did not load the unchanged approved SLX.");
+end
 in = Simulink.SimulationInput(modelName);
 if isfield(config, "simulation") && isfield(config.simulation, "duration_s")
     in = in.setModelParameter("StopTime", string(config.simulation.duration_s));
@@ -53,6 +71,13 @@ if nativeE9
     in = in.setModelParameter("RelTol", string(config.simulation.relativeTolerance), ...
         "AbsTol", string(config.simulation.absoluteTolerance), ...
         "MaxStep", string(config.simulation.maxStep_s));
+end
+[finalPath, finalDigest] = verifyGeneratedModelManifest( ...
+    options.ProjectRoot, manifest, approvedSimscapeModelDigests());
+if finalPath ~= modelPath || finalDigest ~= modelDigest || ...
+        strcmpi(get_param(modelName, "Dirty"), "on")
+    error("thermoweave:simscape:ModelDigestMismatch", ...
+        "The approved SLX changed before simulation.");
 end
 out = sim(in);
 if nativeE9
