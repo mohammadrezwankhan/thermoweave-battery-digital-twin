@@ -156,6 +156,13 @@ def verify():
                     "peakTemperature_K", "peakEdgeGradient_K",
                     "finalLayerSpread_K", "energyResidualNormalized"))):
             raise AssertionError("E10 nonfinite or missing scientific measurement")
+        # docs/scenarios.md defines a <=1e-3 normalized energy-residual
+        # acceptance gate for E10. Merely requiring finiteness could permit
+        # a physically unacceptable study to be published as verified.
+        energy_residual = case["energyResidualNormalized"]
+        if not 0 <= energy_residual <= 1e-3:
+            raise AssertionError(
+                "E10 energy residual outside declared [0, 1e-3] limit")
         if not math.isclose(max(layers) - min(layers),
                             case["finalLayerSpread_K"], rel_tol=1e-7, abs_tol=1e-8):
             raise AssertionError("E10 final layer-spread contradicts layer temperatures")
