@@ -4,6 +4,7 @@ import csv
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -114,6 +115,7 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         self.write("manifest", self.manifest)
         self.write_junit_fixture()
         self.write_study_csv_fixture()
+        self.write_sarif_fixture()
 
     def write_study_csv_fixture(self):
         # Mirror the published 3-D study CSV independently of JSON fixtures.
@@ -128,6 +130,16 @@ class ArtifactAcceptanceTests(unittest.TestCase):
             writer.writeheader()
             for case in self.study["cases"]:
                 writer.writerow({key: case[key] for key in columns})
+
+    def write_sarif_fixture(self):
+        # The archived MATLAB Code Analyzer receipt reports zero findings.
+        # Checking verification.json alone would trust a self-reported zero.
+        path = self.root / "results/code-issues.sarif"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps({
+            "version": "2.1.0",
+            "runs": [{"tool": {"driver": {"name": "Code Analyzer"}}, "results": []}]
+        }), encoding="utf-8")
 
     def write_junit_fixture(self):
         # Match the actual MATLAB JUnit shape: one suite has the optional
@@ -292,6 +304,38 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         xml.write(path, encoding="utf-8")
         with self.assertRaisesRegex(AssertionError, "JUnit"):
             self.verify()
+
+    def test_rejects_missing_code_analyzer_sarif(self):
+        # The JSON claim of zero findings is not a separate static receipt.
+        (self.root / "results/code-issues.sarif").unlink()
+        with self.assertRaisesRegex(AssertionError, "SARIF"):
+            self.verify()
+
+    def test_rejects_sarif_warning_hidden_by_zero_json_count(self):
+        sarif = self.root / "results/code-issues.sarif"
+        payload = json.loads(sarif.read_text(encoding="utf-8"))
+        payload["runs"][0]["results"] = [{
+            "ruleId": "MATLAB:WARN", "level": "warning",
+            "message": {"text": "Synthetic warning for acceptance test"}
+        }]
+        sarif.write_text(json.dumps(payload), encoding="utf-8")
+        with self.assertRaisesRegex(AssertionError, "SARIF"):
+            self.verify()
+
+    def test_rejects_stale_code_analyzer_sarif(self):
+        sarif = self.root / "results/code-issues.sarif"
+        marker = self.root / "results/artifact-regeneration-start.flag"
+        stale = marker.stat().st_mtime - 60
+        os.utime(sarif, (stale, stale))
+        with self.assertRaisesRegex(AssertionError, "SARIF"):
+            self.verify()
+
+    def test_rejects_sarif_missing_code_analyzer_run(self):
+        sarif = self.root / "results/code-issues.sarif"
+        sarif.write_text('{"version":"2.1.0","runs":[]}', encoding="utf-8")
+        with self.assertRaisesRegex(AssertionError, "SARIF"):
+            self.verify()
+
 
 if __name__ == "__main__":
     unittest.main()
