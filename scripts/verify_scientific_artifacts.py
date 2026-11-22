@@ -118,6 +118,16 @@ def verify():
                             case["finalLayerSpread_K"], rel_tol=1e-7, abs_tol=1e-8):
             raise AssertionError("E10 final layer-spread contradicts layer temperatures")
     verification = data["verification"]
+    expected_source_sha = os.environ.get("EXPECTED_SOURCE_SHA", "").strip().lower()
+    if expected_source_sha:
+        if len(expected_source_sha) != 40 or any(
+                character not in "0123456789abcdef" for character in expected_source_sha):
+            raise AssertionError("EXPECTED_SOURCE_SHA must be a full Git commit SHA")
+        actual_commit = str(verification.get("gitCommit", "")).strip().lower()
+        if actual_commit != expected_source_sha:
+            raise AssertionError(
+                "Regenerated MATLAB artifacts belong to a different source commit: "
+                + actual_commit + " vs " + expected_source_sha)
     if verification.get("schemaVersion") != "thermoweave.verification/v1":
         raise AssertionError("Unexpected MATLAB verification schema")
     counts = [verification.get(key) for key in
