@@ -39,7 +39,7 @@ class ReleaseReadinessTests(unittest.TestCase):
                              "testCount": 63, "passed": 63, "failed": 0,
                              "incomplete": 0, "codeAnalyzerFindings": 0,
                              "simscapeAdapterStatus": "PASS"}
-        self.study = {"cases": [
+        self.study = {"matlabRelease": "2024a", "cases": [
             {"caseId": case, "nodeCount": 36, "edgeCount": 75}
             for case in ("weak", "nominal", "strong")]}
         self.write("audit/SCIENTIFIC_VERIFICATION_MATRIX.md",
