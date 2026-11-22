@@ -17,11 +17,14 @@ concurrency:
 jobs:
   core:
     name: MATLAB R2024a core build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Verify workflow action pin inventory
+        run: python3 scripts/verify_workflow_notices.py
 
       - name: Set up MATLAB R2024a
         uses: matlab-actions/setup-matlab@f9e43010f1ae678f7cfa0542fe2a4f60f7d1ad8d # v3
@@ -32,3 +35,31 @@ jobs:
         uses: matlab-actions/run-build@cf54c2229a74d57eb4e6ba1bbebd45793d37797e # v3
         with:
           tasks: test
+
+      - name: Report MATLAB Code Analyzer findings
+        if: always()
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path("results/code-issues.sarif")
+          if not path.is_file():
+              print("Code Analyzer SARIF missing; original build outcome remains authoritative.")
+          else:
+              report = json.loads(path.read_text(encoding="utf-8"))
+              count = 0
+              for item in report.get("runs", []):
+                  rules = {r.get("id"): r for r in item.get("tool", {}).get("driver", {}).get("rules", [])}
+                  for finding in item.get("results", []):
+                      level = finding.get("level", "warning")
+                      rule = finding.get("ruleId", "UNKNOWN")
+                      message = finding.get("message", {}).get("text", "")
+                      locations = finding.get("locations", [])
+                      physical = locations[0].get("physicalLocation", {}) if locations else {}
+                      uri = physical.get("artifactLocation", {}).get("uri", "?")
+                      line = physical.get("region", {}).get("startLine", "?")
+                      print(f"MATLAB ANALYZER {level}: {uri}:{line} [{rule}] {message}")
+                      count += 1
+              print(f"MATLAB ANALYZER: {count} detailed findings reported.")
+          PY

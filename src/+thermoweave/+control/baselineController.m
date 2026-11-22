@@ -4,7 +4,9 @@ if nargin<3||isempty(state), state=struct('command',zeros(cfg.controller.zoneCou
 z=zoneMeans(input.temperature_K,input.zoneId,input.zoneWeights);
 ref=getField(input,'referenceTemperature_K',cfg.controller.referenceTemperature_K);
 kp=expand(getField(cfg.controller,'Kp_per_K',0.2),numel(z));
-q=max(0,kp.*(z-ref)-getField(cfg.controller,'deadband_K',0)); u=max(0,min(1,q));
+deadband=expand(getField(cfg.controller,'deadband_K',0),numel(z));
+% The deadband is in kelvin and must be applied before the K^-1 gain.
+q=kp.*max(0,z-ref-deadband); u=max(0,min(1,q));
 dt=max(getField(input,'elapsedStep_s',getField(cfg.controller,'samplePeriod_s',1)),eps); rate=expand(getField(cfg.controller,'rateLimit_per_s',Inf),numel(z));
 d=rate*dt; u=max(state.command-d,min(state.command+d,u));
 u=max(0,min(1,u)); state.command=u(:); state.zoneMean_K=z(:);

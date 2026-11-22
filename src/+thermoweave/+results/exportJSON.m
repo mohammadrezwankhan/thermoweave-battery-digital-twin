@@ -7,6 +7,35 @@ txt=jsonencode(compact); fid=fopen(path,'w'); if fid<0,error('thermoweave:result
 fwrite(fid,txt,'char'); fclose(fid); manifest=struct('path',path,'sha256',thermoweave.util.hashText(txt),'bytes',numel(txt));
 end
 function r=downsample(r,step)
-if ~isscalar(step)||step<1,return;end; idx=1:step:numel(r.time_s); r.time_s=r.time_s(idx); f={'temperature_K','soc'}; for k=1:numel(f),r.state.(f{k})=r.state.(f{k})(idx,:);end
+if ~isnumeric(step)||~isscalar(step)||~isfinite(step)||step<1||step~=floor(step)
+    error('thermoweave:results:Downsample','Downsample stride must be a positive integer.');
+end
+if isempty(r.time_s)
+    error('thermoweave:results:Downsample','Cannot downsample an empty result.');
+end
+sourceSampleCount=numel(r.time_s);
+idx=1:step:sourceSampleCount;
+if idx(end)~=sourceSampleCount,idx(end+1)=sourceSampleCount;end
+r.time_s=r.time_s(idx);
+if isfield(r,'metadata')
+    r.metadata.sourceSampleCount=sourceSampleCount;
+    if isfield(r.metadata,'timeBase_s'),r.metadata.timeBase_s=r.time_s;end
+end
+f={'temperature_K','soc'}; for k=1:numel(f),r.state.(f{k})=r.state.(f{k})(idx,:);end
 r.boundary.temperature_K=r.boundary.temperature_K(idx,:);r.boundary.conductance_W_per_K=r.boundary.conductance_W_per_K(idx,:);r.control.zoneCommand=r.control.zoneCommand(idx,:);r.signals.current_A=r.signals.current_A(idx);r.signals.heatGeneration_W=r.signals.heatGeneration_W(idx,:);r.signals.coolingPowerProxy_W=r.signals.coolingPowerProxy_W(idx);
+% Controller provenance must be sampled at exactly the exported time grid.
+% Otherwise JSON consumers can display solver identities for absent samples.
+for k=1:numel({'methodHistory','statusHistory','objectiveHistory'})
+    names={'methodHistory','statusHistory','objectiveHistory'};
+    name=names{k};
+    if isfield(r.control,name)
+        history=r.control.(name);
+        if numel(history)~=sourceSampleCount
+            error('thermoweave:results:Downsample', ...
+                'Control history %s has %d entries; expected %d.', ...
+                name,numel(history),sourceSampleCount);
+        end
+        r.control.(name)=history(idx(:));
+    end
+end
 end
