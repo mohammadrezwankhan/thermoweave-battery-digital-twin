@@ -159,6 +159,13 @@ class SimulationOutputAdapterContractTests(unittest.TestCase):
 class PagesPublicationGateContractTests(unittest.TestCase):
     """Static deployment regression: no unqualified science site publication."""
 
+    def test_scientific_workflow_reproduces_main_merge_sha(self):
+        workflow = (ROOT / ".github/workflows/scientific-artifacts.yml").read_text(encoding="utf-8")
+        self.assertIn("  push:\\n    branches: [main]\\n".replace("\\n", "\n"), workflow,
+                      "PR-only scientific artifacts cannot qualify a merged main SHA")
+        self.assertIn("EXPECTED_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}",
+                      workflow)
+
     def test_pages_deploy_requires_exact_source_scientific_release_veto(self):
         workflow = (ROOT / ".github/workflows/pages.yml").read_text(encoding="utf-8")
         self.assertIn("EXPECTED_SOURCE_SHA: ${{ github.sha }}", workflow)
