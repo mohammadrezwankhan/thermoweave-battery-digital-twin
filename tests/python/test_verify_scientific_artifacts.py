@@ -186,7 +186,7 @@ class ArtifactAcceptanceTests(unittest.TestCase):
             "classname": "TestSimulationIntegration",
             "name": "advancedControllerCoolsHotZonesAndHonorsRate",
         })
-        ET.SubElement(optional, "skipped")
+        ET.SubElement(optional, "skipped").text = "Optimization Toolbox unavailable."
         path = self.root / "results/test-results.xml"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(ET.tostring(root, encoding="utf-8"))
@@ -386,6 +386,28 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         suite.set("skipped", "0")
         junit.write(path, encoding="utf-8")
         with self.assertRaisesRegex(AssertionError, "required scientific regression"):
+            self.verify()
+
+    def test_rejects_qp_skip_for_unrelated_failure_reason(self):
+        # A named QP regression cannot be filtered for a scientific defect
+        # while claiming the only permitted optional license assumption.
+        path = self.root / "results/test-results.xml"
+        junit = ET.parse(path)
+        case = next(case for case in junit.iter("testcase")
+                    if case.get("name") == "advancedControllerCoolsHotZonesAndHonorsRate")
+        case.find("skipped").text = "Numerical convergence assumption failed."
+        junit.write(path, encoding="utf-8")
+        with self.assertRaisesRegex(AssertionError, "QP skip reason"):
+            self.verify()
+
+    def test_rejects_qp_skip_without_diagnostic(self):
+        path = self.root / "results/test-results.xml"
+        junit = ET.parse(path)
+        case = next(case for case in junit.iter("testcase")
+                    if case.get("name") == "advancedControllerCoolsHotZonesAndHonorsRate")
+        case.find("skipped").text = None
+        junit.write(path, encoding="utf-8")
+        with self.assertRaisesRegex(AssertionError, "QP skip reason"):
             self.verify()
 
     def test_rejects_omitted_downsampled_history_test_with_same_totals(self):
