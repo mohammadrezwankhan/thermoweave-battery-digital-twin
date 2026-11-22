@@ -155,5 +155,20 @@ class SimulationOutputAdapterContractTests(unittest.TestCase):
                         runner.index('adapterResult.status = "PASS"'))
 
 
+
+class PagesPublicationGateContractTests(unittest.TestCase):
+    """Static deployment regression: no unqualified science site publication."""
+
+    def test_pages_deploy_requires_exact_source_scientific_release_veto(self):
+        workflow = (ROOT / ".github/workflows/pages.yml").read_text(encoding="utf-8")
+        self.assertIn("EXPECTED_SOURCE_SHA: ${{ github.sha }}", workflow)
+        gate = "python3 scripts/verify_release_readiness.py"
+        upload = "Upload static documentation"
+        self.assertIn(gate, workflow, "Pages must execute the scientific release veto")
+        self.assertIn(upload, workflow)
+        self.assertLess(workflow.index(gate), workflow.index(upload),
+                        "The release veto must precede publishing the Pages artifact")
+
+
 if __name__ == "__main__":
     unittest.main()
