@@ -70,11 +70,14 @@ class ArtifactAcceptanceTests(unittest.TestCase):
             "matlabRelease": "2024a", "testCount": 58,
             "passed": 57, "failed": 0, "incomplete": 1,
             "codeAnalyzerFindings": 0, "gitCommit": "a" * 40,
+            "simscapeAdapterStatus": "SKIPPED_MISSING_PRODUCT",
         }
         self.experiments = {
             "matlabRelease": "2024a", "schemaVersion": "thermoweave.experiments/v1",
             "records": [{"id": "E" + str(i),
-                         "status": "PASS" if i < 9 else "SKIPPED_MISSING_PRODUCT"}
+                         "status": "PASS" if i < 9 else "SKIPPED_MISSING_PRODUCT",
+                         "evidence": ({"adapterStatus": "SKIPPED_MISSING_PRODUCT"}
+                                      if i == 9 else {})}
                         for i in range(10)],
         }
         self.manifest = {
@@ -348,6 +351,35 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         case.set("name", "otherPassingTest")
         junit.write(path, encoding="utf-8")
         with self.assertRaisesRegex(AssertionError, "required scientific regression"):
+            self.verify()
+
+    def test_rejects_simscape_skip_not_attributable_to_missing_product(self):
+        # Missing approved model or unresolved policy is not a licensed
+        # scientific success and must not be an acceptable hosted E9 skip.
+        self.experiments["records"][9]["status"] = "SKIPPED_MODEL_NOT_GENERATED"
+        self.experiments["records"][9]["evidence"]["adapterStatus"] = (
+            "SKIPPED_MODEL_NOT_GENERATED"
+        )
+        self.verification["simscapeAdapterStatus"] = "SKIPPED_MODEL_NOT_GENERATED"
+        self.write_fixture()
+        with self.assertRaisesRegex(AssertionError, "Simscape"):
+            self.verify()
+
+    def test_rejects_e9_pass_when_verification_records_product_skip(self):
+        # Rewriting only E9 experiment/evidence to PASS must not override
+        # an independent verification.json missing-license record.
+        self.experiments["records"][9]["status"] = "PASS"
+        self.experiments["records"][9]["evidence"]["adapterStatus"] = "PASS"
+        self.write_fixture()
+        with self.assertRaisesRegex(AssertionError, "Simscape"):
+            self.verify()
+
+    def test_rejects_e9_evidence_status_mismatch(self):
+        # Each of experiment summary, adapter evidence, and verification
+        # report must describe the same executed/skip outcome.
+        self.experiments["records"][9]["evidence"]["adapterStatus"] = "PASS"
+        self.write_fixture()
+        with self.assertRaisesRegex(AssertionError, "Simscape"):
             self.verify()
 
     def test_rejects_missing_code_analyzer_sarif(self):
