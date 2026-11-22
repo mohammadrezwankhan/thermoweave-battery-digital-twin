@@ -138,5 +138,26 @@ class ArtifactAcceptanceTests(unittest.TestCase):
             self.verify()
 
 
+    def test_accepts_artifacts_attributed_to_exact_source_commit(self):
+        self.verification["gitCommit"] = "a" * 40
+        self.write_fixture()
+        with mock.patch.dict("os.environ", {"EXPECTED_SOURCE_SHA": "a" * 40}):
+            self.verify()
+
+    def test_rejects_artifacts_attributed_to_wrong_git_commit(self):
+        self.verification["gitCommit"] = "b" * 40
+        self.write_fixture()
+        with mock.patch.dict("os.environ", {"EXPECTED_SOURCE_SHA": "a" * 40}):
+            with self.assertRaises(AssertionError):
+                self.verify()
+
+    def test_rejects_artifacts_without_git_commit(self):
+        self.verification.pop("gitCommit", None)
+        self.write_fixture()
+        with mock.patch.dict("os.environ", {"EXPECTED_SOURCE_SHA": "a" * 40}):
+            with self.assertRaises(AssertionError):
+                self.verify()
+
+
 if __name__ == "__main__":
     unittest.main()
