@@ -130,5 +130,30 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assert_blocked()
 
 
+
+class SimulationOutputAdapterContractTests(unittest.TestCase):
+    """Static guard for a known MATLAB SimulationOutput API mismatch.
+
+    A licensed end-to-end Simscape test remains mandatory; these checks only
+    keep the mapper from invoking an API the deployed SimulationOutput lacks.
+    """
+
+    def test_simulation_output_uses_supported_variable_inventory(self):
+        mapper = (ROOT / "simscape/mapSimscapeResults.m").read_text(encoding="utf-8")
+        self.assertIn("who(raw)", mapper,
+                      "SimulationOutput must enumerate its logged variables with who")
+        self.assertNotIn("raw.hasVariable(", mapper,
+                         "SimulationOutput.hasVariable caused the licensed E9 adapter failure")
+
+    def test_packaged_adapter_cannot_claim_parity_without_canonical_log(self):
+        mapper = (ROOT / "simscape/mapSimscapeResults.m").read_text(encoding="utf-8")
+        runner = (ROOT / "simscape/runSimscapeScenario.m").read_text(encoding="utf-8")
+        self.assertIn('"thermoweaveRaw"', mapper)
+        self.assertIn("thermoweave:simscape:MissingCanonicalLog", mapper)
+        self.assertIn("mapSimscapeResults(out, config)", runner)
+        self.assertLess(runner.index("mapSimscapeResults(out, config)"),
+                        runner.index('adapterResult.status = "PASS"'))
+
+
 if __name__ == "__main__":
     unittest.main()
