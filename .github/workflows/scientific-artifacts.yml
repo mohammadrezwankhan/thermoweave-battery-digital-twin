@@ -15,7 +15,7 @@ concurrency:
 jobs:
   scientific-artifacts:
     name: MATLAB R2024a regenerate evidence
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
       - name: Check out source
