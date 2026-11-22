@@ -1,4 +1,5 @@
 """Fail-closed release evidence gates: adversarial Python fixtures (no MATLAB license)."""
+import csv
 import json
 import hashlib
 import importlib.util
@@ -40,8 +41,14 @@ class ReleaseReadinessTests(unittest.TestCase):
                              "incomplete": 0, "codeAnalyzerFindings": 0,
                              "simscapeAdapterStatus": "PASS"}
         self.study = {"matlabRelease": "2024a", "cases": [
-            {"caseId": case, "nodeCount": 36, "edgeCount": 75}
-            for case in ("weak", "nominal", "strong")]}
+            {"caseId": case, "gz_W_per_K": conductance,
+             "nodeCount": 36, "edgeCount": 75, "scenarioHash": "a" * 64,
+             "peakTemperature_K": 303.0, "peakEdgeGradient_K": 2.0,
+             "finalLayerMeanTemperature_K": [300.0, 301.0, 302.0],
+             "finalLayerSpread_K": 2.0, "energyResidualNormalized": 1e-12}
+            for case, conductance in (("weak", 0.10), ("nominal", 0.25),
+                                      ("strong", 0.75))],
+            "artifacts": {"table": "artifacts/data/3d-study-results.csv"}}
         self.write("audit/SCIENTIFIC_VERIFICATION_MATRIX.md",
                    "# Scientific verification matrix\n\n" +
                    "".join(f"| {g} | **PASS** | Reviewed evidence |\n" for g in REQUIRED))
@@ -52,6 +59,16 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.write_json("artifacts/reports/verification.json", self.verification)
         self.write_json("artifacts/reports/experiment-summary.json", self.experiments)
         self.write_json("artifacts/reports/3d-study-summary.json", self.study)
+        csv_path = self.root / "artifacts/data/3d-study-results.csv"
+        csv_path.parent.mkdir(parents=True, exist_ok=True)
+        fields = ("caseId", "gz_W_per_K", "nodeCount", "edgeCount",
+                  "peakTemperature_K", "peakEdgeGradient_K",
+                  "finalLayerSpread_K", "energyResidualNormalized", "scenarioHash")
+        with csv_path.open("w", encoding="utf-8", newline="") as stream:
+            writer = csv.DictWriter(stream, fieldnames=fields)
+            writer.writeheader()
+            writer.writerows({key: case[key] for key in fields}
+                             for case in self.study["cases"])
         self.write_json("artifacts/web-data/thermoweave-demo.json", self.web)
         self.write_json("docs/assets/thermoweave-demo.json", self.web)
         self.refresh_manifest()
