@@ -83,6 +83,82 @@ def _verify_findings(root: Path):
             raise AssertionError("Unverified or unsupported audit finding: " + identity)
 
 
+
+def _verify_e10(root: Path, study: dict) -> None:
+    """Check published E10 numerical claims AND their independent CSV copy.
+
+    This is a release-time cross-check of checked-in evidence, not a new
+    simulator execution or independent numerical/physical validation.
+    """
+    import csv
+    import math
+
+    cases = study.get("cases")
+    expected = (("weak", 0.10), ("nominal", 0.25), ("strong", 0.75))
+    if not isinstance(cases, list) or len(cases) != len(expected):
+        raise AssertionError("E10 case inventory incomplete")
+
+    columns = ("caseId", "gz_W_per_K", "nodeCount", "edgeCount",
+               "peakTemperature_K", "peakEdgeGradient_K",
+               "finalLayerSpread_K", "energyResidualNormalized", "scenarioHash")
+    numeric = [key for key in columns if key not in ("caseId", "scenarioHash")]
+
+    for case, (identity, conductance) in zip(cases, expected):
+        if not isinstance(case, dict) or case.get("caseId") != identity:
+            raise AssertionError("E10 cases are missing, reordered or duplicated")
+        if case.get("nodeCount") != 36 or case.get("edgeCount") != 75:
+            raise AssertionError("E10 geometry must be 36 nodes / 75 edges")
+        g = case.get("gz_W_per_K")
+        if type(g) not in (int, float) or not math.isfinite(g) or not math.isclose(
+                g, conductance, rel_tol=0, abs_tol=1e-12):
+            raise AssertionError("E10 conductance cases altered")
+        scenario_hash = case.get("scenarioHash")
+        if not isinstance(scenario_hash, str) or not re.fullmatch(
+                r"[0-9a-f]{64}", scenario_hash):
+            raise AssertionError("E10 scenario SHA-256 identity missing")
+        for key in numeric:
+            value = case.get(key)
+            if type(value) not in (int, float) or not math.isfinite(value):
+                raise AssertionError("Missing/nonfinite E10 numerical measurement: " + key)
+        residual = case["energyResidualNormalized"]
+        if not 0 <= residual <= 1e-3:
+            raise AssertionError("E10 energy residual violates [0, 1e-3] acceptance")
+        layers = case.get("finalLayerMeanTemperature_K")
+        if not isinstance(layers, list) or len(layers) != 3 or any(
+                type(v) not in (int, float) or not math.isfinite(v) for v in layers):
+            raise AssertionError("E10 layer temperature inventory incomplete")
+        spread = max(layers) - min(layers)
+        if not math.isclose(spread, case["finalLayerSpread_K"],
+                            rel_tol=1e-7, abs_tol=1e-8):
+            raise AssertionError("E10 claimed layer spread disagrees with temperatures")
+
+    csv_rel = "artifacts/data/3d-study-results.csv"
+    if study.get("artifacts", {}).get("table") != csv_rel:
+        raise AssertionError("E10 report does not identify its canonical CSV")
+    csv_path = root / csv_rel
+    if not csv_path.is_file():
+        raise AssertionError("Published E10 numerical CSV missing")
+    try:
+        with csv_path.open("r", encoding="utf-8-sig", newline="") as stream:
+            reader = csv.DictReader(stream, strict=True)
+            if reader.fieldnames != list(columns):
+                raise AssertionError("E10 published CSV schema differs from report")
+            rows = list(reader)
+        if len(rows) != len(cases):
+            raise AssertionError("E10 CSV record inventory differs from report")
+        for row, case in zip(rows, cases):
+            for key in ("caseId", "scenarioHash"):
+                if row.get(key) != case.get(key):
+                    raise AssertionError("E10 CSV identity differs from report: " + key)
+            for key in numeric:
+                value = float(row[key])
+                if not math.isfinite(value) or not math.isclose(
+                        value, float(case[key]), rel_tol=1e-10, abs_tol=1e-10):
+                    raise AssertionError("E10 CSV numerical claim differs: " + key)
+    except (ValueError, TypeError, KeyError, OverflowError, csv.Error) as exc:
+        raise AssertionError("E10 CSV has malformed or nonfinite measurements") from exc
+
+
 def verify_release_readiness(root: Path, expected_sha: str) -> None:
     """Check mechanical veto conditions before any tag-based publication.
 
@@ -123,13 +199,7 @@ def verify_release_readiness(root: Path, expected_sha: str) -> None:
         raise AssertionError("Missing or duplicate experiment identifiers")
     if any(x.get("status") != "PASS" for x in records):
         raise AssertionError("Synthetic E0-E9 experiment incomplete; E9 parity mandatory")
-    cases = study.get("cases")
-    if not isinstance(cases, list) or len(cases) != 3:
-        raise AssertionError("E10 case inventory incomplete")
-    if ({x.get("caseId") for x in cases} != EXPECTED_E10
-            or any(x.get("nodeCount") != 36 or x.get("edgeCount") != 75
-                   for x in cases)):
-        raise AssertionError("E10 geometry or case inventory altered")
+    _verify_e10(root, study)
 
     web_path = root / "artifacts/web-data/thermoweave-demo.json"
     docs_path = root / "docs/assets/thermoweave-demo.json"
