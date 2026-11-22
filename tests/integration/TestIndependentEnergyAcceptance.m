@@ -32,6 +32,25 @@ classdef TestIndependentEnergyAcceptance < matlab.unittest.TestCase
             testCase.verifyFalse(thermoweave.validation.hasIndependentEnergyBalance( ...
                 result,1e-3));
         end
+        function coolantEnergyResidualConvergesUnderRefinement(testCase)
+            cfg=thermoweave.config.defaultConfig();
+            cfg.simulation.duration_s=20;
+            cfg.simulation.outputStep_s=2;
+            cfg.controller.mode='openloop';
+            cfg.electrical.current_A=0;
+            cfg.boundary.mode='coolant';
+            cfg.cell.initialTemperature_K=linspace(299,304,cfg.cell.count)';
+            topo=thermoweave.thermal.buildTopology(cfg.layout);
+            cfg.boundary.coolant.segmentNodes=topo.zoneId;
+            cfg.simulation.maxStep_s=0.25;
+            coarse=thermoweave.simulate(cfg);
+            cfg.simulation.maxStep_s=0.1;
+            fine=thermoweave.simulate(cfg);
+            testCase.verifyLessThan(fine.energyLedger.normalizedResidual, ...
+                coarse.energyLedger.normalizedResidual);
+            testCase.verifyTrue(thermoweave.validation.hasIndependentEnergyBalance( ...
+                fine,1e-3));
+        end
     end
 end
 
