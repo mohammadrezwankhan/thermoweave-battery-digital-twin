@@ -13,6 +13,33 @@ classdef TestIndependentEnergyAcceptance < matlab.unittest.TestCase
                 result,1e-3));
         end
 
+        function rejectComplexInputsAndNonvectorCapacity(testCase)
+            r=adiabaticSample();
+            verify=@(result,tol) thermoweave.validation.hasIndependentEnergyBalance(result,tol);
+            testCase.verifyFalse(verify(r,1e-3+1i));
+            bad=r;
+            bad.state.temperature_K=r.state.temperature_K+1i;
+            testCase.verifyFalse(verify(bad,1e-3));
+            bad=r;
+            bad.configuration.cell.thermalCapacity_J_per_K= ...
+                r.configuration.cell.thermalCapacity_J_per_K+1i;
+            testCase.verifyFalse(verify(bad,1e-3));
+            for key=fieldnames(r.energyLedger)'
+                name=key{1};
+                if ismember(name,{'generatedHeat_J','ambientHeat_J','coolantHeat_J', ...
+                        'externalHeat_J','netHeat_J','storedEnergyChange_J','normalizedResidual'})
+                    bad=r;
+                    bad.energyLedger.(name)=bad.energyLedger.(name)+1e-12i;
+                    testCase.verifyFalse(verify(bad,1e-3),name);
+                end
+            end
+            n=size(r.state.temperature_K,2);
+            cap=r.configuration.cell.thermalCapacity_J_per_K;
+            if isscalar(cap),cap=repmat(cap,n,1);end
+            r.configuration.cell.thermalCapacity_J_per_K=reshape(cap,2,[]);
+            testCase.verifyFalse(verify(r,1e-3));
+        end
+
         function forgedLegacyZeroCannotHideIncorrectHeat(testCase)
             result=adiabaticSample();
             result.energyResidualNormalized=0; % Legacy same-RHS identity.

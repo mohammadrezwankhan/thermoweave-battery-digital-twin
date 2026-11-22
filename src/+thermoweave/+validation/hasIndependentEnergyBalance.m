@@ -6,7 +6,7 @@ function accepted = hasIndependentEnergyBalance(result,relativeTolerance)
 % consistency gate for synthetic models, NOT physical-cell validation.
 accepted=false;
 if nargin<2 || isempty(relativeTolerance),relativeTolerance=1e-3;end
-if ~isnumeric(relativeTolerance) || ~isscalar(relativeTolerance) || ...
+if ~isnumeric(relativeTolerance) || ~isscalar(relativeTolerance) || ~isreal(relativeTolerance) || ...
         ~isfinite(relativeTolerance) || relativeTolerance<0
     return
 end
@@ -19,9 +19,10 @@ if ~isstruct(result) || ~isscalar(result) || ...
 end
 temperature=result.state.temperature_K;
 capacity=result.configuration.cell.thermalCapacity_J_per_K;
-if ~isnumeric(temperature) || ~ismatrix(temperature) || ...
+if ~isnumeric(temperature) || ~ismatrix(temperature) || ~isreal(temperature) || ...
         size(temperature,1)<2 || isempty(temperature) || ...
         any(~isfinite(temperature(:))) || ~isnumeric(capacity) || ...
+        ~isreal(capacity) || ~isvector(capacity) || ...
         any(~isfinite(capacity(:))) || any(capacity(:)<=0)
     return
 end
@@ -37,7 +38,7 @@ if ~isstruct(ledger) || ~isscalar(ledger) || ~all(isfield(ledger,required))
 end
 for k=1:numel(required)
     value=ledger.(required{k});
-    if ~isnumeric(value) || ~isscalar(value) || ~isfinite(value),return;end
+    if ~isnumeric(value) || ~isscalar(value) || ~isreal(value) || ~isfinite(value),return;end
 end
 signedParts=[ledger.generatedHeat_J,ledger.ambientHeat_J, ...
     ledger.coolantHeat_J,ledger.externalHeat_J];
