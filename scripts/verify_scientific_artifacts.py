@@ -264,6 +264,28 @@ def verify():
         raise AssertionError("Missing the audited MATLAB regression inventory")
     if verification.get("codeAnalyzerFindings") != 0:
         raise AssertionError("MATLAB Code Analyzer findings remain; inspect SARIF")
+    # The analyzer's SARIF is an independent receipt, not just a reported
+    # count in verification.json. A missing/stale/malformed report or any
+    # diagnostic must fail evidence acceptance, even if the JSON says zero.
+    sarif_path = root / "results/code-issues.sarif"
+    if not sarif_path.is_file():
+        raise AssertionError("Code Analyzer SARIF receipt missing")
+    if sarif_path.stat().st_mtime + 0.001 < marker.stat().st_mtime:
+        raise AssertionError("Code Analyzer SARIF receipt predates regeneration")
+    try:
+        sarif = json.loads(sarif_path.read_text(encoding="utf-8"),
+                           parse_constant=_reject_nonfinite)
+    except (json.JSONDecodeError, ValueError) as exception:
+        raise AssertionError("Code Analyzer SARIF receipt malformed") from exception
+    runs = sarif.get("runs") if isinstance(sarif, dict) else None
+    if (sarif.get("version") != "2.1.0" or not isinstance(runs, list)
+            or len(runs) != 1 or not isinstance(runs[0], dict)
+            or runs[0].get("tool", {}).get("driver", {}).get("name")
+                != "Code Analyzer"):
+        raise AssertionError("Code Analyzer SARIF run missing or unrecognized")
+    findings = runs[0].get("results")
+    if not isinstance(findings, list) or findings:
+        raise AssertionError("Code Analyzer SARIF findings contradict zero warnings")
     print("PASS: fresh versioned MATLAB artifacts, sources, digests and checks")
     print("Optional licensed Simscape and field-cell validation remain separate gates")
 
