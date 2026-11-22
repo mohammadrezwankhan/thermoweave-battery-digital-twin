@@ -166,6 +166,8 @@ classdef TestSimulationIntegration < matlab.unittest.TestCase
         end
 
         function advancedControllerCoolsHotZonesAndHonorsRate(testCase)
+            testCase.assumeTrue(exist('quadprog','file') == 2 && ...
+                license('test','Optimization_Toolbox'), 'Optimization Toolbox unavailable.');
             cfg = thermoweave.config.defaultConfig();
             cfg.controller.rateLimit_per_s = 0.1;
             topology = thermoweave.thermal.buildTopology(cfg.layout);
@@ -173,7 +175,9 @@ classdef TestSimulationIntegration < matlab.unittest.TestCase
                 'zoneId', topology.zoneId, 'zoneWeights', ones(cfg.cell.count, 1), ...
                 'referenceTemperature_K', 298.15, 'elapsedStep_s', 1);
             [command, info] = thermoweave.control.advancedController(input, cfg);
-            testCase.assumeEqual(info.status, 'OPTIMAL');
+            testCase.verifyEqual(info.status, 'OPTIMAL', info.message);
+            testCase.verifyFalse(info.usedFallback);
+            testCase.verifyEqual(command, 0.1 * ones(cfg.controller.zoneCount,1), 'AbsTol', 1e-8);
             testCase.verifyGreaterThan(command, 0);
             testCase.verifyLessThanOrEqual(command, 0.1 + 1e-10);
         end
