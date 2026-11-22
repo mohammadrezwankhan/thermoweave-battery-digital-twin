@@ -26,6 +26,9 @@ jobs:
       - name: Verify workflow action pin inventory
         run: python3 scripts/verify_workflow_notices.py
 
+      - name: Test fail-closed release authorization with adversarial fixtures
+        run: python3 -m unittest discover -s tests/python -p 'test_verify_release_readiness.py' -v
+
       - name: Set up MATLAB R2024a
         uses: matlab-actions/setup-matlab@f9e43010f1ae678f7cfa0542fe2a4f60f7d1ad8d # v3
         with:
