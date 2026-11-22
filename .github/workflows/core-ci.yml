@@ -33,6 +33,7 @@ jobs:
         uses: matlab-actions/setup-matlab@f9e43010f1ae678f7cfa0542fe2a4f60f7d1ad8d # v3
         with:
           release: R2024a
+          products: Simulink
 
       - name: Run core build and tests
         uses: matlab-actions/run-build@cf54c2229a74d57eb4e6ba1bbebd45793d37797e # v3
