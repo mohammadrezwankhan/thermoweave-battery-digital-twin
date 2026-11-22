@@ -21,6 +21,7 @@ jobs:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
 
       - name: Test provenance verifier with adversarial fixtures
@@ -46,6 +47,7 @@ jobs:
         if: always()
         env:
           EXPECTED_MATLAB_RELEASE: '2024a'
+          EXPECTED_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           python3 scripts/verify_scientific_artifacts.py
           git status --short -- artifacts/ docs/assets/
