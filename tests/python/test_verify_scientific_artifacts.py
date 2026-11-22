@@ -1,5 +1,6 @@
 """Adversarial regression tests for provenance acceptance (no MATLAB required)."""
 import copy
+import csv
 import hashlib
 import importlib.util
 import json
@@ -112,6 +113,21 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         self.manifest["study3d"] = copy.deepcopy(self.study)
         self.write("manifest", self.manifest)
         self.write_junit_fixture()
+        self.write_study_csv_fixture()
+
+    def write_study_csv_fixture(self):
+        # Mirror the published 3-D study CSV independently of JSON fixtures.
+        path = self.root / "artifacts/data/3d-study-results.csv"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        columns = ["caseId", "gz_W_per_K", "nodeCount", "edgeCount",
+                   "peakTemperature_K", "peakEdgeGradient_K",
+                   "finalLayerSpread_K", "energyResidualNormalized",
+                   "scenarioHash"]
+        with path.open("w", encoding="utf-8", newline="") as stream:
+            writer = csv.DictWriter(stream, fieldnames=columns)
+            writer.writeheader()
+            for case in self.study["cases"]:
+                writer.writerow({key: case[key] for key in columns})
 
     def write_junit_fixture(self):
         # Match the actual MATLAB JUnit shape: one suite has the optional
@@ -145,6 +161,24 @@ class ArtifactAcceptanceTests(unittest.TestCase):
             str(self.root / "scripts/verify_scientific_artifacts.py"),
         ):
             verifier.verify()
+
+    def test_rejects_missing_published_e10_csv(self):
+        # Previously the manifest validated JSON but never read the CSV.
+        (self.root / "artifacts/data/3d-study-results.csv").unlink()
+        with self.assertRaisesRegex(AssertionError, "E10 CSV"):
+            self.verify()
+
+    def test_rejects_e10_csv_measurement_inconsistent_with_json(self):
+        # A different peak temperature must not be published as verified.
+        path = self.root / "artifacts/data/3d-study-results.csv"
+        rows = list(csv.DictReader(path.open(encoding="utf-8", newline="")))
+        rows[1]["peakTemperature_K"] = "999"
+        with path.open("w", encoding="utf-8", newline="") as stream:
+            writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
+            writer.writeheader()
+            writer.writerows(rows)
+        with self.assertRaisesRegex(AssertionError, "E10 CSV"):
+            self.verify()
 
     def test_valid_complete_synthetic_bundle_is_accepted(self):
         self.verify()
