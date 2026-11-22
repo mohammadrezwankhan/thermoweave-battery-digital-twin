@@ -23,6 +23,9 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Test provenance verifier with adversarial fixtures
+        run: python3 -m unittest discover -s tests/python -p 'test_verify_scientific_artifacts.py' -v
+
       - name: Set up MATLAB R2024a
         uses: matlab-actions/setup-matlab@f9e43010f1ae678f7cfa0542fe2a4f60f7d1ad8d # v3
         with:
