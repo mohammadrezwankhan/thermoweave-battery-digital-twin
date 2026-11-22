@@ -293,6 +293,17 @@ def verify():
             if skipped and identity not in optional_skips:
                 raise AssertionError("JUnit has an unapproved incomplete test: "
                                      + "/".join(identity))
+            if skipped and identity in optional_skips:
+                # This is the sole approved optional licensed regression. A
+                # numerical/physics assumption failure must not masquerade as
+                # missing Optimization Toolbox just because its test ID matches.
+                skip_record = case.find("skipped")
+                diagnostic = " ".join((
+                    skip_record.get("message", ""), skip_record.text or ""
+                )).lower()
+                if "optimization toolbox unavailable" not in diagnostic:
+                    raise AssertionError(
+                        "QP skip reason must identify unavailable Optimization Toolbox")
             suite_skipped += int(skipped)
             suite_failed += int(failed)
             suite_errors += int(errored)
