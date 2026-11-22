@@ -70,11 +70,14 @@ class ArtifactAcceptanceTests(unittest.TestCase):
             "matlabRelease": "2024a", "testCount": 58,
             "passed": 57, "failed": 0, "incomplete": 1,
             "codeAnalyzerFindings": 0, "gitCommit": "a" * 40,
+            "simscapeAdapterStatus": "SKIPPED_MISSING_PRODUCT",
         }
         self.experiments = {
             "matlabRelease": "2024a", "schemaVersion": "thermoweave.experiments/v1",
             "records": [{"id": "E" + str(i),
-                         "status": "PASS" if i < 9 else "SKIPPED_MISSING_PRODUCT"}
+                         "status": "PASS" if i < 9 else "SKIPPED_MISSING_PRODUCT",
+                         "evidence": ({"adapterStatus": "SKIPPED_MISSING_PRODUCT"}
+                                      if i == 9 else {})}
                         for i in range(10)],
         }
         self.manifest = {
@@ -145,15 +148,36 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         # Match the actual MATLAB JUnit shape: one suite has the optional
         # Optimization Toolbox assumption, all other test cases succeed.
         root = ET.Element("testsuites")
-        passing = ET.SubElement(root, "testsuite", {
-            "name": "TestAuditRegressions", "tests": "57",
-            "failures": "0", "errors": "0", "skipped": "0",
-        })
-        for index in range(57):
-            ET.SubElement(passing, "testcase", {
-                "classname": "TestAuditRegressions",
-                "name": f"fixtureCase{index:02d}",
+        # These named MATLAB regressions are essential evidence, not merely
+        # interchangeable contributors to the aggregate pass count.
+        required_cases = [
+            ("TestScientificAuditGates", "downsampledControlHistoriesAlignWithTimeVector"),
+            ("TestAuditRegressions", "downsampleExportRetainsTerminalStateAndMatchingTimebase"),
+            ("TestScientificAuditGates", "controllerExecutionIdentityIsRecorded"),
+            ("TestScientificAuditGates", "faultBetweenOutputTimesHasExactHeatDuration"),
+            ("TestIndependentEnergyAcceptance", "forgedLegacyZeroCannotHideIncorrectHeat"),
+            ("Test3DStudy", "canonicalResultHasThreeDimensionalState"),
+            ("TestSimscapeModelProvenance", "modifiedModelBytesFailClosed"),
+            ("TestIndependentEnergyAcceptance", "coolantEnergyResidualConvergesUnderRefinement"),
+            ("TestScientificAuditGates", "advancedExecutionMetadataCannotClaimUnexecutedQP"),
+        ]
+        passing_by_class = {
+            "TestAuditRegressions": [
+                f"fixtureCase{index:02d}"
+                for index in range(57 - len(required_cases))
+            ],
+        }
+        for classname, name in required_cases:
+            passing_by_class.setdefault(classname, []).append(name)
+        for classname, names in passing_by_class.items():
+            passing = ET.SubElement(root, "testsuite", {
+                "name": classname, "tests": str(len(names)),
+                "failures": "0", "errors": "0", "skipped": "0",
             })
+            for name in names:
+                ET.SubElement(passing, "testcase", {
+                    "classname": classname, "name": name,
+                })
         incomplete = ET.SubElement(root, "testsuite", {
             "name": "TestSimulationIntegration", "tests": "1",
             "failures": "0", "errors": "0", "skipped": "1",
@@ -162,7 +186,7 @@ class ArtifactAcceptanceTests(unittest.TestCase):
             "classname": "TestSimulationIntegration",
             "name": "advancedControllerCoolsHotZonesAndHonorsRate",
         })
-        ET.SubElement(optional, "skipped")
+        ET.SubElement(optional, "skipped").text = "Optimization Toolbox unavailable."
         path = self.root / "results/test-results.xml"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(ET.tostring(root, encoding="utf-8"))
@@ -209,6 +233,21 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         with self.assertRaises((AssertionError, ValueError)):
             self.verify()
 
+    def test_rejects_e10_energy_residual_above_declared_limit(self):
+        # docs/scenarios.md sets <=1e-3 for the E10 synthetic model.
+        # A finite but unacceptably large residual must not be attested.
+        self.study["cases"][1]["energyResidualNormalized"] = 0.01
+        self.write_fixture()
+        with self.assertRaisesRegex(AssertionError, "E10 energy residual"):
+            self.verify()
+
+    def test_rejects_negative_e10_energy_residual(self):
+        # Normalized absolute residual is a nonnegative metric.
+        self.study["cases"][0]["energyResidualNormalized"] = -0.01
+        self.write_fixture()
+        with self.assertRaisesRegex(AssertionError, "E10 energy residual"):
+            self.verify()
+
     def test_rejects_inconsistent_matlab_test_inventory(self):
         self.verification["passed"] = 1
         self.write_fixture()
@@ -219,6 +258,30 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         self.web["scenarios"][0]["temperature_C"].pop()
         self.write_fixture()
         with self.assertRaises(AssertionError):
+            self.verify()
+
+    def test_rejects_downsampled_cell_width_change(self):
+        # A matching time-axis length is not sufficient: temperature vectors
+        # must retain one fixed physical-cell dimension after downsampling.
+        self.web["scenarios"][0]["temperature_C"][1] = [22]
+        self.write_fixture()
+        with self.assertRaisesRegex(AssertionError, "website.*width"):
+            self.verify()
+
+    def test_rejects_downsampled_boundary_cell_mismatch(self):
+        # The boundary temperature must address exactly the same physical
+        # cells as the model temperature at every exported timestamp.
+        self.web["scenarios"][0]["boundaryTemperature_C"] = [[20], [20]]
+        self.write_fixture()
+        with self.assertRaisesRegex(AssertionError, "website.*width"):
+            self.verify()
+
+    def test_rejects_downsampled_zone_command_width_change(self):
+        # Zone commands cannot silently gain or lose actuators between two
+        # downsampled samples even when the sample timestamps still align.
+        self.web["scenarios"][0]["zoneCommand"][1] = [0, 0]
+        self.write_fixture()
+        with self.assertRaisesRegex(AssertionError, "website.*width"):
             self.verify()
 
     def test_rejects_incorrect_artifact_manifest_schema(self):
@@ -303,6 +366,101 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         cases[1].set("name", cases[0].get("name"))
         xml.write(path, encoding="utf-8")
         with self.assertRaisesRegex(AssertionError, "JUnit"):
+            self.verify()
+
+    def test_rejects_missing_qp_regression_disguised_as_all_green(self):
+        # 58/58 PASS is not proof that the licensed advanced-controller
+        # regression ran. A replaced JUnit testcase must fail provenance even
+        # if both the XML and regenerated JSON totals agree exactly.
+        self.verification["passed"] += 1
+        self.verification["incomplete"] = 0
+        self.write_fixture()
+        path = self.root / "results/test-results.xml"
+        junit = ET.parse(path)
+        case = next(case for case in junit.iter("testcase")
+                    if case.get("name") == "advancedControllerCoolsHotZonesAndHonorsRate")
+        case.set("name", "unrelatedPassingQPPlaceholder")
+        case.remove(case.find("skipped"))
+        suite = next(suite for suite in junit.iter("testsuite")
+                     if suite.get("name") == "TestSimulationIntegration")
+        suite.set("skipped", "0")
+        junit.write(path, encoding="utf-8")
+        with self.assertRaisesRegex(AssertionError, "required scientific regression"):
+            self.verify()
+
+    def test_rejects_qp_skip_for_unrelated_failure_reason(self):
+        # A named QP regression cannot be filtered for a scientific defect
+        # while claiming the only permitted optional license assumption.
+        path = self.root / "results/test-results.xml"
+        junit = ET.parse(path)
+        case = next(case for case in junit.iter("testcase")
+                    if case.get("name") == "advancedControllerCoolsHotZonesAndHonorsRate")
+        case.find("skipped").text = "Numerical convergence assumption failed."
+        junit.write(path, encoding="utf-8")
+        with self.assertRaisesRegex(AssertionError, "QP skip reason"):
+            self.verify()
+
+    def test_rejects_qp_skip_without_diagnostic(self):
+        path = self.root / "results/test-results.xml"
+        junit = ET.parse(path)
+        case = next(case for case in junit.iter("testcase")
+                    if case.get("name") == "advancedControllerCoolsHotZonesAndHonorsRate")
+        case.find("skipped").text = None
+        junit.write(path, encoding="utf-8")
+        with self.assertRaisesRegex(AssertionError, "QP skip reason"):
+            self.verify()
+
+    def test_rejects_omitted_downsampled_history_test_with_same_totals(self):
+        # A misleading 57-pass/1-skip receipt can omit the critical
+        # downsampled controller-history regression without changing counts.
+        path = self.root / "results/test-results.xml"
+        junit = ET.parse(path)
+        case = next(case for case in junit.iter("testcase")
+                    if case.get("name") == "downsampledControlHistoriesAlignWithTimeVector")
+        case.set("name", "unrelatedPassingTest")
+        junit.write(path, encoding="utf-8")
+        with self.assertRaisesRegex(AssertionError, "required scientific regression"):
+            self.verify()
+
+    def test_rejects_omitted_model_provenance_regression_with_same_totals(self):
+        # A green aggregate count is not evidence that the model-byte
+        # tampering regression actually executed.
+        path = self.root / "results/test-results.xml"
+        junit = ET.parse(path)
+        case = next(case for case in junit.iter("testcase")
+                    if case.get("name") == "modifiedModelBytesFailClosed")
+        case.set("name", "otherPassingTest")
+        junit.write(path, encoding="utf-8")
+        with self.assertRaisesRegex(AssertionError, "required scientific regression"):
+            self.verify()
+
+    def test_rejects_simscape_skip_not_attributable_to_missing_product(self):
+        # Missing approved model or unresolved policy is not a licensed
+        # scientific success and must not be an acceptable hosted E9 skip.
+        self.experiments["records"][9]["status"] = "SKIPPED_MODEL_NOT_GENERATED"
+        self.experiments["records"][9]["evidence"]["adapterStatus"] = (
+            "SKIPPED_MODEL_NOT_GENERATED"
+        )
+        self.verification["simscapeAdapterStatus"] = "SKIPPED_MODEL_NOT_GENERATED"
+        self.write_fixture()
+        with self.assertRaisesRegex(AssertionError, "Simscape"):
+            self.verify()
+
+    def test_rejects_e9_pass_when_verification_records_product_skip(self):
+        # Rewriting only E9 experiment/evidence to PASS must not override
+        # an independent verification.json missing-license record.
+        self.experiments["records"][9]["status"] = "PASS"
+        self.experiments["records"][9]["evidence"]["adapterStatus"] = "PASS"
+        self.write_fixture()
+        with self.assertRaisesRegex(AssertionError, "Simscape"):
+            self.verify()
+
+    def test_rejects_e9_evidence_status_mismatch(self):
+        # Each of experiment summary, adapter evidence, and verification
+        # report must describe the same executed/skip outcome.
+        self.experiments["records"][9]["evidence"]["adapterStatus"] = "PASS"
+        self.write_fixture()
+        with self.assertRaisesRegex(AssertionError, "Simscape"):
             self.verify()
 
     def test_rejects_missing_code_analyzer_sarif(self):

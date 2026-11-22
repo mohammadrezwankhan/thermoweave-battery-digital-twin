@@ -17,6 +17,26 @@ def _finite_number(value):
     return type(value) in (int, float) and math.isfinite(value)
 
 
+# A correct aggregate count is not proof that the intended scientific
+# regressions actually ran. Require these named cases as well as green totals.
+# These are synthetic/model/provenance tests, NOT licensed Simscape or
+# real-cell validation.
+REQUIRED_SCIENTIFIC_TESTS = frozenset({
+    ("TestScientificAuditGates", "downsampledControlHistoriesAlignWithTimeVector"),
+    ("TestAuditRegressions", "downsampleExportRetainsTerminalStateAndMatchingTimebase"),
+    ("TestScientificAuditGates", "controllerExecutionIdentityIsRecorded"),
+    ("TestScientificAuditGates", "faultBetweenOutputTimesHasExactHeatDuration"),
+    ("TestIndependentEnergyAcceptance", "forgedLegacyZeroCannotHideIncorrectHeat"),
+    ("Test3DStudy", "canonicalResultHasThreeDimensionalState"),
+    ("TestSimscapeModelProvenance", "modifiedModelBytesFailClosed"),
+    ("TestIndependentEnergyAcceptance", "coolantEnergyResidualConvergesUnderRefinement"),
+    ("TestScientificAuditGates", "advancedExecutionMetadataCannotClaimUnexecutedQP"),
+    # Prove the optional licensed QP test was run or explicitly skipped;
+    # it must not disappear from an otherwise green synthetic test inventory.
+    ("TestSimulationIntegration", "advancedControllerCoolsHotZonesAndHonorsRate"),
+})
+
+
 def verify():
     root = Path(__file__).resolve().parents[1]
     expected_release = os.environ.get("EXPECTED_MATLAB_RELEASE", "2024a")
@@ -78,6 +98,11 @@ def verify():
                 or not all(_finite_number(t) for t in times)
                 or any(right <= left for left, right in zip(times, times[1:]))):
             raise AssertionError("Invalid website time grid for " + str(scenario.get("id")))
+        # Matching the time-axis length alone can conceal a dropped cell or
+        # actuator in one downsampled record. Temperature and boundary vectors
+        # refer to the same physical cells; zone commands have their own fixed
+        # width and must remain consistent across samples.
+        cell_width = None
         for field in ("temperature_C", "boundaryTemperature_C", "zoneCommand"):
             series = scenario.get(field)
             if (not isinstance(series, list) or len(series) != len(times)
@@ -85,6 +110,13 @@ def verify():
                            or not all(_finite_number(value) for value in row)
                            for row in series)):
                 raise AssertionError("Unaligned/nonfinite website field " + field)
+            width = len(series[0])
+            if any(len(row) != width for row in series):
+                raise AssertionError("website " + field + " width changes over time")
+            if field == "temperature_C":
+                cell_width = width
+            elif field == "boundaryTemperature_C" and width != cell_width:
+                raise AssertionError("website boundaryTemperature_C width differs from cells")
     experiments = data["experiments"]
     if experiments.get("schemaVersion") != "thermoweave.experiments/v1":
         raise AssertionError("Experiment schema mismatch")
@@ -105,8 +137,12 @@ def verify():
     if failed:
         raise AssertionError("E0-E8 must PASS: " + ", ".join(failed))
     e9 = rows[9].get("status", "")
-    if not (e9 == "PASS" or e9.startswith("SKIPPED_")):
-        raise AssertionError("Untruthful optional Simscape status")
+    # The hosted license-free runner may report only missing products, not a
+    # model/policy/adapter defect disguised as an arbitrary SKIPPED_* success.
+    # A PASS here is just a consistency statement; licensed model parity and
+    # independent approval remain separate mandatory release gates.
+    if e9 not in ("PASS", "SKIPPED_MISSING_PRODUCT"):
+        raise AssertionError("Simscape E9 status is not an approved execution/skip result")
     print("E0-E8 PASS; E9 status", e9, "(not accepted as numerical parity if skipped)")
     study = data["study"]
     if study.get("schemaVersion") != "thermoweave.study3d/v1":
@@ -135,6 +171,13 @@ def verify():
                     "peakTemperature_K", "peakEdgeGradient_K",
                     "finalLayerSpread_K", "energyResidualNormalized"))):
             raise AssertionError("E10 nonfinite or missing scientific measurement")
+        # docs/scenarios.md defines a <=1e-3 normalized energy-residual
+        # acceptance gate for E10. Merely requiring finiteness could permit
+        # a physically unacceptable study to be published as verified.
+        energy_residual = case["energyResidualNormalized"]
+        if not 0 <= energy_residual <= 1e-3:
+            raise AssertionError(
+                "E10 energy residual outside declared [0, 1e-3] limit")
         if not math.isclose(max(layers) - min(layers),
                             case["finalLayerSpread_K"], rel_tol=1e-7, abs_tol=1e-8):
             raise AssertionError("E10 final layer-spread contradicts layer temperatures")
@@ -177,6 +220,15 @@ def verify():
         raise AssertionError("E10 CSV has malformed scientific values") from error
 
     verification = data["verification"]
+    # E9 is reported independently by the experiment, adapter evidence, and
+    # regenerated MATLAB verification report. None can silently overrule a
+    # missing-product skip or forge a licensed execution claim.
+    e9_evidence = rows[9].get("evidence")
+    if (not isinstance(e9_evidence, dict)
+            or e9_evidence.get("adapterStatus") != e9
+            or verification.get("simscapeAdapterStatus") != e9):
+        raise AssertionError(
+            "Simscape E9 experiment, adapter and verification statuses disagree")
     expected_source_sha = os.environ.get("EXPECTED_SOURCE_SHA", "").strip().lower()
     if len(expected_source_sha) != 40 or any(
             character not in "0123456789abcdef" for character in expected_source_sha):
@@ -241,6 +293,17 @@ def verify():
             if skipped and identity not in optional_skips:
                 raise AssertionError("JUnit has an unapproved incomplete test: "
                                      + "/".join(identity))
+            if skipped and identity in optional_skips:
+                # This is the sole approved optional licensed regression. A
+                # numerical/physics assumption failure must not masquerade as
+                # missing Optimization Toolbox just because its test ID matches.
+                skip_record = case.find("skipped")
+                diagnostic = " ".join((
+                    skip_record.get("message", ""), skip_record.text or ""
+                )).lower()
+                if "optimization toolbox unavailable" not in diagnostic:
+                    raise AssertionError(
+                        "QP skip reason must identify unavailable Optimization Toolbox")
             suite_skipped += int(skipped)
             suite_failed += int(failed)
             suite_errors += int(errored)
@@ -260,6 +323,12 @@ def verify():
     if tuple(counts) != junit_counts:
         raise AssertionError("JUnit summary disagrees with MATLAB verification JSON: "
                              + str(junit_counts) + " vs " + str(tuple(counts)))
+    missing_required = REQUIRED_SCIENTIFIC_TESTS - seen_test_ids
+    if missing_required:
+        missing_names = ", ".join(
+            f"{class_name}/{case_name}"
+            for class_name, case_name in sorted(missing_required))
+        raise AssertionError("JUnit missing required scientific regression: " + missing_names)
     if verification.get("testCount", 0) < 51:
         raise AssertionError("Missing the audited MATLAB regression inventory")
     if verification.get("codeAnalyzerFindings") != 0:
