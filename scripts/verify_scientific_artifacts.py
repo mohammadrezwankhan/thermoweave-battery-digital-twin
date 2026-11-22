@@ -1,4 +1,5 @@
 """Validate fresh R2024a ThermoWeave artifacts without masking scientific failures."""
+import csv
 import hashlib
 import json
 import math
@@ -137,6 +138,44 @@ def verify():
         if not math.isclose(max(layers) - min(layers),
                             case["finalLayerSpread_K"], rel_tol=1e-7, abs_tol=1e-8):
             raise AssertionError("E10 final layer-spread contradicts layer temperatures")
+    # E10's published CSV is a separate numerical artifact. A correct JSON
+    # report must not mask a stale, missing or contradictory research table.
+    csv_rel = "artifacts/data/3d-study-results.csv"
+    if study.get("artifacts", {}).get("table", csv_rel) != csv_rel:
+        raise AssertionError("E10 CSV table path disagrees with study metadata")
+    csv_path = root / csv_rel
+    if not csv_path.is_file():
+        raise AssertionError("E10 CSV missing from regenerated evidence")
+    if csv_path.stat().st_mtime + 0.001 < marker.stat().st_mtime:
+        raise AssertionError("E10 CSV predates artifact regeneration")
+    columns = ["caseId", "gz_W_per_K", "nodeCount", "edgeCount",
+               "peakTemperature_K", "peakEdgeGradient_K",
+               "finalLayerSpread_K", "energyResidualNormalized",
+               "scenarioHash"]
+    numeric_columns = [name for name in columns
+                       if name not in ("caseId", "scenarioHash")]
+    try:
+        with csv_path.open("r", encoding="utf-8-sig", newline="") as stream:
+            reader = csv.DictReader(stream, strict=True)
+            if reader.fieldnames != columns:
+                raise AssertionError("E10 CSV columns differ from study schema")
+            csv_rows = list(reader)
+        if len(csv_rows) != len(cases):
+            raise AssertionError("E10 CSV row count disagrees with JSON study")
+        for row, case in zip(csv_rows, cases):
+            for key in ("caseId", "scenarioHash"):
+                if row.get(key) != case.get(key):
+                    raise AssertionError("E10 CSV case identity/hash disagrees with JSON")
+            for key in numeric_columns:
+                value = float(row[key])
+                expected = float(case[key])
+                if (not math.isfinite(value)
+                        or not math.isclose(value, expected, rel_tol=1e-10,
+                                            abs_tol=1e-10)):
+                    raise AssertionError("E10 CSV scientific measurement disagrees with JSON: " + key)
+    except (ValueError, TypeError, OverflowError, csv.Error) as error:
+        raise AssertionError("E10 CSV has malformed scientific values") from error
+
     verification = data["verification"]
     expected_source_sha = os.environ.get("EXPECTED_SOURCE_SHA", "").strip().lower()
     if len(expected_source_sha) != 40 or any(
