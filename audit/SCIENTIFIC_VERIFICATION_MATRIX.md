@@ -13,7 +13,7 @@ States refer to the **candidate**, except where a note explicitly identifies a h
 | PHY-05 | **NOT VERIFIED** | New integrated signed flux ledger and independent CΔT endpoint oracle pass three R2024a experiments; broad mesh/tolerance convergence and independent thermophysical validation remain open |
 | NUM-01 | **NOT VERIFIED** | Historic 20s ode15s/ode45 comparison passed; no systematic tolerance convergence |
 | NUM-02 | **NOT VERIFIED** | No multi-parameter stiffness sweep captured |
-| NUM-03 | **NOT VERIFIED** | Symmetric chain storage-reversal test exists; arbitrary graph relabelling not comprehensively verified |
+| NUM-03 | **NOT VERIFIED** | A reflected axis permutation of a 24-node, 46-edge cuboid with unequal contacts and node properties passes in both portable solvers against an independent matrix-exponential reference. Other layouts and permutations remain open. |
 | NUM-04 | **NOT VERIFIED** | E0 and relaxation baseline checks pass; isolated/passive-mixed cases not comprehensive |
 | CTRL-01 | **NOT VERIFIED** | Executed-command and controller provenance regressions PASS; exhaustive actuator paths and constrained QP paths unverified |
 | CTRL-02 | **NOT VERIFIED** | The off-clock sensor-bias and stuck-actuator overlap passes with baseline and licensed QP control in R2026a. The test checks executed commands and cooling energy on two output grids. Broader fault combinations remain open. |
