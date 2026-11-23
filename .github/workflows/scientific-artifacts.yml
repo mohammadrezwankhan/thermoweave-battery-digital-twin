@@ -35,7 +35,7 @@ jobs:
         uses: matlab-actions/setup-matlab@f9e43010f1ae678f7cfa0542fe2a4f60f7d1ad8d # v3
         with:
           release: R2024a
-          products: Simulink
+          products: Simulink Optimization_Toolbox
 
       - name: Record regeneration start
         shell: bash
