@@ -53,35 +53,59 @@ class TagReleaseTests(unittest.TestCase):
 
 
 class PackageEvidenceTests(unittest.TestCase):
-    SHA = "a" * 40
+    """Exercise archive provenance against real Git objects, not mocked names."""
 
     def setUp(self):
+        import subprocess
+
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.module = load_script("verify_licensed_release_package")
-        self.entries = {"README.md": b"source"}
+        self.entries = {"README.md": b"committed source"}
         for path in self.module.EVIDENCE_FILES:
             file = self.root / path
             file.parent.mkdir(parents=True, exist_ok=True)
             file.write_bytes(b"licensed evidence")
             self.entries[path] = b"licensed evidence"
+        (self.root / "README.md").write_bytes(self.entries["README.md"])
         (self.root / "release").mkdir()
-        self.tracked = sorted(self.entries)
+        subprocess.run(["git", "init", "-q"], cwd=self.root, check=True)
+        subprocess.run(["git", "add", "README.md", "artifacts", "docs"],
+                       cwd=self.root, check=True)
+        subprocess.run(["git", "-c", "user.name=Scientific Fixture",
+                        "-c", "user.email=fixture@example.invalid",
+                        "commit", "-qm", "Fixture source"],
+                       cwd=self.root, check=True)
+        self.sha = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=self.root, text=True
+        ).strip()
 
-    def make_package(self, revision=SHA):
+    def make_package(self, revision=None, symlink=False):
+        import stat
+
         package = self.root / "release/thermoweave-source.zip"
         with zipfile.ZipFile(package, "w") as archive:
             for path, content in self.entries.items():
-                archive.writestr(path, content)
-        manifest = {"gitCommit": revision, "sha256": hashlib.sha256(package.read_bytes()).hexdigest(),
-                    "bytes": package.stat().st_size, "contents": ["README.md", "docs", "artifacts"]}
-        (self.root / "release/release-manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+                if path == "README.md" and symlink:
+                    info = zipfile.ZipInfo(path)
+                    info.create_system = 3
+                    info.external_attr = (stat.S_IFLNK | 0o777) << 16
+                    archive.writestr(info, b"outside-target")
+                else:
+                    archive.writestr(path, content)
+        manifest = {
+            "gitCommit": revision or self.sha,
+            "sha256": hashlib.sha256(package.read_bytes()).hexdigest(),
+            "bytes": package.stat().st_size,
+            "contents": ["README.md", "docs", "artifacts"],
+        }
+        (self.root / "release/release-manifest.json").write_text(
+            json.dumps(manifest), encoding="utf-8"
+        )
 
     def verify(self):
-        listing = ("\0".join(self.tracked) + "\0").encode()
-        with patch.object(self.module.subprocess, "check_output", return_value=listing):
-            self.module.verify_package(self.root, self.root, self.SHA)
+        self.module.verify_package(self.root, self.root, self.sha)
 
     def test_accepts_exact_archive_and_evidence(self):
         self.make_package()
@@ -100,6 +124,20 @@ class PackageEvidenceTests(unittest.TestCase):
             self.verify()
         self.make_package(revision="b" * 40)
         with self.assertRaisesRegex(ValueError, "source commit"):
+            self.verify()
+
+    def test_rejects_changed_committed_source_bytes_with_valid_zip_digest(self):
+        # The same tracked path and a self-consistent ZIP manifest must NOT
+        # authorize uncommitted executable or documentation source changes.
+        self.entries["README.md"] = b"uncommitted replacement"
+        self.make_package()
+        with self.assertRaisesRegex(ValueError, "source bytes"):
+            self.verify()
+
+    def test_rejects_symlink_disguised_as_committed_regular_file(self):
+        # A link is not the committed Git blob even if its filename matches.
+        self.make_package(symlink=True)
+        with self.assertRaisesRegex(ValueError, "unsafe"):
             self.verify()
 
 
