@@ -9,7 +9,7 @@ All external GitHub Actions are pinned to immutable commits recorded in `THIRD_P
 
 GitHub Pages uses **GitHub Actions** as its source; `.github/workflows/pages.yml` publishes `docs/` after a push to `main`. The [19 November 2026 Pages deployment run](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44626427373) successfully published source `6b48646da2f6f8b60a13b14e19c4c65e45b17383` to `https://mohammadrezwankhan.github.io/thermoweave-battery-digital-twin/` according to the deployment job log. This is verified provider deployment evidence, not a real-time browser availability or accessibility audit. The separately referenced `chatgpt.site` host, if present in metadata, is not proof of a GitHub Pages deployment.
 
-No semantic-version release is currently claimed. Before creating one, run:
+The signed [v0.2.0 release](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/releases/tag/v0.2.0) includes a source archive and its SHA-256 checksum. The bundled R2024a verification reports E9 as `SKIPPED_MISSING_PRODUCT`. Before preparing a future release archive, run:
 
 ```matlab
 buildtool package
