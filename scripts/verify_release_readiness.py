@@ -159,8 +159,13 @@ def _verify_e10(root: Path, study: dict) -> None:
         raise AssertionError("E10 CSV has malformed or nonfinite measurements") from exc
 
 
-def verify_release_readiness(root: Path, expected_sha: str) -> None:
-    """Check mechanical veto conditions before any tag-based publication.
+def verify_release_readiness(
+    root: Path, expected_sha: str, *, evidence_root: Path | None = None
+) -> None:
+    """Check mechanical veto conditions before publication.
+
+    Governance records are rooted in the source checkout. The optional
+    evidence directory supplies only generated reports and dashboard data.
 
     Passing this function is NOT proof of authorized licenses or genuine
     independent approval. Scientific gate evidence must also be reviewed.
@@ -171,10 +176,11 @@ def verify_release_readiness(root: Path, expected_sha: str) -> None:
     _verify_matrix(root)
     _verify_findings(root)
 
-    verification = _read_json(root, "artifacts/reports/verification.json")
-    manifest = _read_json(root, "artifacts/reports/artifact-manifest.json")
-    experiments = _read_json(root, "artifacts/reports/experiment-summary.json")
-    study = _read_json(root, "artifacts/reports/3d-study-summary.json")
+    evidence = root if evidence_root is None else Path(evidence_root)
+    verification = _read_json(evidence, "artifacts/reports/verification.json")
+    manifest = _read_json(evidence, "artifacts/reports/artifact-manifest.json")
+    experiments = _read_json(evidence, "artifacts/reports/experiment-summary.json")
+    study = _read_json(evidence, "artifacts/reports/3d-study-summary.json")
     if verification.get("gitCommit", "").lower() != expected_sha:
         raise AssertionError("Release verification is not bound to tagged source SHA")
     if any(item.get("matlabRelease") != "2024a" for item in
@@ -199,16 +205,16 @@ def verify_release_readiness(root: Path, expected_sha: str) -> None:
         raise AssertionError("Missing or duplicate experiment identifiers")
     if any(x.get("status") != "PASS" for x in records):
         raise AssertionError("Synthetic E0-E9 experiment incomplete; E9 parity mandatory")
-    _verify_e10(root, study)
+    _verify_e10(evidence, study)
 
-    web_path = root / "artifacts/web-data/thermoweave-demo.json"
-    docs_path = root / "docs/assets/thermoweave-demo.json"
+    web_path = evidence / "artifacts/web-data/thermoweave-demo.json"
+    docs_path = evidence / "docs/assets/thermoweave-demo.json"
     if not web_path.is_file() or not docs_path.is_file():
         raise AssertionError("Release web-data copies missing")
     web_bytes = web_path.read_bytes()
     if web_bytes != docs_path.read_bytes():
         raise AssertionError("Release website and documentation JSON differ")
-    web = _read_json(root, "artifacts/web-data/thermoweave-demo.json")
+    web = _read_json(evidence, "artifacts/web-data/thermoweave-demo.json")
     scenarios = web.get("scenarios")
     if web.get("matlabRelease") != "2024a" or not isinstance(scenarios, list) or len(scenarios) != 5:
         raise AssertionError("Wrong release web JSON or scenario inventory")
@@ -225,7 +231,11 @@ def verify_release_readiness(root: Path, expected_sha: str) -> None:
 
 if __name__ == "__main__":
     try:
-        verify_release_readiness(Path("."), os.environ.get("EXPECTED_SOURCE_SHA", "").lower())
+        evidence_root = os.environ.get("SCIENTIFIC_EVIDENCE_ROOT")
+        verify_release_readiness(
+            Path("."), os.environ.get("EXPECTED_SOURCE_SHA", "").lower(),
+            evidence_root=Path(evidence_root) if evidence_root else None,
+        )
     except (AssertionError, ValueError, KeyError, TypeError, OSError) as exc:
         print("RELEASE HOLD: " + str(exc), file=sys.stderr)
         sys.exit(1)

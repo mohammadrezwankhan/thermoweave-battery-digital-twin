@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      licensed_evidence_run_id:
+        description: Successful exact-main licensed Simscape workflow run ID
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -17,11 +22,34 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       contents: read
       pages: read
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Select exact-source licensed science evidence
+        if: github.event_name == 'workflow_dispatch' && inputs.licensed_evidence_run_id != ''
+        id: licensed-evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LICENSED_EVIDENCE_RUN_ID: ${{ inputs.licensed_evidence_run_id }}
+        run: |
+          artifact_id=$(python3 scripts/select_licensed_pages_artifact.py)
+          printf 'id=%s\n' "$artifact_id" >> "$GITHUB_OUTPUT"
+
+      - name: Download verified licensed science evidence
+        if: steps.licensed-evidence.outputs.id != ''
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: ${{ steps.licensed-evidence.outputs.id }}
+          run-id: ${{ inputs.licensed_evidence_run_id }}
+          github-token: ${{ github.token }}
+          digest-mismatch: error
+          path: ${{ runner.temp }}/thermoweave-licensed-pages-evidence
 
       - name: Check the learning dashboard before publishing
         env:
@@ -49,7 +77,14 @@ jobs:
       - name: Refuse Pages publication without approved exact-source science
         env:
           EXPECTED_SOURCE_SHA: ${{ github.sha }}
+          SCIENTIFIC_EVIDENCE_ROOT: ${{ steps.licensed-evidence.outputs.id != '' && format('{0}/thermoweave-licensed-pages-evidence', runner.temp) || '' }}
         run: python3 scripts/verify_release_readiness.py
+
+      - name: Stage the verified dashboard data
+        if: steps.licensed-evidence.outputs.id != ''
+        env:
+          SCIENTIFIC_EVIDENCE_ROOT: ${{ runner.temp }}/thermoweave-licensed-pages-evidence
+        run: cp "$SCIENTIFIC_EVIDENCE_ROOT/docs/assets/thermoweave-demo.json" docs/assets/thermoweave-demo.json
 
       - name: Configure Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
