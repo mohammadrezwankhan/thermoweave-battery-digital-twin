@@ -1,6 +1,7 @@
 import hashlib
 import importlib.util
 import json
+import re
 from pathlib import Path
 import tempfile
 import unittest
@@ -18,6 +19,15 @@ def load_script(name):
 
 
 class TagReleaseTests(unittest.TestCase):
+    def test_verifier_source_roots_match_packager_contract(self):
+        verifier = load_script("verify_licensed_release_package")
+        packager = (ROOT / "tools/packageRelease.m").read_text(encoding="utf-8")
+        match = re.search(r"include\s*=\s*\[(.*?)\];", packager, re.DOTALL)
+        self.assertIsNotNone(match, "package include list was not found")
+        roots = re.findall(r'"([^"\n]+)"', match.group(1))
+        self.assertEqual(len(roots), len(set(roots)), "duplicate packager root")
+        self.assertEqual(set(roots), set(verifier.SOURCE_ROOTS))
+
     def test_tag_keeps_release_veto_before_publishing(self):
         workflow = (ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
         steps = [
