@@ -16,13 +16,13 @@ States refer to the **candidate**, except where a note explicitly identifies a h
 | NUM-03 | **NOT VERIFIED** | Symmetric chain storage-reversal test exists; arbitrary graph relabelling not comprehensively verified |
 | NUM-04 | **NOT VERIFIED** | E0 and relaxation baseline checks pass; isolated/passive-mixed cases not comprehensive |
 | CTRL-01 | **NOT VERIFIED** | Executed-command and controller provenance regressions PASS; exhaustive actuator paths and constrained QP paths unverified |
-| CTRL-02 | **NOT VERIFIED** | Separate sample clock and rate-limit regression PASS; concurrent sensor/actuator fault transients and QP constraints unverified |
+| CTRL-02 | **NOT VERIFIED** | The off-clock sensor-bias and stuck-actuator overlap passes with baseline and licensed QP control in R2026a. The test checks executed commands and cooling energy on two output grids. Broader fault combinations remain open. |
 | CTRL-03 | **NOT VERIFIED** | New per-sample method/status/objective history identifies executed QP vs bounded fallback and honest provenance test PASS; licensed quadprog optimization remains filtered/incomplete |
 | CTRL-04 | **NOT VERIFIED** | Advanced-controller metadata validates fallback identification on available runner; arbitrary fault/solver fallback combinations unverified |
 | FAULT-01 | **NOT VERIFIED** | RandStream('mt19937ar') seed local; cross-release/parallel reproducibility untested |
 | FAULT-02 | **NOT VERIFIED** | Solver mesh now splits at declared fault start/end times; off-grid heat-multiplier duration regression PASS; mixed fault modes and full convergence unresolved |
 | FAULT-03 | **PASS** | Static source confirms controller receives applySensorFaults(sensed,...) rather than true T |
-| FAULT-04 | **NOT VERIFIED** | Stuck-command sample-clock recovery and provenance PASS; arbitrary mid-clock actuator onset/end and compound faults not comprehensively tested |
+| FAULT-04 | **NOT VERIFIED** | The tested mid-clock onset and release hold the last applied command, and recovery follows the configured slew rate while the sensor is still biased. Other overlap sequences and targets remain open. |
 | SCN-01 | **NOT VERIFIED** | Candidate R2024a full artifact run: E0–E8 PASS, E10 3D sweep reproduced; E9 explicitly SKIPPED_MISSING_PRODUCT, exhaustive overrides still unverified |
 | SCN-02 | **PASS** | Independent 3x4x3 count gives N=36, E=24+27+24=75; baseline TestTopology3D passed |
 | SCN-03 | **NOT VERIFIED** | E10 regenerated at candidate PR head 63f0a09: three g_z cases 0.10/0.25/0.75 W/K, each 36 nodes / 75 edges; independent convergence and cross-release reproduction outstanding |
