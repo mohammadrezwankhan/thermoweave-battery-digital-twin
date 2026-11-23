@@ -5,6 +5,7 @@ import json
 import math
 import os
 from pathlib import Path
+import re
 import sys
 import xml.etree.ElementTree as ET
 
@@ -35,6 +36,66 @@ REQUIRED_SCIENTIFIC_TESTS = frozenset({
     # it must not disappear from an otherwise green synthetic test inventory.
     ("TestSimulationIntegration", "advancedControllerCoolsHotZonesAndHonorsRate"),
 })
+
+
+def _is_v2_digest(value):
+    return isinstance(value, str) and re.fullmatch(r"[0-9a-f]{64}", value) is not None
+
+
+def _verify_scenario_hash_v2(data):
+    manifest = data["manifest"]
+    algorithm = "scenarioCanonicalHashV2Algorithm"
+    if algorithm not in manifest and os.environ.get("REQUIRE_SCENARIO_HASH_V2") != "1":
+        return
+    if manifest.get(algorithm) != "thermoweave.canonical-json/v2":
+        raise AssertionError("Missing or unrecognized scenario hash v2 algorithm")
+
+    digest_key = "scenarioCanonicalHashV2"
+    records = data["experiments"]["records"]
+    study = data["study"]
+    standalone = [
+        ("website " + scenario["id"], scenario.get(digest_key))
+        for scenario in data["web"]["scenarios"]
+    ] + [
+        ("verification demo", data["verification"].get("demo", {}).get(digest_key)),
+        ("E10 source", study.get("sourceScenarioCanonicalHashV2")),
+    ] + [
+        ("E10 " + case["caseId"], case.get(digest_key)) for case in study["cases"]
+    ] + [
+        (records[i]["id"], records[i].get("metrics", {}).get(digest_key))
+        for i in (0, 1, 2, 3, 5, 6, 7)
+    ]
+    for label, digest in standalone:
+        if not _is_v2_digest(digest):
+            raise AssertionError("Invalid scenario hash v2 for " + label)
+    # The three E10 conductances are distinct and therefore cannot
+    # legitimately share an identical typed canonical scenario digest.
+    # Reject a copied-but-well-formed digest rather than accepting its shape.
+    e10_digests = [case[digest_key] for case in study["cases"]]
+    if len(set(e10_digests)) != len(e10_digests):
+        raise AssertionError("Duplicate E10 scenario hash v2 across distinct conductances")
+
+    e4 = records[4]["evidence"]
+    e8 = records[8]["evidence"]
+    seeds = e4.get("seeds")
+    for label, evidence, size in (
+            ("E4", e4, len(seeds) if isinstance(seeds, list) else 0),
+            ("E8", e8, e8.get("runCount"))):
+        digests = evidence.get("scenarioCanonicalHashesV2")
+        if (type(size) is not int or size < 1 or not isinstance(digests, list)
+                or len(digests) != size or not all(map(_is_v2_digest, digests))
+                or len(set(digests)) != size):
+            raise AssertionError("Invalid seeded scenario hashes v2 for " + label)
+
+    e7 = records[7]
+    controllers = e7["evidence"].get("controllerScenarioCanonicalHashesV2")
+    if (not isinstance(controllers, dict)
+            or set(controllers) != {"openloop", "baseline", "advanced"}
+            or not all(map(_is_v2_digest, controllers.values()))
+            or len(set(controllers.values())) != 3):
+        raise AssertionError("Invalid E7 controller scenario hashes v2")
+    if controllers["baseline"] != e7["metrics"][digest_key]:
+        raise AssertionError("E7 baseline scenario hash v2 mismatch")
 
 
 def verify():
@@ -115,8 +176,17 @@ def verify():
                 raise AssertionError("website " + field + " width changes over time")
             if field == "temperature_C":
                 cell_width = width
+                # All five current website demonstrations are the declared
+                # 3x4 (12-cell) model. A uniformly cropped history would pass
+                # the ordinary time-alignment and constant-width checks.
+                if cell_width != 12:
+                    raise AssertionError("website must retain 12 cell temperatures")
             elif field == "boundaryTemperature_C" and width != cell_width:
                 raise AssertionError("website boundaryTemperature_C width differs from cells")
+            elif field == "zoneCommand" and width != 4:
+                # The site exposes four actuator zones in every scenario.
+                # Cropping every command row to three zones is still data loss.
+                raise AssertionError("website must retain 4 zone commands")
     experiments = data["experiments"]
     if experiments.get("schemaVersion") != "thermoweave.experiments/v1":
         raise AssertionError("Experiment schema mismatch")
@@ -355,6 +425,7 @@ def verify():
     findings = runs[0].get("results")
     if not isinstance(findings, list) or findings:
         raise AssertionError("Code Analyzer SARIF findings contradict zero warnings")
+    _verify_scenario_hash_v2(data)
     print("PASS: fresh versioned MATLAB artifacts, sources, digests and checks")
     print("Optional licensed Simscape and field-cell validation remain separate gates")
 

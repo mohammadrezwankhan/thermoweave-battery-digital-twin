@@ -107,14 +107,7 @@ flowchart LR
 
 The cell energy balance is
 
-$$
-\begin{aligned}
-C_i\dot T_i &= Q_{\mathrm{gen},i} \\
-&\quad {}- \sum_j G_{ij}(T_i-T_j) \\
-&\quad {}- G_{b,i}(T_i-T_{b,i}) \\
-&\quad {}- G_{c,i}(T_i-T_{c,i}).
-\end{aligned}
-$$
+$`\begin{aligned} C_i\dot T_i &= Q_{\mathrm{gen},i} \\ &\quad {}- \sum_j G_{ij}(T_i-T_j) \\ &\quad {}- G_{b,i}(T_i-T_{b,i}) \\ &\quad {}- G_{c,i}(T_i-T_{c,i}). \end{aligned}`$
 
 Temperatures are kelvin internally, current is positive on discharge, and heat flow is positive into a cell. The complete derivation, coolant balance, controller objective, units, and limitations are in [`docs/model.md`](docs/model.md).
 
