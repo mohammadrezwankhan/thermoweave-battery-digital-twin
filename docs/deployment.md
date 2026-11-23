@@ -15,6 +15,8 @@ No semantic-version release is currently claimed. Before creating one, run:
 buildtool package
 ```
 
+Build from a committed Git checkout. The source ZIP includes committed paths from the package inventory and the freshly generated reports at those paths. Local model inputs and other paths absent from that commit stay out of the ZIP.
+
 Then inspect `release/release-manifest.json`, the archive checksum, provenance/notices, test evidence, and `git status`. The optional Simscape integration remains `SKIPPED_LIBRARY_POLICY_UNRESOLVED` and must not be marketed as a completed comparison.
 
 Profile pinning remains manual: open the GitHub profile, choose **Customize your pins**, select the repository, and save.
