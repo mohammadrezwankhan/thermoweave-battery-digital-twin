@@ -61,6 +61,12 @@ def verify_package(root, evidence_root, expected_sha):
         if name in tracked:
             raise ValueError("Duplicate Git source entry")
         tracked[name] = blob_id.decode("ascii")
+    # A self-consistent manifest must not define away the mandatory receipts
+    # by narrowing its top-level contents to a harmless subset of the tree.
+    missing_evidence = set(EVIDENCE_FILES) - tracked.keys()
+    if missing_evidence:
+        raise ValueError("Release package missing required evidence: "
+                         + ", ".join(sorted(missing_evidence)))
     with zipfile.ZipFile(package) as archive:
         entries = archive.infolist()
         if len(entries) != len({entry.filename for entry in entries}):
