@@ -9,11 +9,11 @@ All external GitHub Actions are pinned to immutable commits recorded in `THIRD_P
 
 GitHub Pages uses **GitHub Actions** as its source; `.github/workflows/pages.yml` publishes `docs/` after a push to `main`. The [19 November 2026 Pages deployment run](https://github.com/mohammadrezwankhan/thermoweave-battery-digital-twin/actions/runs/44626427373) successfully published source `6b48646da2f6f8b60a13b14e19c4c65e45b17383` to `https://mohammadrezwankhan.github.io/thermoweave-battery-digital-twin/` according to the deployment job log. This is verified provider deployment evidence, not a real-time browser availability or accessibility audit. The separately referenced `chatgpt.site` host, if present in metadata, is not proof of a GitHub Pages deployment.
 
-## Licensed evidence for the Pages gate
+## Licensed evidence for Pages and tag releases
 
 The Pages job requires the independent scientific matrix and findings recorded in the checked-out source, plus evidence generated for that exact commit. For publication after scientific approval, the authorized maintainer can dispatch **Optional Simscape integration** on `main` with `pages_evidence` enabled. Its existing `thermoweave-simscape` runner must have licensed MATLAB R2024a, Simulink, Simscape, Simscape Battery, Optimization Toolbox and Python 3. Configure `THERMOWEAVE_LICENSED_INPUT_ROOT` on that runner with the locally approved `.satk/reuse-libraries.json`, `simscape/models/thermoweave-model-manifest.json` and `simscape/models/ThermoWeaveE9Candidate.slx`. The build checks the pinned model bytes. The evidence archive contains reports and test receipts. The model and library declaration stay on the runner.
 
-After reviewing the successful run and its evidence, use its numeric run ID as `licensed_evidence_run_id` in the **Documentation Pages** manual workflow on the same `main` revision. Pages verifies the run's repository, workflow and SHA, requires an intact archive, applies the existing release veto and stages the validated demo data only when that veto passes. The archive is retained for 14 days. The existing tag release path uses its own regenerated evidence.
+After reviewing the successful run and its evidence, use its numeric run ID as `licensed_evidence_run_id` in the **Documentation Pages** manual workflow on the same `main` revision. Pages verifies the run's repository, workflow and SHA, requires an intact archive, applies the existing release veto and stages the validated demo data only when that veto passes. The archive is retained for 14 days.
 
 No semantic-version release is currently claimed. Before creating one, run:
 
@@ -24,3 +24,7 @@ buildtool package
 Then inspect `release/release-manifest.json`, the archive checksum, provenance/notices, test evidence, and `git status`. The optional Simscape integration remains `SKIPPED_LIBRARY_POLICY_UNRESOLVED` and must not be marketed as a completed comparison.
 
 Profile pinning remains manual: open the GitHub profile, choose **Customize your pins**, select the repository, and save.
+
+## Exact-source tag releases
+
+First integrate the tracked-path source packager, then run the licensed workflow on the reviewed main commit with `pages_evidence` enabled. The tag workflow selects the newest usable bundle for the exact tag commit. It verifies the package against the uploaded science evidence and the independent review records in the checkout. Create the tag while the licensed evidence is still retained.

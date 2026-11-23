@@ -32,19 +32,44 @@ def api(path):
     return json.loads(subprocess.check_output(["gh", "api", path], encoding="utf-8"))
 
 
+def run_artifacts(actions, run_id):
+    result = api(f"{actions}/runs/{run_id}/artifacts?name={ARTIFACT_NAME}")
+    if result["total_count"] != len(result["artifacts"]):
+        raise ValueError("Unexpected number of licensed evidence artifacts")
+    return result["artifacts"]
+
+
+def latest_artifact(actions, workflow_id, repository, sha):
+    if not re.fullmatch(r"[0-9a-f]{40}", sha):
+        raise ValueError("Expected an exact source commit")
+    response = api(f"{actions}/workflows/{workflow_id}/runs?"
+                   f"head_sha={sha}&branch=main&event=workflow_dispatch&status=success&per_page=100")
+    for run in response["workflow_runs"]:
+        run_id = run.get("id")
+        if type(run_id) is not int or run_id < 1:
+            continue
+        rows = run_artifacts(actions, run_id)
+        try:
+            return run_id, select_artifact(run, rows, workflow_id, repository, sha)
+        except ValueError:
+            continue
+    raise ValueError("No usable licensed integration artifact for the exact source commit")
+
+
 def main():
     repository = os.environ["GITHUB_REPOSITORY"]
-    sha = os.environ["GITHUB_SHA"]
+    sha = os.environ.get("EXPECTED_SOURCE_SHA") or os.environ["GITHUB_SHA"]
+    actions = f"repos/{repository}/actions"
+    workflow = api(f"{actions}/workflows/simscape-integration.yml")
+    if sys.argv[1:] == ["--latest"]:
+        print(*latest_artifact(actions, workflow["id"], repository, sha))
+        return
     run_id = os.environ["LICENSED_EVIDENCE_RUN_ID"]
     if not re.fullmatch(r"[1-9][0-9]*", run_id):
         raise ValueError("Licensed evidence run ID must be numeric")
-    actions = f"repos/{repository}/actions"
-    workflow = api(f"{actions}/workflows/simscape-integration.yml")
     run = api(f"{actions}/runs/{run_id}")
-    artifacts = api(f"{actions}/runs/{run_id}/artifacts?name={ARTIFACT_NAME}")
-    if artifacts["total_count"] != len(artifacts["artifacts"]):
-        raise ValueError("Unexpected number of licensed evidence artifacts")
-    print(select_artifact(run, artifacts["artifacts"], workflow["id"], repository, sha))
+    artifacts = run_artifacts(actions, run_id)
+    print(select_artifact(run, artifacts, workflow["id"], repository, sha))
 
 
 if __name__ == "__main__":

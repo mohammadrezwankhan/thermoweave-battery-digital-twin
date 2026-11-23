@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       pages_evidence:
-        description: Generate exact-main licensed Pages evidence
+        description: Generate exact-main licensed Pages and tag-release evidence
         type: boolean
         default: false
 
@@ -55,7 +55,7 @@ jobs:
       - name: Run gated integration build
         uses: matlab-actions/run-build@cf54c2229a74d57eb4e6ba1bbebd45793d37797e # v3
         with:
-          tasks: ${{ inputs.pages_evidence && 'integration artifacts' || 'integration' }}
+          tasks: ${{ inputs.pages_evidence && 'integration package' || 'integration' }}
 
       - name: Require complete exact-source licensed evidence
         if: inputs.pages_evidence
@@ -74,6 +74,8 @@ jobs:
               raise SystemExit("RELEASE HOLD: licensed E9 and all native tests must pass")
           PY
 
+          python3 scripts/verify_licensed_release_package.py
+
       - name: Retain exact-main licensed Pages evidence
         if: inputs.pages_evidence
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -89,5 +91,7 @@ jobs:
             artifacts/data/3d-study-results.csv
             artifacts/web-data/thermoweave-demo.json
             docs/assets/thermoweave-demo.json
+            release/thermoweave-source.zip
+            release/release-manifest.json
           if-no-files-found: error
           retention-days: 14
