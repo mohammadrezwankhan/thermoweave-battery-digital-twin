@@ -4,6 +4,7 @@ import json
 import hashlib
 import importlib.util
 from pathlib import Path
+import shutil
 import tempfile
 import unittest
 
@@ -12,6 +13,12 @@ SPEC = importlib.util.spec_from_file_location(
     "thermoweave_release_readiness", ROOT / "scripts/verify_release_readiness.py")
 release = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(release)
+
+artifact_spec = importlib.util.spec_from_file_location(
+    "thermoweave_pages_artifact", ROOT / "scripts/select_licensed_pages_artifact.py")
+artifacts = importlib.util.module_from_spec(artifact_spec)
+artifact_spec.loader.exec_module(artifacts)
+
 
 REQUIRED = (
     "PHY-01", "PHY-02", "PHY-03", "PHY-04", "PHY-05",
@@ -96,6 +103,30 @@ class ReleaseReadinessTests(unittest.TestCase):
     def test_happy_fixture_does_not_claim_real_cell_validation(self):
         release.verify_release_readiness(self.root, self.SHA)
 
+    def test_fresh_external_evidence_uses_checked_out_review(self):
+        evidence = self.root / "fresh-evidence"
+        shutil.copytree(self.root / "artifacts", evidence / "artifacts")
+        shutil.copytree(self.root / "docs", evidence / "docs")
+        shutil.copytree(self.root / "audit", evidence / "audit")
+
+        self.verification["gitCommit"] = "b" * 40
+        self.write_json("artifacts/reports/verification.json", self.verification)
+        self.refresh_manifest()
+        release.verify_release_readiness(self.root, self.SHA, evidence_root=evidence)
+        self.assert_blocked()
+
+        matrix = self.root / "audit/SCIENTIFIC_VERIFICATION_MATRIX.md"
+        matrix.write_text(matrix.read_text().replace("| **PASS** |", "| **NOT VERIFIED** |", 1),
+                          encoding="utf-8")
+        with self.assertRaisesRegex(AssertionError, "Mandatory scientific matrix not PASS"):
+            release.verify_release_readiness(self.root, self.SHA, evidence_root=evidence)
+
+    def test_external_evidence_cannot_fall_back_to_tracked_reports(self):
+        evidence = self.root / "empty-bundle"
+        evidence.mkdir()
+        with self.assertRaisesRegex(AssertionError, r"missing:.*verification\.json"):
+            release.verify_release_readiness(self.root, self.SHA, evidence_root=evidence)
+
     def test_missing_scientific_matrix_gate_blocks_release(self):
         path = self.root / "audit/SCIENTIFIC_VERIFICATION_MATRIX.md"
         path.write_text(path.read_text().replace("| PHY-05 |", "| OTHER-05 |"), encoding="utf-8")
@@ -148,6 +179,44 @@ class ReleaseReadinessTests(unittest.TestCase):
 
 
 
+class LicensedPagesArtifactTests(unittest.TestCase):
+    REPO = "owner/thermoweave"
+    SHA = "a" * 40
+
+    def setUp(self):
+        repository = {"full_name": self.REPO}
+        self.run = {"id": 22, "workflow_id": 12, "head_sha": self.SHA,
+                    "head_branch": "main", "repository": repository,
+                    "head_repository": repository, "event": "workflow_dispatch",
+                    "status": "completed", "conclusion": "success"}
+        self.artifact = {"name": "thermoweave-licensed-pages-evidence", "expired": False,
+                         "id": 42, "digest": "sha256:" + "a" * 64}
+
+    def select(self, run, rows):
+        return artifacts.select_artifact(run, rows, 12, self.REPO, self.SHA)
+
+    def test_selects_main_licensed_run_artifact(self):
+        self.assertEqual(self.select(self.run, [self.artifact]), 42)
+
+    def test_rejects_other_run_identities(self):
+        other = {"full_name": "contributor/thermoweave"}
+        for field, value in (("workflow_id", 13), ("head_sha", "b" * 40),
+                             ("head_branch", "topic"), ("event", "pull_request"),
+                             ("head_repository", other), ("repository", other),
+                             ("status", "in_progress"), ("conclusion", "failure")):
+            with self.subTest(field=field):
+                run = dict(self.run, **{field: value})
+                with self.assertRaises(ValueError):
+                    self.select(run, [self.artifact])
+
+    def test_missing_or_unusable_artifacts_block(self):
+        for rows in ([], [dict(self.artifact, expired=True)], [dict(self.artifact, digest=None)],
+                     [dict(self.artifact, name="thermoweave-matlab-evidence")],
+                     [self.artifact, dict(self.artifact, id=43)]):
+            with self.subTest(rows=rows), self.assertRaises(ValueError):
+                self.select(self.run, rows)
+
+
 class SimulationOutputAdapterContractTests(unittest.TestCase):
     """Static guard for a known MATLAB SimulationOutput API mismatch.
 
@@ -191,6 +260,34 @@ class PagesPublicationGateContractTests(unittest.TestCase):
         self.assertIn(upload, workflow)
         self.assertLess(workflow.index(gate), workflow.index(upload),
                         "The release veto must precede publishing the Pages artifact")
+
+
+    def test_licensed_pages_workflow_preserves_the_review_veto(self):
+        workflow = (ROOT / ".github/workflows/pages.yml").read_text(encoding="utf-8")
+        steps = ("Select exact-source licensed science evidence",
+                 "Download verified licensed science evidence",
+                 "python3 scripts/verify_release_readiness.py",
+                 "Stage the verified dashboard data",
+                 "Upload static documentation")
+        positions = [workflow.index(step) for step in steps]
+        self.assertEqual(positions, sorted(positions))
+        self.assertIn("digest-mismatch: error", workflow)
+        self.assertIn("github.event_name == 'workflow_dispatch'", workflow)
+        self.assertIn("branches: [main]", workflow)
+        self.assertIn("cancel-in-progress: false", workflow)
+
+    def test_licensed_producer_checks_exact_model_results_before_upload(self):
+        workflow = (ROOT / ".github/workflows/simscape-integration.yml").read_text(encoding="utf-8")
+        self.assertIn("runs-on: [self-hosted, thermoweave-simscape]", workflow)
+        self.assertLess(workflow.index('test "$GITHUB_REF" = refs/heads/main'),
+                        workflow.index("Stage the locally approved E9 model"))
+        source, archive = workflow.split("Retain exact-main licensed Pages evidence", 1)
+        self.assertIn('receipt["simscapeAdapterStatus"] != "PASS"', source)
+        self.assertIn("python3 scripts/verify_scientific_artifacts.py", source)
+        self.assertIn("EXPECTED_SOURCE_SHA: ${{ github.sha }}", source)
+        self.assertIn("name: thermoweave-licensed-pages-evidence", archive)
+        self.assertNotIn(".slx", archive)
+        self.assertNotIn(".satk", archive)
 
 
 if __name__ == "__main__":

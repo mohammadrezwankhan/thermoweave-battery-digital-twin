@@ -21,9 +21,10 @@ The citation above does not grant a license to copy source code, prose, diagrams
 GitHub-hosted repository and workflow services, if used, are provided under GitHub's terms. The workflow files reference these external actions; their source is not vendored here:
 
 - `actions/checkout` commit `3d3c42e5aac5ba805825da76410c181273ba90b1` (v7.0.1, reviewed 2026-10-21), <https://github.com/actions/checkout>, MIT License.
+- `actions/download-artifact` commit `9000827ccba6bdab643e8b6fd33ac0654aef8333` (v8.0.2, verified 2026-11-23), <https://github.com/actions/download-artifact>, MIT License.
 - `actions/configure-pages` commit `45bfe0192ca1faeb007ade9deae92b16b8254a0d` (v6.0.0, reviewed 2026-10-21), <https://github.com/actions/configure-pages>, MIT License.
 - `actions/upload-pages-artifact` commit `fc324d3547104276b827a68afc52ff2a11cc49c9` (v5.0.0, reviewed 2026-10-21), <https://github.com/actions/upload-pages-artifact>, MIT License.
-- `actions/upload-artifact` commit `ea165f8d65b6e75b540449e92b4886f43607fa02` (v4.6.2, verified against workflow source 2026-11-21), <https://github.com/actions/upload-artifact>, MIT License.
+- `actions/upload-artifact` commit `cf430e030ddbb5b0abf93d22962f4752f3646cd9` (v7.0.2, verified 2026-11-23), <https://github.com/actions/upload-artifact>, MIT License.
 - `actions/deploy-pages` commit `368f82528645a54fb793d4d04e342629a3f51346` (v5.0.1, verified against workflow source 2026-11-21), <https://github.com/actions/deploy-pages>, MIT License.
 - `matlab-actions/setup-matlab` commit `f9e43010f1ae678f7cfa0542fe2a4f60f7d1ad8d` (v3, reviewed 2026-10-21), <https://github.com/matlab-actions/setup-matlab>, BSD 3-Clause License.
 - `matlab-actions/run-build` commit `cf54c2229a74d57eb4e6ba1bbebd45793d37797e` (v3, reviewed 2026-10-21), <https://github.com/matlab-actions/run-build>, BSD 3-Clause License.

@@ -2,6 +2,11 @@ name: Optional Simscape integration
 
 on:
   workflow_dispatch:
+    inputs:
+      pages_evidence:
+        description: Generate exact-main licensed Pages and tag-release evidence
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -14,8 +19,33 @@ jobs:
     runs-on: [self-hosted, thermoweave-simscape]
     timeout-minutes: 60
     steps:
+      - name: Require main for Pages evidence
+        if: inputs.pages_evidence
+        run: test "$GITHUB_REF" = refs/heads/main
+
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Stage the locally approved E9 model and library declaration
+        if: inputs.pages_evidence
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          from shutil import copyfile
+
+          source = Path(os.environ["THERMOWEAVE_LICENSED_INPUT_ROOT"]).resolve(strict=True)
+          files = (".satk/reuse-libraries.json", "simscape/models/ThermoWeaveE9Candidate.slx",
+                   "simscape/models/thermoweave-model-manifest.json")
+          for name in files:
+              target = Path(name)
+              target.parent.mkdir(parents=True, exist_ok=True)
+              copyfile(source / name, target)
+          Path("results").mkdir(exist_ok=True)
+          Path("results/artifact-regeneration-start.flag").touch()
+          PY
 
       - name: Set up MATLAB R2024a or newer
         uses: matlab-actions/setup-matlab@f9e43010f1ae678f7cfa0542fe2a4f60f7d1ad8d # v3
@@ -25,4 +55,47 @@ jobs:
       - name: Run gated integration build
         uses: matlab-actions/run-build@cf54c2229a74d57eb4e6ba1bbebd45793d37797e # v3
         with:
-          tasks: integration
+          tasks: ${{ inputs.pages_evidence && 'integration package' || 'integration' }}
+
+      - name: Require complete exact-source licensed evidence
+        if: inputs.pages_evidence
+        env:
+          EXPECTED_MATLAB_RELEASE: '2024a'
+          EXPECTED_SOURCE_SHA: ${{ github.sha }}
+        run: |
+          python3 scripts/verify_scientific_artifacts.py
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          receipt = json.loads(Path("artifacts/reports/verification.json").read_text(encoding="utf-8"))
+          if (receipt["passed"] != receipt["testCount"] or receipt["failed"] or receipt["incomplete"]
+                  or receipt["simscapeAdapterStatus"] != "PASS"):
+              raise SystemExit("RELEASE HOLD: licensed E9 and all native tests must pass")
+          PY
+
+          python3 scripts/verify_licensed_release_package.py
+
+      - name: Retain exact-main licensed Pages evidence
+        if: inputs.pages_evidence
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: thermoweave-licensed-pages-evidence
+          path: |
+            results/*.xml
+            results/*.sarif
+            artifacts/animation/thermal-field.gif
+            artifacts/figures/thermal-overview.png
+            artifacts/figures/3d-layer-response.png
+            artifacts/figures/3d-module-temperature.png
+            artifacts/reports/verification.json
+            artifacts/reports/artifact-manifest.json
+            artifacts/reports/experiment-summary.json
+            artifacts/reports/3d-study-summary.json
+            artifacts/data/3d-study-results.csv
+            artifacts/web-data/thermoweave-demo.json
+            docs/assets/thermoweave-demo.json
+            release/thermoweave-source.zip
+            release/release-manifest.json
+          if-no-files-found: error
+          retention-days: 14

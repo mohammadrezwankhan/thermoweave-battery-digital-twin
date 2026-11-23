@@ -1,6 +1,10 @@
 classdef TestAuditRegressions < matlab.unittest.TestCase
     % Independent regression oracles for focused engineering-audit fixes.
 
+    properties (TestParameter)
+        controllerMode = {'baseline', 'advanced'};
+    end
+
     methods (TestClassSetup)
         function installSource(testCase)
             root = fileparts(fileparts(fileparts(mfilename('fullpath'))));
@@ -46,6 +50,55 @@ classdef TestAuditRegressions < matlab.unittest.TestCase
                 'AbsTol', 1e-12);
             testCase.verifyGreaterThan(command(6), command(5));
             testCase.verifyLessThanOrEqual(max(abs(diff(command))), 0.1 + 1e-12);
+        end
+
+        function overlappingFaultsRespectControllerClock(testCase, controllerMode)
+            if strcmp(controllerMode, 'advanced')
+                testCase.assumeTrue(exist('quadprog', 'file') == 2 && ...
+                    license('test', 'Optimization_Toolbox'));
+                expectedStatus = "OPTIMAL";
+                expectedMethod = "advanced_quadratic_program";
+            else
+                expectedStatus = "BASELINE";
+                expectedMethod = "baseline_bounded_controller";
+            end
+
+            cfg = thermoweave.config.defaultConfig();
+            cfg.simulation.duration_s = 7;
+            cfg.simulation.relativeTolerance = 1e-8;
+            cfg.simulation.absoluteTolerance = 1e-10;
+            cfg.cell.initialTemperature_K = 325;
+            cfg.boundary.conductance_W_per_K = 0;
+            cfg.electrical.current_A = 0;
+            cfg.controller.mode = controllerMode;
+            cfg.controller.samplePeriod_s = 1;
+            cfg.controller.rateLimit_per_s = 0.1;
+            cfg.controller.advanced.lambdaGradient = 0;
+            cfg.faults.events = [ ...
+                struct('type', 'stuck_actuator', 'start_s', 0.75, ...
+                    'end_s', 2.25, 'target', 2, 'magnitude', 1), ...
+                struct('type', 'sensor_bias', 'start_s', 1.25, ...
+                    'end_s', 4.75, 'target', 2, 'magnitude', -60)];
+
+            % Unbiased zones remain hot enough to request maximum cooling.
+            % Zone 2 holds the initial command at ticks 1 and 2, drops
+            % one slew step at tick 3, then resumes the ramp at tick 5.
+            expectedAtTicks = repmat((1:7)' * 0.1, 1, cfg.layout.zoneCount);
+            expectedAtTicks(:, 2) = [0.1; 0.1; 0.1; 0; 0; 0.1; 0.2];
+            expectedCoolant_J = -cfg.controller.qMax_W * sum(expectedAtTicks(:));
+            for outputStep = [0.125, 1.75]
+                cfg.simulation.outputStep_s = outputStep;
+                result = thermoweave.simulate(cfg);
+                tickIndex = min(floor(result.time_s) + 1, 7);
+                testCase.verifyEqual(result.control.zoneCommand, ...
+                    expectedAtTicks(tickIndex, :), 'AbsTol', 2e-7);
+                testCase.verifyTrue(all(string(result.control.statusHistory) == expectedStatus));
+                testCase.verifyTrue(all(string(result.control.methodHistory) == expectedMethod));
+                testCase.verifyEqual(result.energyLedger.coolantHeat_J, ...
+                    expectedCoolant_J, 'AbsTol', 1e-4);
+                testCase.verifyEqual(result.energyLedger.storedEnergyChange_J, ...
+                    expectedCoolant_J, 'AbsTol', 1e-4);
+            end
         end
 
         function inactiveCoolantSegmentsKeepLastDefinedTemperature(testCase)
