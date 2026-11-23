@@ -68,6 +68,12 @@ def _verify_scenario_hash_v2(data):
     for label, digest in standalone:
         if not _is_v2_digest(digest):
             raise AssertionError("Invalid scenario hash v2 for " + label)
+    # The three E10 conductances are distinct and therefore cannot
+    # legitimately share an identical typed canonical scenario digest.
+    # Reject a copied-but-well-formed digest rather than accepting its shape.
+    e10_digests = [case[digest_key] for case in study["cases"]]
+    if len(set(e10_digests)) != len(e10_digests):
+        raise AssertionError("Duplicate E10 scenario hash v2 across distinct conductances")
 
     e4 = records[4]["evidence"]
     e8 = records[8]["evidence"]
