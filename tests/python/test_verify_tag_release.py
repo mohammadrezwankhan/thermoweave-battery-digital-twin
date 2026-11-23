@@ -134,6 +134,19 @@ class PackageEvidenceTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "source bytes"):
             self.verify()
 
+    def test_rejects_manifest_omitting_required_licensed_science_files(self):
+        # A malicious archive can narrow contents to only README.md,
+        # yielding a valid SHA, valid source bytes and matching inventory.
+        # Such a package lacks the mandatory exact-source science receipts.
+        self.entries = {"README.md": b"committed source"}
+        self.make_package()
+        manifest_path = self.root / "release/release-manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest["contents"] = ["README.md"]
+        manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "required evidence"):
+            self.verify()
+
     def test_rejects_symlink_disguised_as_committed_regular_file(self):
         # A link is not the committed Git blob even if its filename matches.
         self.make_package(symlink=True)
