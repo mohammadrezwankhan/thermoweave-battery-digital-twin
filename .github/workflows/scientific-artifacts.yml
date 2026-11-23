@@ -52,6 +52,7 @@ jobs:
         if: always()
         env:
           EXPECTED_MATLAB_RELEASE: '2024a'
+          REQUIRE_SCENARIO_HASH_V2: '1'
           EXPECTED_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           python3 scripts/verify_scientific_artifacts.py

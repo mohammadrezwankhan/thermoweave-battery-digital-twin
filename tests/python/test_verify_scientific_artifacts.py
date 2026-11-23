@@ -90,6 +90,61 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         }
         self.write_fixture()
 
+    def add_v2_fixture(self):
+        def digest(number):
+            return f"{number:064x}"
+
+        self.manifest["scenarioCanonicalHashV2Algorithm"] = "thermoweave.canonical-json/v2"
+        for i, scenario in enumerate(self.web["scenarios"]):
+            scenario["scenarioCanonicalHashV2"] = digest(i + 1)
+        self.verification["demo"] = {"scenarioCanonicalHashV2": digest(10)}
+        self.study["sourceScenarioCanonicalHashV2"] = digest(11)
+        for i, case in enumerate(self.study["cases"]):
+            case["scenarioCanonicalHashV2"] = digest(i + 12)
+        records = self.experiments["records"]
+        for i in (0, 1, 2, 3, 5, 6, 7):
+            records[i]["metrics"] = {"scenarioCanonicalHashV2": digest(i + 20)}
+        records[4]["evidence"].update(
+            seeds=[4401, 4402, 4403],
+            scenarioCanonicalHashesV2=[digest(i) for i in range(30, 33)])
+        records[7]["evidence"]["controllerScenarioCanonicalHashesV2"] = {
+            "openloop": digest(40), "baseline": digest(27), "advanced": digest(41),
+        }
+        records[8]["evidence"].update(
+            runCount=2, scenarioCanonicalHashesV2=[digest(50), digest(51)])
+        self.write_fixture()
+
+    def test_fresh_artifacts_require_v2_algorithm(self):
+        with mock.patch.dict(os.environ, {"REQUIRE_SCENARIO_HASH_V2": "1"}):
+            with self.assertRaisesRegex(AssertionError, "scenario hash v2 algorithm"):
+                self.verify()
+
+    def test_accepts_complete_v2_identity_bundle(self):
+        self.add_v2_fixture()
+        self.verify()
+
+    def test_declared_v2_rejects_invalid_website_digest(self):
+        self.add_v2_fixture()
+        self.web["scenarios"][0]["scenarioCanonicalHashV2"] = "broken"
+        self.write_fixture()
+        with self.assertRaisesRegex(AssertionError, "Invalid scenario hash v2"):
+            self.verify()
+
+    def test_declared_v2_rejects_unpaired_controller_digest(self):
+        self.add_v2_fixture()
+        controllers = self.experiments["records"][7]["evidence"]["controllerScenarioCanonicalHashesV2"]
+        controllers["baseline"] = "f" * 64
+        self.write_fixture()
+        with self.assertRaisesRegex(AssertionError, "E7 baseline scenario hash v2 mismatch"):
+            self.verify()
+
+    def test_declared_v2_rejects_missing_seeded_case_digest(self):
+        self.add_v2_fixture()
+        self.experiments["records"][8]["evidence"]["scenarioCanonicalHashesV2"].pop()
+        self.write_fixture()
+        with self.assertRaisesRegex(AssertionError, "Invalid seeded scenario hashes v2 for E8"):
+            self.verify()
+
     def write(self, key, value):
         file = self.root / self.names[key]
         file.parent.mkdir(parents=True, exist_ok=True)
