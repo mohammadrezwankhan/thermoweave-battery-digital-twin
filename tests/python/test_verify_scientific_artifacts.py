@@ -46,9 +46,10 @@ class ArtifactAcceptanceTests(unittest.TestCase):
             "scenarios": [
                 {"id": str(i), "sourceSchema": "thermoweave.result/v1",
                  "scenarioHash": "a" * 64, "time_s": [0, 1],
-                 "temperature_C": [[20, 21], [22, 23]],
-                 "boundaryTemperature_C": [[20, 20], [20, 20]],
-                 "zoneCommand": [[0], [0]]}
+                 "temperature_C": [[20 + j for j in range(12)],
+                                    [22 + j for j in range(12)]],
+                 "boundaryTemperature_C": [[20] * 12, [20] * 12],
+                 "zoneCommand": [[0] * 4, [0] * 4]}
                 for i in range(5)
             ],
         }
@@ -282,6 +283,25 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         self.web["scenarios"][0]["zoneCommand"][1] = [0, 0]
         self.write_fixture()
         with self.assertRaisesRegex(AssertionError, "website.*width"):
+            self.verify()
+
+    def test_rejects_consistently_truncated_cell_inventory(self):
+        # The time/width guards alone cannot detect uniformly losing a cell:
+        # all samples and both temperature fields can still agree at 11 cells.
+        scenario = self.web["scenarios"][0]
+        for field in ("temperature_C", "boundaryTemperature_C"):
+            scenario[field] = [row[:-1] for row in scenario[field]]
+        self.write_fixture()
+        with self.assertRaisesRegex(AssertionError, "website.*12 cell"):
+            self.verify()
+
+    def test_rejects_consistently_truncated_zone_command_inventory(self):
+        # A missing actuator from every sample must not be accepted just
+        # because the downsampled timebase and row widths are consistent.
+        scenario = self.web["scenarios"][0]
+        scenario["zoneCommand"] = [row[:-1] for row in scenario["zoneCommand"]]
+        self.write_fixture()
+        with self.assertRaisesRegex(AssertionError, "website.*4 zone"):
             self.verify()
 
     def test_rejects_incorrect_artifact_manifest_schema(self):
