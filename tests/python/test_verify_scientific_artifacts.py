@@ -138,6 +138,16 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         with self.assertRaisesRegex(AssertionError, "E7 baseline scenario hash v2 mismatch"):
             self.verify()
 
+    def test_declared_v2_rejects_duplicate_e10_conductance_digest(self):
+        # Distinct E10 conductance configurations require distinct typed hashes.
+        # Copying a valid hash to another case must not pass provenance review.
+        self.add_v2_fixture()
+        cases = self.study["cases"]
+        cases[1]["scenarioCanonicalHashV2"] = cases[0]["scenarioCanonicalHashV2"]
+        self.write_fixture()
+        with self.assertRaisesRegex(AssertionError, "Duplicate E10 scenario hash v2"):
+            self.verify()
+
     def test_declared_v2_rejects_missing_seeded_case_digest(self):
         self.add_v2_fixture()
         self.experiments["records"][8]["evidence"]["scenarioCanonicalHashesV2"].pop()
