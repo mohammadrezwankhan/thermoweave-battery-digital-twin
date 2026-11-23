@@ -62,16 +62,18 @@ class PackageEvidenceTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.module = load_script("verify_licensed_release_package")
-        self.entries = {"README.md": b"committed source"}
+        self.entries = {"README.md": b"committed source", "src/model.m": b"source model"}
         for path in self.module.EVIDENCE_FILES:
             file = self.root / path
             file.parent.mkdir(parents=True, exist_ok=True)
             file.write_bytes(b"licensed evidence")
             self.entries[path] = b"licensed evidence"
         (self.root / "README.md").write_bytes(self.entries["README.md"])
+        (self.root / "src").mkdir()
+        (self.root / "src/model.m").write_bytes(self.entries["src/model.m"])
         (self.root / "release").mkdir()
         subprocess.run(["git", "init", "-q"], cwd=self.root, check=True)
-        subprocess.run(["git", "add", "README.md", "artifacts", "docs"],
+        subprocess.run(["git", "add", "README.md", "src", "artifacts", "docs"],
                        cwd=self.root, check=True)
         subprocess.run(["git", "-c", "user.name=Scientific Fixture",
                         "-c", "user.email=fixture@example.invalid",
@@ -98,7 +100,7 @@ class PackageEvidenceTests(unittest.TestCase):
             "gitCommit": revision or self.sha,
             "sha256": hashlib.sha256(package.read_bytes()).hexdigest(),
             "bytes": package.stat().st_size,
-            "contents": ["README.md", "docs", "artifacts"],
+            "contents": ["README.md", "src", "docs", "artifacts"],
         }
         (self.root / "release/release-manifest.json").write_text(
             json.dumps(manifest), encoding="utf-8"
@@ -145,6 +147,16 @@ class PackageEvidenceTests(unittest.TestCase):
         manifest["contents"] = ["README.md"]
         manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
         with self.assertRaisesRegex(ValueError, "required evidence"):
+            self.verify()
+
+    def test_rejects_manifest_omitting_committed_source_root(self):
+        del self.entries["src/model.m"]
+        self.make_package()
+        manifest_path = self.root / "release/release-manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest["contents"].remove("src")
+        manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "source inventory"):
             self.verify()
 
     def test_rejects_symlink_disguised_as_committed_regular_file(self):

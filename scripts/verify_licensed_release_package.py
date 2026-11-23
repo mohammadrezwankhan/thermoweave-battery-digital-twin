@@ -10,6 +10,18 @@ import sys
 import zipfile
 
 
+SOURCE_ROOTS = (
+    "README.md", "LICENSE", "CITATION.cff", "CHANGELOG.md",
+    "PROVENANCE.md", "THIRD_PARTY_NOTICES.md", "ENVIRONMENT.md",
+    "PROJECT_CHARTER.md", "ARCHITECTURE.md", "DECISIONS.md",
+    "RISK_REGISTER.md", "RED_TEAM_REPORT.md", "TASKS.md", "ROADMAP.md",
+    "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "SECURITY.md",
+    "ThermoWeave.prj", "startup.m", "runDemo.m", "buildfile.m",
+    "src", "config", "examples", "simscape", "tests", "tools",
+    "docs", "artifacts", "resources", "manuscript", ".github",
+)
+
+
 EVIDENCE_FILES = (
     "artifacts/reports/verification.json",
     "artifacts/reports/artifact-manifest.json",
@@ -67,6 +79,13 @@ def verify_package(root, evidence_root, expected_sha):
     if missing_evidence:
         raise ValueError("Release package missing required evidence: "
                          + ", ".join(sorted(missing_evidence)))
+    root_listing = subprocess.check_output(
+        ["git", "ls-tree", "-z", expected_sha, "--", *SOURCE_ROOTS], cwd=root,
+    )
+    expected_roots = {record.partition(b"\t")[2].decode("utf-8")
+                      for record in root_listing.split(b"\0") if record}
+    if len(contents) != len(set(contents)) or set(contents) != expected_roots:
+        raise ValueError("Release package source inventory differs from committed roots")
     with zipfile.ZipFile(package) as archive:
         entries = archive.infolist()
         if len(entries) != len({entry.filename for entry in entries}):
