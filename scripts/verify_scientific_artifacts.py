@@ -115,8 +115,17 @@ def verify():
                 raise AssertionError("website " + field + " width changes over time")
             if field == "temperature_C":
                 cell_width = width
+                # All five current website demonstrations are the declared
+                # 3x4 (12-cell) model. A uniformly cropped history would pass
+                # the ordinary time-alignment and constant-width checks.
+                if cell_width != 12:
+                    raise AssertionError("website must retain 12 cell temperatures")
             elif field == "boundaryTemperature_C" and width != cell_width:
                 raise AssertionError("website boundaryTemperature_C width differs from cells")
+            elif field == "zoneCommand" and width != 4:
+                # The site exposes four actuator zones in every scenario.
+                # Cropping every command row to three zones is still data loss.
+                raise AssertionError("website must retain 4 zone commands")
     experiments = data["experiments"]
     if experiments.get("schemaVersion") != "thermoweave.experiments/v1":
         raise AssertionError("Experiment schema mismatch")
