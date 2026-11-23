@@ -212,6 +212,7 @@ end
 end
 function m=metadata(cfg,varInfo,t)
 m=struct('matlabRelease',version('-release'),'products',productManifest(),'seed',cfg.simulation.seed,'solver',cfg.simulation.solver,'tolerances',struct('relative',cfg.simulation.relativeTolerance,'absolute',cfg.simulation.absoluteTolerance,'maxStep_s',cfg.simulation.maxStep_s),'timestampUTC','','timestampPolicy','omitted-for-deterministic-core','scenarioHash',thermoweave.util.hashStruct(cfg),'scenarioCanonicalHash',thermoweave.util.hashCanonicalStruct(cfg),'scenarioCanonicalHashAlgorithm','thermoweave.canonical-json/v1','gitCommit','','variability',varInfo,'timeBase_s',t);
+[m.scenarioCanonicalHashV2, m.scenarioCanonicalHashV2Algorithm] = thermoweave.util.hashCanonicalStructV2(cfg);
 try
     [ok,out]=system('git rev-parse HEAD');
     if ok==0,m.gitCommit=strtrim(out);end
