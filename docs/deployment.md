@@ -17,6 +17,8 @@ To build a local source package for inspection, run:
 buildtool package
 ```
 
+Build from a committed Git checkout. The source ZIP includes committed paths from the package inventory and the freshly generated reports at those paths. Local model inputs and other paths absent from that commit stay out of the ZIP.
+
 Then inspect `release/release-manifest.json`, the archive checksum, provenance/notices, test evidence, and `git status`. Use the exact-source licensed process below for a future release that requires a passing Simscape comparison.
 
 Profile pinning remains manual: open the GitHub profile, choose **Customize your pins**, select the repository, and save.
