@@ -23,6 +23,10 @@ SOURCE_ROOTS = (
 
 
 EVIDENCE_FILES = (
+    "artifacts/animation/thermal-field.gif",
+    "artifacts/figures/thermal-overview.png",
+    "artifacts/figures/3d-layer-response.png",
+    "artifacts/figures/3d-module-temperature.png",
     "artifacts/reports/verification.json",
     "artifacts/reports/artifact-manifest.json",
     "artifacts/reports/experiment-summary.json",

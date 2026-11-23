@@ -109,6 +109,18 @@ class PackageEvidenceTests(unittest.TestCase):
     def verify(self):
         self.module.verify_package(self.root, self.root, self.sha)
 
+    def test_generated_graphics_are_required_licensed_evidence(self):
+        graphics = {
+            "artifacts/animation/thermal-field.gif",
+            "artifacts/figures/thermal-overview.png",
+            "artifacts/figures/3d-layer-response.png",
+            "artifacts/figures/3d-module-temperature.png",
+        }
+        self.assertTrue(graphics.issubset(self.module.EVIDENCE_FILES))
+        workflow = (ROOT / ".github/workflows/simscape-integration.yml").read_text(encoding="utf-8")
+        for path in graphics:
+            self.assertIn(path, workflow)
+
     def test_accepts_exact_archive_and_evidence(self):
         self.make_package()
         self.verify()
