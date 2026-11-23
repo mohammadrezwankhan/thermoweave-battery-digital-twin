@@ -34,7 +34,7 @@ if ~isempty(cfg.faults.events)
     end
 end
 profile=getField(cfg.electrical,'currentProfile',[]);
-if isstruct(profile)&&~isempty(profile)&&isfield(profile,'time_s')
+if isstruct(profile)&&~isempty(profile)&&isfield(profile,'time_s')&&numel(profile.time_s)>1
     mesh=[mesh;profile.time_s(:)];
 elseif isnumeric(profile)&&numel(profile)>1
     % Numeric current profiles use integer-second piecewise-constant knots.
@@ -189,10 +189,23 @@ end
 end
 
 function I=currentAt(cfg,tt,N)
-v=getField(cfg.electrical,'current_A',5); p=getField(cfg.electrical,'currentProfile',[]);
+v=getField(cfg.electrical,'current_A',5);
+p=getField(cfg.electrical,'currentProfile',[]);
 if ~isempty(p)
- if isstruct(p),ts=p.time_s(:); vs=p.current_A; if isscalar(vs),vs=repmat(vs,numel(ts),1);end; v=interp1(ts,vs,tt,'previous','extrap'); elseif isscalar(p),v=p; else, v=interp1((0:numel(p)-1)',p(:),tt,'previous','extrap');end
-end; I=expand(v,N);
+    if isstruct(p)
+        ts=p.time_s(:);
+        v=p.current_A;
+        if numel(ts)~=1
+            if isscalar(v),v=repmat(v,numel(ts),1);end
+            v=interp1(ts,v,tt,'previous','extrap');
+        end
+    elseif isscalar(p)
+        v=p;
+    else
+        v=interp1((0:numel(p)-1)',p(:),tt,'previous','extrap');
+    end
+end
+I=expand(v,N);
 end
 function T=applySensorFaults(T,cfg,t,topo)
 if ~isfield(cfg.faults,'events')||isempty(cfg.faults.events),return;end
