@@ -357,6 +357,12 @@ def verify():
                     "peakTemperature_K", "peakEdgeGradient_K",
                     "finalLayerSpread_K", "energyResidualNormalized"))):
             raise AssertionError("E10 nonfinite or missing scientific measurement")
+        # A full-history peak must encompass every final layer mean.
+        # Kelvin temperatures must be physical and a magnitude cannot be negative.
+        if (min(layers) <= 0 or case["peakTemperature_K"] <= 0
+                or case["peakTemperature_K"] < max(layers) - 1e-9
+                or case["peakEdgeGradient_K"] < 0):
+            raise AssertionError("E10 physically contradictory thermal measurements")
         # docs/scenarios.md defines a <=1e-3 normalized energy-residual
         # acceptance gate for E10. Merely requiring finiteness could permit
         # a physically unacceptable study to be published as verified.
