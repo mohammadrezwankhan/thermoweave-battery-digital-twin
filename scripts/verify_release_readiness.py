@@ -218,6 +218,18 @@ def _verify_e9_parity(records, expected_sha):
         terms = [number(ledger.get(k)) for k in (
             "generatedHeat_J", "ambientHeat_J", "coolantHeat_J", "externalHeat_J")]
         stored = number(ledger.get("storedEnergyChange_J"))
+        # Native E9 fixes the 12 cell capacities at 40.5 J/K (defaultConfig)
+        # and both producers define stored energy from their temperature
+        # endpoints. Recompute this identity independently for each trace;
+        # agreement between four self-consistent ledgers alone is insufficient.
+        # This is a floating-point/JSON consistency allowance, not a new
+        # scientific parity tolerance.
+        endpoint_stored = 40.5 * math.fsum(
+            end - start for start, end in zip(
+                data["temperature_K"][0], data["temperature_K"][-1]))
+        if not math.isclose(stored, endpoint_stored,
+                            rel_tol=1e-9, abs_tol=1e-6):
+            raise AssertionError("E9 stored energy disagrees with temperature endpoints")
         residual = abs(stored - sum(terms)) / max(abs(stored), sum(map(abs, terms)), 1e-9)
         claimed = number(ledger.get("normalizedResidual"))
         if (not 0 <= claimed <= 1e-4 or residual > 1e-4
