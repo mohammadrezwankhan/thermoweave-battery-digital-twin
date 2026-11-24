@@ -187,6 +187,9 @@ def verify():
                 # The site exposes four actuator zones in every scenario.
                 # Cropping every command row to three zones is still data loss.
                 raise AssertionError("website must retain 4 zone commands")
+            if field == "zoneCommand" and any(
+                    not 0 <= value <= 1 for row in series for value in row):
+                raise AssertionError("website zoneCommand outside normalized bounds [0, 1]")
     experiments = data["experiments"]
     if experiments.get("schemaVersion") != "thermoweave.experiments/v1":
         raise AssertionError("Experiment schema mismatch")
