@@ -7,7 +7,7 @@ topo=thermoweave.thermal.buildTopology(cfg.layout);
 topo=applyEdgeVariability(topo,cfg);
 N=topo.nodeCount; Zc=max(topo.zoneId);
 t=(0:cfg.simulation.outputStep_s:cfg.simulation.duration_s)';
-if t(end)<cfg.simulation.duration_s,t(end+1)=cfg.simulation.duration_s;end
+if t(end)<cfg.simulation.duration_s,t(end+1,1)=cfg.simulation.duration_s;end
 Nt=numel(t);
 T=zeros(Nt,N); S=zeros(Nt,N); BT=zeros(Nt,N); BH=zeros(Nt,N);
 U=zeros(Nt,Zc); IHist=zeros(Nt,1); QHist=zeros(Nt,N);

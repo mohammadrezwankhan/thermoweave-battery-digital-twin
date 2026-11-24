@@ -81,6 +81,21 @@ classdef TestSimulationIntegration < matlab.unittest.TestCase
                 initialHeat, 'AbsTol', 1e-12);
         end
 
+        function durationShorterThanOutputStepReturnsTwoRows(testCase)
+            cfg = thermoweave.config.defaultConfig();
+            cfg.simulation.duration_s = 0.1;
+            cfg.simulation.outputStep_s = 1;
+            for solver = ["ode45", "ode15s"]
+                cfg.simulation.solver = char(solver);
+                result = thermoweave.simulate(cfg);
+                testCase.verifyEqual(result.time_s, [0; 0.1]);
+                testCase.verifyEqual(result.metadata.timeBase_s, result.time_s);
+                testCase.verifySize(result.state.temperature_K, [2 cfg.cell.count]);
+                testCase.verifySize(result.control.zoneCommand, [2 cfg.layout.zoneCount]);
+                testCase.verifyEqual(result.signals.current_A, [5; 5]);
+            end
+        end
+
         function decimalOutputGridDoesNotRepeatControllerTicks(testCase)
             cfg = thermoweave.config.defaultConfig();
             cfg.simulation.duration_s = 1.1;
