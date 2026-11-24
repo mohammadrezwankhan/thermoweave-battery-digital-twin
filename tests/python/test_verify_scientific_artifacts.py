@@ -55,6 +55,8 @@ class ArtifactAcceptanceTests(unittest.TestCase):
                      "peakTemperature_K": 307.15,
                      "coolingEnergy_J": 0.0,
                      "timeAboveThreshold_s": 0.0,
+                     "peakEdgeGradient_K": 1.0,
+                     "energyResidualNormalized": 1e-12,
                  }}
                 for i in range(5)
             ],
@@ -176,6 +178,13 @@ class ArtifactAcceptanceTests(unittest.TestCase):
             ("minimumTemperature_K", 295.0),
             ("coolingEnergy_J", -1.0),
             ("timeAboveThreshold_s", 2.0),
+            ("peakEdgeGradient_K", None),
+            ("peakEdgeGradient_K", True),
+            ("peakEdgeGradient_K", -0.01),
+            ("peakEdgeGradient_K", 16.0),
+            ("energyResidualNormalized", None),
+            ("energyResidualNormalized", "1e-9"),
+            ("energyResidualNormalized", -1e-9),
         )
         for key, invalid in cases:
             with self.subTest(metric=key):

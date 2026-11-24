@@ -286,18 +286,20 @@ def verify():
                 raise AssertionError("website zoneCommand outside normalized bounds [0, 1]")
         metrics = scenario.get("metrics")
         fields = ("minimumTemperature_K", "peakTemperature_K",
-                  "coolingEnergy_J", "timeAboveThreshold_s")
+                  "coolingEnergy_J", "timeAboveThreshold_s",
+                  "peakEdgeGradient_K", "energyResidualNormalized")
         if not isinstance(metrics, dict) or any(
                 not _finite_number(metrics.get(key)) for key in fields):
             raise AssertionError("website metrics missing or nonfinite")
-        minimum, peak, cooling_energy, threshold_duration = (metrics[key] for key in fields)
+        minimum, peak, cooling, duration, gradient, residual = (metrics[key] for key in fields)
         temperatures = scenario["temperature_C"]
         sampled_minimum = min(map(min, temperatures)) + 273.15
         sampled_peak = max(map(max, temperatures)) + 273.15
         # The exported grid retains both endpoints but can omit temperature extrema.
-        if (minimum > sampled_minimum + 1e-9 or peak < sampled_peak - 1e-9
-                or cooling_energy < 0
-                or not 0 <= threshold_duration <= times[-1] - times[0] + 1e-9):
+        if (minimum > peak or minimum > sampled_minimum + 1e-9
+                or peak < sampled_peak - 1e-9 or cooling < 0 or residual < 0
+                or not 0 <= gradient <= peak - minimum + 1e-9
+                or not 0 <= duration <= times[-1] - times[0] + 1e-9):
             raise AssertionError("website metrics contradict its sampled history")
     experiments = data["experiments"]
     if experiments.get("schemaVersion") != "thermoweave.experiments/v1":
