@@ -60,6 +60,7 @@ jobs:
       - name: Require complete exact-source licensed evidence
         if: inputs.pages_evidence
         env:
+          REQUIRE_SCENARIO_HASH_V2: '1'
           EXPECTED_MATLAB_RELEASE: '2024a'
           EXPECTED_SOURCE_SHA: ${{ github.sha }}
         run: |
