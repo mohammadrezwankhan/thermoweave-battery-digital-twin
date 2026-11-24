@@ -8,7 +8,7 @@ This guide describes the public call surface of source `5f29e34788b0f7ee58e2feea
 |---|---|---|
 | `startup()` | Returns repository root and adds three source paths | Does not add `examples`; modifies MATLAB path |
 | `runDemo()` / `runDemo(source, exportPath)` | 30 s default demo, or supplied scenario; canonical result | Optional path writes downsampled JSON; no-output call prints a summary |
-| `thermoweave.simulate(source, seed)` | `source=[]`, JSON path or struct; optional seed override; canonical result | Seed override occurs after loader validation; simulation can raise dimension/solver errors |
+| `thermoweave.simulate(source, seed)` | `source=[]`, JSON path or struct; optional seed override; canonical result | Seeds are numeric integers from 0 to 4294967295. An empty configured simulation seed uses the variability seed. A nonempty override takes precedence. |
 | `thermoweave.run(source, ...)` | Alias of `simulate` | Requires source argument in wrapper |
 | `thermoweave.thermal.simulate(...)` / `integrate(...)` | Forwarding compatibility aliases | Ultimately same solver, not a second implementation |
 | `thermoweave.config.loadScenario(source)` | Deep merges defaults and supplied struct/JSON | Missing file, invalid JSON/type/schema and invalid domain errors |

@@ -32,6 +32,51 @@ classdef TestRegressionContracts < matlab.unittest.TestCase
             testCase.verifyEqual(jsonencode(first), jsonencode(second));
         end
 
+        function invalidSeedsFailAtAllPublicEntryPoints(testCase)
+            cfg = thermoweave.config.defaultConfig();
+            cfg.simulation.duration_s = 0.1;
+            cfg.simulation.outputStep_s = 0.1;
+            cfg.variability.enabled = true;
+            invalid = {-1, 0.5, 2^32, [1 2], 1+1i, true, '7', NaN, Inf};
+            for index = 1:numel(invalid)
+                seed = invalid{index};
+                withSimulationSeed = cfg;
+                withSimulationSeed.simulation.seed = seed;
+                withVariabilitySeed = cfg;
+                withVariabilitySeed.variability.seed = seed;
+                errorId = 'thermoweave:config:Range';
+                testCase.verifyError(@() thermoweave.config.loadScenario(withSimulationSeed), errorId);
+                testCase.verifyError(@() thermoweave.config.loadScenario(withVariabilitySeed), errorId);
+                testCase.verifyError(@() thermoweave.simulate(cfg, seed), errorId);
+                testCase.verifyError(@() thermoweave.uncertainty.applyVariability(cfg, seed), errorId);
+            end
+
+            cfg.variability.enabled = false;
+            testCase.verifyError(@() thermoweave.simulate(cfg, [1 2]), ...
+                'thermoweave:config:Range');
+        end
+
+        function defaultAndOverrideSeedsRecordTheStreamUsed(testCase)
+            cfg = thermoweave.config.defaultConfig();
+            cfg.simulation.duration_s = 0.1;
+            cfg.simulation.outputStep_s = 0.1;
+            cfg.variability.enabled = true;
+            cfg.simulation.seed = [];
+            cfg.variability.seed = 2^32 - 1;
+
+            fromConfig = thermoweave.simulate(cfg);
+            explicit = thermoweave.simulate(cfg, cfg.variability.seed);
+            testCase.verifyEqual(fromConfig.metadata.seed, cfg.variability.seed);
+            testCase.verifyEqual(fromConfig.metadata.variability.seed, cfg.variability.seed);
+            testCase.verifyEqual(jsonencode(fromConfig), jsonencode(explicit));
+
+            zero = thermoweave.simulate(cfg, 0);
+            testCase.verifyEqual(zero.metadata.seed, 0);
+            testCase.verifyEqual(zero.metadata.variability.seed, 0);
+            testCase.verifyNotEqual(zero.configuration.electrical.R0_Ohm, ...
+                fromConfig.configuration.electrical.R0_Ohm);
+        end
+
         function canonicalSchemaAndExportManifestRemainTraceable(testCase)
             cfg = thermoweave.config.defaultConfig();
             cfg.simulation.duration_s = 4;
