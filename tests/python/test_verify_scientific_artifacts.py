@@ -447,6 +447,29 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         with self.assertRaises((AssertionError, ValueError)):
             self.verify()
 
+    def test_rejects_physically_contradictory_e10_measurements(self):
+        # Rebuild JSON, embedded manifest and CSV together: a matching
+        # receipt is not enough when elementary physical invariants fail.
+        original = copy.deepcopy(self.study)
+        cases = (
+            {"peakTemperature_K": 303.0},
+            {"peakEdgeGradient_K": -0.01},
+            {"finalLayerMeanTemperature_K": [-1.0, 302.0, 304.0],
+             "finalLayerSpread_K": 305.0},
+        )
+        try:
+            for updates in cases:
+                with self.subTest(updates=updates):
+                    self.study = copy.deepcopy(original)
+                    self.study["cases"][0].update(updates)
+                    self.write_fixture()
+                    with self.assertRaisesRegex(AssertionError, "E10"):
+                        self.verify()
+        finally:
+            self.study = original
+            self.write_fixture()
+        self.verify()
+
     def test_rejects_e10_energy_residual_above_declared_limit(self):
         # docs/scenarios.md sets <=1e-3 for the E10 synthetic model.
         # A finite but unacceptably large residual must not be attested.
