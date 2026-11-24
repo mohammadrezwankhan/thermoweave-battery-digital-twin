@@ -1,6 +1,7 @@
 function [cfg,info] = applyVariability(cfg,seed)
 %APPLYVARIABILITY Apply seeded parameter dispersion without global RNG state.
 if nargin<2 || isempty(seed), seed=getField(cfg.variability,'seed',getField(cfg.simulation,'seed',0)); end
+thermoweave.config.validateSeed(seed, 'variability seed');
 info=struct('enabled',false,'seed',seed,'draws',struct());
 if ~getField(cfg.variability,'enabled',false), return; end
 rs=RandStream('mt19937ar','Seed',double(seed)); N=cfg.cell.count;

@@ -1,7 +1,10 @@
 function result = simulate(source,varargin)
 %SIMULATE Portable graph electrothermal model with event-aligned integration.
 cfg=thermoweave.config.loadScenario(source);
-if nargin>1 && ~isempty(varargin{1}),cfg.simulation.seed=varargin{1};end
+if nargin>1 && ~isempty(varargin{1})
+    thermoweave.config.validateSeed(varargin{1}, 'seed override');
+    cfg.simulation.seed=varargin{1};
+end
 [cfg,varInfo]=thermoweave.uncertainty.applyVariability(cfg,cfg.simulation.seed);
 topo=thermoweave.thermal.buildTopology(cfg.layout);
 topo=applyEdgeVariability(topo,cfg);

@@ -80,7 +80,8 @@ mustPositiveFinite(cfg.simulation.absoluteTolerance, ...
 if ~ismember(lower(string(cfg.simulation.solver)), ["ode15s", "ode45"])
     error('thermoweave:config:Solver', 'Solver must be ode15s or ode45.');
 end
-mustFinite(getField(cfg.simulation, 'seed', 0), 'simulation.seed');
+cfg.simulation.seed = getField(cfg.simulation, 'seed', cfg.variability.seed);
+thermoweave.config.validateSeed(cfg.simulation.seed, 'simulation.seed');
 
 mustPositiveFinite(cfg.thermal.ambientTemperature_K, ...
     'thermal.ambientTemperature_K', cellCount);
@@ -226,7 +227,7 @@ end
 mustNonnegativeFinite(cfg.variability.R0CV, 'variability.R0CV');
 mustRangeFinite(cfg.variability.uniformFraction, 0, 1, ...
     'variability.uniformFraction');
-mustFinite(cfg.variability.seed, 'variability.seed');
+thermoweave.config.validateSeed(cfg.variability.seed, 'variability.seed');
 edgeCount = thermoweave.thermal.buildTopology(layout).edgeCount;
 edgeScale = getField(cfg.thermal, 'edgeConductanceScale', []);
 if ~isempty(edgeScale)
