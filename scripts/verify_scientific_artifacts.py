@@ -18,6 +18,84 @@ def _finite_number(value):
     return type(value) in (int, float) and math.isfinite(value)
 
 
+def _verify_experiment_observations(rows):
+    # Check only observations emitted by runExperimentSuite. Its full-state
+    # energy calculation and the licensed parity test remain separate checks.
+    def bounded(record, key, lower, upper):
+        value = record.get(key)
+        return _finite_number(value) and lower <= value <= upper
+
+    def require(condition, experiment, description):
+        if not condition:
+            raise AssertionError(f"E{experiment} {description}")
+
+    for index, row in enumerate(rows[:9]):
+        metrics = row.get("metrics")
+        evidence = row.get("evidence")
+        require(isinstance(metrics, dict) and isinstance(evidence, dict),
+                index, "must include experiment metrics and evidence")
+        peak = metrics.get("peakTemperature_K")
+        require(_finite_number(peak), index, "peak temperature must be finite")
+        if index not in (4, 8):
+            require(bounded(metrics, "integratedEnergyResidualNormalized", 0, 1e-3),
+                    index, "independent energy residual outside [0, 1e-3]")
+
+        if index == 0:
+            require(bounded(evidence, "maximumDrift_K", 0, 1e-10),
+                    index, "isothermal drift outside [0, 1e-10] K")
+        elif index == 1:
+            distinct = evidence.get("distinctBoundaryValues")
+            require(type(distinct) is int and distinct > 4,
+                    index, "prescribed gradient requires more than four boundary values")
+        elif index == 2:
+            difference = evidence.get("reversePatternDifference_K")
+            require(_finite_number(difference) and difference > 1e-6,
+                    index, "coolant direction must affect the temperature pattern")
+            require(bounded(evidence, "coolantBalanceError_W", 0, 1e-9),
+                    index, "coolant enthalpy balance outside [0, 1e-9] W")
+            require(bounded(evidence, "reverseIntegratedEnergyResidualNormalized", 0, 1e-3),
+                    index, "reverse coolant independent energy residual outside [0, 1e-3]")
+        elif index == 3:
+            require(bounded(evidence, "peakRiseReductionFraction", 0.15, 1)
+                    and peak <= 318.15, index, "zonal controller misses its stated limits")
+        elif index == 4:
+            peaks = evidence.get("peakTemperature_K")
+            hashes = evidence.get("scenarioHashes")
+            draws = evidence.get("drawsPositive")
+            require(evidence.get("seeds") == [4401, 4402, 4403]
+                    and isinstance(peaks, list) and len(peaks) == 3
+                    and all(_finite_number(value) for value in peaks) and max(peaks) == peak
+                    and isinstance(hashes, list) and len(hashes) == 3
+                    and all(isinstance(value, str) and value for value in hashes)
+                    and len(set(hashes)) == 3
+                    and isinstance(draws, list) and len(draws) == 3
+                    and all(value is True for value in draws)
+                    and evidence.get("firstSeedRepeatedExactly") is True,
+                    index, "seeded variability observations are inconsistent")
+        elif index == 5:
+            factor = evidence.get("measuredConductanceFactor")
+            require(evidence.get("faultTarget") == 2 and _finite_number(factor)
+                    and abs(factor - 0.2) <= 1e-12
+                    and evidence.get("otherSegmentsUnchanged") is True,
+                    index, "coolant fault measurements contradict the specified restriction")
+        elif index == 6:
+            require(evidence.get("faultTarget") == 2 and evidence.get("bias_K") == 5,
+                    index, "sensor fault measurements contradict the specified target or bias")
+        elif index == 7:
+            require(evidence.get("commandsBounded") is True
+                    and evidence.get("benefitClaim") == "descriptive-only"
+                    and _finite_number(evidence.get("openLoopPeakTemperature_K"))
+                    and _finite_number(evidence.get("advancedPeakTemperature_K")),
+                    index, "controller comparison observations are inconsistent")
+        elif index == 8:
+            count = evidence.get("runCount")
+            percentile = evidence.get("peakTemperature95th_K")
+            require(type(count) is int and count > 0 and evidence.get("firstSeed") == 6100
+                    and evidence.get("lastSeed") == 6099 + count
+                    and _finite_number(percentile) and percentile <= peak,
+                    index, "Monte Carlo observations are inconsistent")
+
+
 # A correct aggregate count is not proof that the intended scientific
 # regressions actually ran. Require these named cases as well as green totals.
 # These are synthetic/model/provenance tests, NOT licensed Simscape or
@@ -225,6 +303,7 @@ def verify():
     failed = [r.get("id") for r in rows[:9] if r.get("status") != "PASS"]
     if failed:
         raise AssertionError("E0-E8 must PASS: " + ", ".join(failed))
+    _verify_experiment_observations(rows)
     e9 = rows[9].get("status", "")
     # The hosted license-free runner may report only missing products, not a
     # model/policy/adapter defect disguised as an arbitrary SKIPPED_* success.
