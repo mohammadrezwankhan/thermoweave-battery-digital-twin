@@ -81,6 +81,52 @@ class ArtifactAcceptanceTests(unittest.TestCase):
                                       if i == 9 else {})}
                         for i in range(10)],
         }
+        # Populate the observable E0-E8 evidence, not just PASS labels.
+        # These synthetic fixtures are independent of MATLAB execution.
+        records = self.experiments["records"]
+        for i in (0, 1, 2, 3, 5, 6, 7):
+            records[i]["metrics"] = {
+                "peakTemperature_K": 300.0, "peakEdgeGradient_K": 0.5,
+                "coolingEnergy_J": 1.0, "energyResidualNormalized": 1e-8,
+                "integratedEnergyResidualNormalized": 1e-5,
+                "scenarioHash": f"{i + 100:064x}",
+            }
+        evidence = {
+            0: {"maximumDrift_K": 0.0},
+            1: {"distinctBoundaryValues": 7},
+            2: {"reversePatternDifference_K": 0.4,
+                "reverseResidual": 1e-8,
+                "reverseIntegratedEnergyResidualNormalized": 1e-5,
+                "coolantBalanceError_W": 1e-12},
+            3: {"peakRiseReductionFraction": 0.5,
+                "openLoopPeakTemperature_K": 302.0},
+            4: {"seeds": [4401, 4402, 4403],
+                "peakTemperature_K": [299.0, 300.0, 301.0],
+                "scenarioHashes": [f"{i:064x}" for i in range(200, 203)],
+                "drawsPositive": [True, True, True],
+                "firstSeedRepeatedExactly": True},
+            5: {"faultTarget": 2, "measuredConductanceFactor": 0.2,
+                "otherSegmentsUnchanged": True},
+            6: {"faultTarget": 2, "bias_K": 5},
+            7: {"openLoopPeakTemperature_K": 302.0,
+                "advancedPeakTemperature_K": 299.0,
+                "advancedFallbackEvents": 0, "commandsBounded": True,
+                "benefitClaim": "descriptive-only"},
+            8: {"runCount": 20, "firstSeed": 6100, "lastSeed": 6119,
+                "peakTemperature95th_K": 299.0},
+        }
+        for i, item in evidence.items():
+            records[i]["evidence"] = item
+        records[0]["metrics"].update(peakEdgeGradient_K=0.0,
+                                     coolingEnergy_J=0.0,
+                                     energyResidualNormalized=0.0,
+                                     integratedEnergyResidualNormalized=0.0)
+        records[4]["metrics"] = {"peakTemperature_K": 301.0}
+        records[8]["metrics"] = {"peakTemperature_K": 300.0,
+                                  "coolingEnergy_J": 1.0}
+        records[9]["metrics"] = {}
+        self.experiments["syntheticData"] = True
+        self.experiments["scenarioSpecification"] = "docs/scenarios.md"
         self.manifest = {
             "matlabRelease": "2024a",
             "schemaVersion": "thermoweave.artifacts/v1",
@@ -104,7 +150,7 @@ class ArtifactAcceptanceTests(unittest.TestCase):
             case["scenarioCanonicalHashV2"] = digest(i + 12)
         records = self.experiments["records"]
         for i in (0, 1, 2, 3, 5, 6, 7):
-            records[i]["metrics"] = {"scenarioCanonicalHashV2": digest(i + 20)}
+            records[i]["metrics"]["scenarioCanonicalHashV2"] = digest(i + 20)
         records[4]["evidence"].update(
             seeds=[4401, 4402, 4403],
             scenarioCanonicalHashesV2=[digest(i) for i in range(30, 33)])
@@ -112,7 +158,7 @@ class ArtifactAcceptanceTests(unittest.TestCase):
             "openloop": digest(40), "baseline": digest(27), "advanced": digest(41),
         }
         records[8]["evidence"].update(
-            runCount=2, scenarioCanonicalHashesV2=[digest(50), digest(51)])
+            scenarioCanonicalHashesV2=[digest(i) for i in range(50, 70)])
         self.write_fixture()
 
     def test_fresh_artifacts_require_v2_algorithm(self):
@@ -191,6 +237,7 @@ class ArtifactAcceptanceTests(unittest.TestCase):
                 (self.root / self.names["experiments"]).read_bytes()
             ).hexdigest(),
             "scenarioCount": len(self.experiments["records"]),
+            "monteCarloRuns": 20,
         }
         self.manifest["verification"] = copy.deepcopy(self.verification)
         self.manifest["study3d"] = copy.deepcopy(self.study)
@@ -292,6 +339,38 @@ class ArtifactAcceptanceTests(unittest.TestCase):
             str(self.root / "scripts/verify_scientific_artifacts.py"),
         ):
             verifier.verify()
+
+    def test_rejects_contradictory_pass_experiment_receipts(self):
+        # Recompute the report digest and retain PASS, so only scientific
+        # consistency (not corruption or a stale hash) can reject the bundle.
+        cases = [
+            (0, "evidence", "maximumDrift_K", 1.0),
+            (1, "evidence", "distinctBoundaryValues", 1),
+            (2, "evidence", "reversePatternDifference_K", 0.0),
+            (2, "evidence", "coolantBalanceError_W", 1e-3),
+            (2, "evidence", "reverseIntegratedEnergyResidualNormalized", 0.1),
+            (3, "evidence", "peakRiseReductionFraction", 0.01),
+            (3, "metrics", "peakTemperature_K", 330.0),
+            (4, "evidence", "drawsPositive", [True, False, True]),
+            (4, "evidence", "firstSeedRepeatedExactly", False),
+            (5, "evidence", "measuredConductanceFactor", 1.0),
+            (5, "evidence", "otherSegmentsUnchanged", False),
+            (6, "evidence", "faultTarget", 3),
+            (7, "evidence", "commandsBounded", False),
+            (7, "evidence", "benefitClaim", "universal-superiority"),
+            (8, "evidence", "lastSeed", 6118),
+            (8, "evidence", "peakTemperature95th_K", 400.0),
+            (1, "metrics", "integratedEnergyResidualNormalized", 0.1),
+            (5, "metrics", "integratedEnergyResidualNormalized", -0.1),
+        ]
+        original = copy.deepcopy(self.experiments)
+        for index, section, field, invalid in cases:
+            with self.subTest(experiment=index, field=field):
+                self.experiments = copy.deepcopy(original)
+                self.experiments["records"][index][section][field] = invalid
+                self.write_fixture()
+                with self.assertRaisesRegex(AssertionError, r"E[0-8]"):
+                    self.verify()
 
     def test_rejects_missing_published_e10_csv(self):
         # Previously the manifest validated JSON but never read the CSV.
