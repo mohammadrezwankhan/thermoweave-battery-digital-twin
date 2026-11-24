@@ -69,6 +69,35 @@ classdef TestConfigAndPhysics < matlab.unittest.TestCase
                 'thermoweave:config:Fault');
         end
 
+        function rejectsMalformedFaultScalars(testCase)
+            cfg = thermoweave.config.defaultConfig();
+            fault = struct('type', 'heat_multiplier', 'start_s', 1, ...
+                'end_s', 2, 'target', 1, 'magnitude', 2);
+            invalid = {
+                'start_s', [0 1];
+                'start_s', 1 + 2i;
+                'end_s', '3';
+                'end_s', 3 + 2i;
+                'magnitude', [2 3];
+                'magnitude', 2 + 3i
+            };
+            for k = 1:size(invalid, 1)
+                cfg.faults.events = fault;
+                field = invalid{k, 1};
+                cfg.faults.events.(field) = invalid{k, 2};
+                testCase.verifyError(@() thermoweave.config.loadScenario(cfg), ...
+                    'thermoweave:config:Fault', field);
+            end
+        end
+
+        function preservesOpenEndedFaultWindow(testCase)
+            cfg = thermoweave.config.defaultConfig();
+            cfg.faults.events = struct('type', 'heat_multiplier', ...
+                'start_s', 1, 'end_s', Inf, 'target', 1, 'magnitude', 2);
+            result = thermoweave.config.loadScenario(cfg);
+            testCase.verifyEqual(result.faults.events, cfg.faults.events);
+        end
+
         function rejectsNegativeRuntimeResistanceFactor(testCase)
             cfg = thermoweave.config.defaultConfig();
             cfg.electrical.alphaT_per_K = 0;
