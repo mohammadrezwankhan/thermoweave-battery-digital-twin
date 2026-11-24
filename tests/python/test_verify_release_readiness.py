@@ -228,6 +228,20 @@ class ReleaseReadinessTests(unittest.TestCase):
                 self.write_json("artifacts/reports/experiment-summary.json", self.experiments)
                 self.assert_blocked()
 
+    def test_e9_parity_rejects_ledger_inconsistent_with_temperature_endpoints(self):
+        # All four traces have identical initial and final temperatures:
+        # fixed native E9 cell heat capacity therefore implies zero stored
+        # thermal energy change. Equal, internally balanced ledgers cannot
+        # establish conservation if they contradict the measured endpoints.
+        receipt = self.experiments["records"][9]["evidence"]["numericalParity"]
+        for name in ("baseline", "refined"):
+            for solver in ("core", "simscape"):
+                ledger = receipt[name][solver]["energyLedger"]
+                ledger["generatedHeat_J"] += 100.0
+                ledger["storedEnergyChange_J"] += 100.0
+        self.write_json("artifacts/reports/experiment-summary.json", self.experiments)
+        self.assert_blocked()
+
     def test_stale_source_sha_blocks_release(self):
         self.verification["gitCommit"] = "b" * 40
         self.write_json("artifacts/reports/verification.json", self.verification)
