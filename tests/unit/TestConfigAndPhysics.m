@@ -180,6 +180,33 @@ classdef TestConfigAndPhysics < matlab.unittest.TestCase
                 before.Hcool_W_per_K(:, [1 3 4]), 'AbsTol', 1e-12);
         end
 
+        function coolantSingleSegmentPreservesWeightsAndIds(testCase)
+            cfg = thermoweave.config.defaultConfig();
+            cfg.boundary.mode = 'coolant';
+            cfg.boundary.coolant.segments = 1;
+            cfg.boundary.coolant.segmentConductance_W_per_K = 2;
+            cfg.boundary.coolant.segmentNodes = [0; 0.25; ones(cfg.cell.count-2, 1)];
+            cfg = thermoweave.config.loadScenario(cfg);
+            topology = thermoweave.thermal.buildTopology(cfg.layout);
+            temperature = (300:300+cfg.cell.count-1)';
+            h = 2 * cfg.boundary.coolant.segmentNodes;
+            coolant = cfg.boundary.coolant;
+            flowCapacity = coolant.massFlow_kg_per_s * coolant.specificHeat_J_per_kgK;
+            outlet = (flowCapacity * coolant.inletTemperature_K + h' * temperature) / ...
+                (flowCapacity + sum(h));
+            boundary = thermoweave.coolant.evaluate(temperature, cfg, topology, [], 0);
+            testCase.verifyEqual(boundary.Hcool_W_per_K, h, 'AbsTol', 1e-12);
+            testCase.verifyEqual(boundary.coolantOutletTemperature_K, outlet, 'AbsTol', 1e-12);
+            testCase.verifyEqual(boundary.qCool_W, h.*(outlet-temperature), 'AbsTol', 1e-12);
+            testCase.verifyEqual(boundary.qCool_W(1), 0);
+
+            for ids = {ones(1,cfg.cell.count), ones(cfg.cell.count,1)}
+                cfg.boundary.coolant.segmentNodes = ids{1};
+                boundary = thermoweave.coolant.evaluate(temperature, cfg, topology, [], 0);
+                testCase.verifyEqual(boundary.Hcool_W_per_K, 2*ones(cfg.cell.count,1));
+            end
+        end
+
         function coolantSupportsPerSegmentConductance(testCase)
             cfg = thermoweave.config.defaultConfig();
             cfg.boundary.mode = 'coolant';

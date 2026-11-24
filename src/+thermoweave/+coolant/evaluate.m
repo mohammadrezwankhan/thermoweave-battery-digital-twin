@@ -41,9 +41,15 @@ H=zeros(N,K); nodes=getField(c,'segmentNodes',[]); h=getField(c,'segmentConducta
 if isscalar(h),h=repmat(h,K,1);else,h=h(:);if numel(h)~=K,error('thermoweave:boundary:Dimension','Coolant segment conductance must be scalar or K-by-1.');end,end
 if isempty(nodes), zid=topo.zoneId; for i=1:N,segment=min(K,zid(i));H(i,segment)=h(segment);end
 elseif isnumeric(nodes)
- if isvector(nodes) && numel(nodes)==N, for i=1:N,segment=min(K,max(1,round(nodes(i))));H(i,segment)=h(segment);end
- elseif isequal(size(nodes),[N K]), H=nodes.*h';
- end
+    % A one-segment weight map has vector shape as well.
+    if isequal(size(nodes),[N K])
+        H=nodes.*h';
+    elseif isvector(nodes) && numel(nodes)==N
+        for i=1:N
+            segment=min(K,max(1,round(nodes(i))));
+            H(i,segment)=h(segment);
+        end
+    end
 end
 scale=getField(c,'cellConductanceScale',ones(N,1));
 if isscalar(scale),scale=repmat(scale,N,1);else,scale=scale(:);end
