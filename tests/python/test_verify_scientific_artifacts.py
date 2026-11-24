@@ -49,7 +49,15 @@ class ArtifactAcceptanceTests(unittest.TestCase):
                  "temperature_C": [[20 + j for j in range(12)],
                                     [22 + j for j in range(12)]],
                  "boundaryTemperature_C": [[20] * 12, [20] * 12],
-                 "zoneCommand": [[0] * 4, [0] * 4]}
+                 "zoneCommand": [[0] * 4, [0] * 4],
+                 "metrics": {
+                     "minimumTemperature_K": 292.15,
+                     "peakTemperature_K": 307.15,
+                     "coolingEnergy_J": 0.0,
+                     "timeAboveThreshold_s": 0.0,
+                     "peakEdgeGradient_K": 1.0,
+                     "energyResidualNormalized": 1e-12,
+                 }}
                 for i in range(5)
             ],
         }
@@ -160,6 +168,34 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         records[8]["evidence"].update(
             scenarioCanonicalHashesV2=[digest(i) for i in range(50, 70)])
         self.write_fixture()
+
+    def test_rejects_contradictory_website_metrics(self):
+        # The dashboard displays full-trajectory metrics beside a downsampled
+        # history. Full-history extrema must enclose the exported samples;
+        # they need not equal them. Rehashing contradictory data is not proof.
+        cases = (
+            ("peakTemperature_K", 300.0),
+            ("minimumTemperature_K", 295.0),
+            ("coolingEnergy_J", -1.0),
+            ("timeAboveThreshold_s", 2.0),
+            ("peakEdgeGradient_K", None),
+            ("peakEdgeGradient_K", True),
+            ("peakEdgeGradient_K", -0.01),
+            ("peakEdgeGradient_K", 16.0),
+            ("energyResidualNormalized", None),
+            ("energyResidualNormalized", "1e-9"),
+            ("energyResidualNormalized", -1e-9),
+        )
+        for key, invalid in cases:
+            with self.subTest(metric=key):
+                original = self.web["scenarios"][0]["metrics"][key]
+                self.web["scenarios"][0]["metrics"][key] = invalid
+                try:
+                    self.write_fixture()
+                    with self.assertRaisesRegex(AssertionError, "website.*metrics"):
+                        self.verify()
+                finally:
+                    self.web["scenarios"][0]["metrics"][key] = original
 
     def test_fresh_artifacts_require_v2_algorithm(self):
         with mock.patch.dict(os.environ, {"REQUIRE_SCENARIO_HASH_V2": "1"}):
