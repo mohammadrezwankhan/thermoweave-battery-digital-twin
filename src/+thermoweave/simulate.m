@@ -42,12 +42,15 @@ elseif isnumeric(profile)&&numel(profile)>1
     mesh=[mesh;(0:numel(profile)-1)'];
 end
 mesh=unique(mesh(isfinite(mesh)&mesh>=0&mesh<=cfg.simulation.duration_s));
+% Each declared tick and output sample already has its own exact mesh entry.
+isTick=ismember(mesh,tickTimes);
+[isOutput,outputRows]=ismember(mesh,t);
 ledgerTerms_J=zeros(1,4); % generated, signed boundary, signed coolant, external
 
 for k=1:numel(mesh)-1
     t0=mesh(k); t1=mesh(k+1);
     activationTime=(t0+t1)/2; % One-sided event state inside each interval.
-    if any(abs(tickTimes-t0)<=16*eps(max(1,abs(t0))))
+    if isTick(k)
         sensed=applySensorFaults(y(1:N),cfg,t0,topo);
         ci=struct('temperature_K',sensed,'zoneId',topo.zoneId, ...
             'zoneWeights',ones(N,1), ...
@@ -78,8 +81,8 @@ for k=1:numel(mesh)-1
         state.command=cmd(:);
     end
 
-    outputIndex=find(abs(t-t0)<=16*eps(max(1,abs(t0))),1);
-    if ~isempty(outputIndex)
+    if isOutput(k)
+        outputIndex=outputRows(k);
         T(outputIndex,:)=y(1:N)';S(outputIndex,:)=y(N+1:end)';
         U(outputIndex,:)=cmd(:)';
         [~,bd,qq,ii,cc,rr]=derivative(t0,y,cmd,activationTime);

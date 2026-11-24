@@ -81,6 +81,45 @@ classdef TestSimulationIntegration < matlab.unittest.TestCase
                 initialHeat, 'AbsTol', 1e-12);
         end
 
+        function decimalOutputGridDoesNotRepeatControllerTicks(testCase)
+            cfg = thermoweave.config.defaultConfig();
+            cfg.simulation.duration_s = 1.1;
+            cfg.simulation.outputStep_s = 0.1;
+            cfg.controller.samplePeriod_s = 0.3;
+            cfg.controller.referenceTemperature_K = 250;
+            cfg.controller.rateLimit_per_s = 0.2;
+
+            tickTimes = (0:3)' * cfg.controller.samplePeriod_s;
+            step = cfg.controller.rateLimit_per_s * cfg.controller.samplePeriod_s;
+            sampleTimes = (0:cfg.simulation.outputStep_s:cfg.simulation.duration_s)';
+            expected = repmat(sum(sampleTimes >= tickTimes', 2) * step, ...
+                1, cfg.layout.zoneCount);
+            for solver = ["ode45", "ode15s"]
+                cfg.simulation.solver = char(solver);
+                result = thermoweave.simulate(cfg);
+                testCase.verifyEqual(result.time_s, sampleTimes);
+                testCase.verifyEqual(result.control.zoneCommand, expected, ...
+                    'AbsTol', 1e-12, sprintf('%s controller command', solver));
+            end
+        end
+
+        function nearbyCurrentTransitionDoesNotOverwriteEarlierOutput(testCase)
+            cfg = thermoweave.config.defaultConfig();
+            cfg.simulation.duration_s = 2;
+            cfg.simulation.outputStep_s = 1;
+            cfg.controller.mode = 'openloop';
+            cfg.electrical.currentProfile = struct( ...
+                'time_s', [0; 1 + 8*eps(1); 2], 'current_A', [1; 2; 3]);
+
+            for solver = ["ode45", "ode15s"]
+                cfg.simulation.solver = char(solver);
+                result = thermoweave.simulate(cfg);
+                testCase.verifyEqual(result.time_s, [0; 1; 2]);
+                testCase.verifyEqual(result.signals.current_A, [1; 1; 3], ...
+                    sprintf('%s sampled current', solver));
+            end
+        end
+
         function externalHeatPreservesEnergyAccounting(testCase)
             cfg = thermoweave.config.defaultConfig();
             cfg.simulation.duration_s = 4;
