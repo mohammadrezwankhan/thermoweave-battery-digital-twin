@@ -43,6 +43,27 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.web = {"matlabRelease": "2024a", "scenarios": [{"id": str(i)} for i in range(5)]}
         self.experiments = {"matlabRelease": "2024a", "records": [
             {"id": "E" + str(i), "status": "PASS"} for i in range(10)]}
+        # Synthetic comparison traces exercise the mechanical contract only.
+        # These are NOT licensed execution data or a scientific acceptance.
+        def trace():
+            return {
+                "time_s": list(range(601)),
+                "temperature_K": [[298.15] * 12 for _ in range(601)],
+                "soc": [[0.8] * 12 for _ in range(601)],
+                "energyLedger": {"generatedHeat_J": 10.0, "ambientHeat_J": -4.0,
+                                 "coolantHeat_J": -6.0, "externalHeat_J": 0.0,
+                                 "storedEnergyChange_J": 0.0, "normalizedResidual": 0.0},
+            }
+        self.experiments["records"][9]["evidence"] = {
+            "adapterStatus": "PASS",
+            "numericalParity": {
+                "schemaVersion": "thermoweave.e9-parity/v1",
+                "gitCommit": self.SHA, "matlabRelease": "2024a",
+                "modelSha256": "18ad387d658f52930209938881d50ad724a4e7038b8e756b094a82df1812adda",
+                "baseline": {"maxStep_s": 0.25, "core": trace(), "simscape": trace()},
+                "refined": {"maxStep_s": 0.125, "core": trace(), "simscape": trace()},
+            },
+        }
         self.verification = {"gitCommit": self.SHA, "matlabRelease": "2024a",
                              "testCount": 63, "passed": 63, "failed": 0,
                              "incomplete": 0, "codeAnalyzerFindings": 0,
@@ -166,6 +187,46 @@ class ReleaseReadinessTests(unittest.TestCase):
         }
         self.write_json("artifacts/reports/experiment-summary.json", self.experiments)
         self.assert_blocked()
+
+    def test_e9_parity_rejects_invalid_comparison_receipts(self):
+        import copy
+        record = self.experiments["records"][9]
+        original = copy.deepcopy(record["evidence"])
+        for case in ("wrong-source", "wrong-model", "wrong-runtime", "missing-refined",
+                     "wrong-step", "truncated", "temperature", "soc", "energy",
+                     "residual", "refinement"):
+            with self.subTest(case=case):
+                record["evidence"] = copy.deepcopy(original)
+                receipt = record["evidence"]["numericalParity"]
+                baseline = receipt["baseline"]
+                refined = receipt["refined"]
+                if case == "wrong-source":
+                    receipt["gitCommit"] = "b" * 40
+                elif case == "wrong-model":
+                    receipt["modelSha256"] = "b" * 64
+                elif case == "wrong-runtime":
+                    receipt["matlabRelease"] = "2026a"
+                elif case == "missing-refined":
+                    del receipt["refined"]
+                elif case == "wrong-step":
+                    refined["maxStep_s"] = 0.25
+                elif case == "truncated":
+                    baseline["simscape"]["temperature_K"].pop()
+                elif case == "temperature":
+                    baseline["simscape"]["temperature_K"][300][0] += 0.11
+                elif case == "soc":
+                    baseline["simscape"]["soc"][300][0] += 0.0002
+                elif case == "energy":
+                    ledger = baseline["simscape"]["energyLedger"]
+                    ledger["generatedHeat_J"] += 1
+                    ledger["ambientHeat_J"] -= 1
+                elif case == "residual":
+                    baseline["simscape"]["energyLedger"]["storedEnergyChange_J"] = 1
+                elif case == "refinement":
+                    for key in ("core", "simscape"):
+                        refined[key]["temperature_K"][300][0] += 0.06
+                self.write_json("artifacts/reports/experiment-summary.json", self.experiments)
+                self.assert_blocked()
 
     def test_stale_source_sha_blocks_release(self):
         self.verification["gitCommit"] = "b" * 40
