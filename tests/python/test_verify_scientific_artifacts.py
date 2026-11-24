@@ -363,6 +363,22 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         with self.assertRaisesRegex(AssertionError, "website.*width"):
             self.verify()
 
+    def test_rejects_out_of_range_downsampled_zone_commands(self):
+        # docs/model.md declares normalized actuator commands in [0, 1].
+        # Recomputing both website copies and their digest must not hide a
+        # finite but physically invalid command in an otherwise aligned row.
+        for value in (-0.01, 1.01):
+            with self.subTest(value=value):
+                self.web["scenarios"][0]["zoneCommand"][1][2] = value
+                self.write_fixture()
+                with self.assertRaisesRegex(AssertionError, "website.*zoneCommand.*bounds"):
+                    self.verify()
+
+    def test_accepts_zone_command_endpoints(self):
+        self.web["scenarios"][0]["zoneCommand"][1] = [0, 1, 0.25, 0.75]
+        self.write_fixture()
+        self.verify()
+
     def test_rejects_consistently_truncated_cell_inventory(self):
         # The time/width guards alone cannot detect uniformly losing a cell:
         # all samples and both temperature fields can still agree at 11 cells.
