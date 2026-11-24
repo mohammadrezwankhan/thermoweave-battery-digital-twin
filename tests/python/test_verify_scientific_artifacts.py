@@ -120,6 +120,19 @@ class ArtifactAcceptanceTests(unittest.TestCase):
             with self.assertRaisesRegex(AssertionError, "scenario hash v2 algorithm"):
                 self.verify()
 
+    def test_licensed_release_workflow_requires_canonical_v2(self):
+        # The manual licensed Pages/tag evidence workflow must enforce the
+        # same canonical identity policy as hosted scientific reproduction.
+        # A missing manifest declaration otherwise disables v2 validation.
+        workflow = (HERE / ".github/workflows/simscape-integration.yml").read_text(
+            encoding="utf-8")
+        step = workflow.split(
+            "- name: Require complete exact-source licensed evidence", 1)[1]
+        step = step.split("\n      - name:", 1)[0]
+        self.assertIn("python3 scripts/verify_scientific_artifacts.py", step)
+        self.assertRegex(step, r"(?m)^\s+REQUIRE_SCENARIO_HASH_V2:\s*['\"]?1['\"]?\s*$",
+                         "Licensed release must require canonical v2 provenance")
+
     def test_accepts_complete_v2_identity_bundle(self):
         self.add_v2_fixture()
         self.verify()
