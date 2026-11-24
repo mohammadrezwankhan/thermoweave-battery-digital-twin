@@ -11,6 +11,52 @@ classdef TestStructuredCurrentProfile < matlab.unittest.TestCase
     end
 
     methods (Test)
+        function rejectsMalformedStructuredProfiles(testCase)
+            cfg = thermoweave.config.defaultConfig();
+            invalid = {
+                struct('time_s', [], 'current_A', 3);
+                struct('time_s', [0 1; 2 3], 'current_A', 3);
+                struct('time_s', [0 1 2 3], 'current_A', [1 2; 3 4]);
+                struct('time_s', 'AB', 'current_A', [1 2]);
+                struct('time_s', [0 1], 'current_A', 'AB');
+                struct('time_s', [0 1i], 'current_A', [1 2]);
+                struct('time_s', [0 1], 'current_A', [1 2i]);
+                repmat(struct('time_s', 0, 'current_A', 2), 1, 2)
+            };
+            for k = 1:numel(invalid)
+                cfg.electrical.currentProfile = invalid{k};
+                testCase.verifyError(@() thermoweave.config.loadScenario(cfg), ...
+                    'thermoweave:config:Profile', sprintf('Malformed profile %d', k));
+            end
+        end
+
+        function rowAndColumnProfilesMatch(testCase,solver)
+            cfg = adiabaticConfig(solver);
+            cfg.electrical.currentProfile = struct( ...
+                'time_s', [0 0.37 1.23], 'current_A', [7 -4 0]);
+            row = thermoweave.simulate(cfg);
+            cfg.electrical.currentProfile.time_s = cfg.electrical.currentProfile.time_s';
+            cfg.electrical.currentProfile.current_A = cfg.electrical.currentProfile.current_A';
+            column = thermoweave.simulate(cfg);
+            testCase.verifyEqual(row.signals.current_A, column.signals.current_A);
+            testCase.verifyEqual(row.state, column.state);
+            testCase.verifyEqual(row.energyLedger, column.energyLedger);
+        end
+
+        function scalarCurrentAcrossSeveralKnotsMatchesConstant(testCase,solver)
+            cfg = adiabaticConfig(solver);
+            cfg.electrical.current_A = -4;
+            constant = thermoweave.simulate(cfg);
+            cfg.electrical.current_A = 9;
+            cfg.electrical.currentProfile = struct( ...
+                'time_s', [0 0.37 1.23], 'current_A', -4);
+            profiled = thermoweave.simulate(cfg);
+            testCase.verifyEqual(profiled.signals.current_A, constant.signals.current_A);
+            testCase.verifyEqual(profiled.state.temperature_K, ...
+                constant.state.temperature_K, 'AbsTol', 1e-7);
+            testCase.verifyEqual(profiled.state.soc, constant.state.soc, 'AbsTol', 1e-11);
+        end
+
         function singleKnotIsAConstantProfile(testCase,solver)
             cfg = adiabaticConfig(solver);
             cfg.electrical.current_A = -4;
