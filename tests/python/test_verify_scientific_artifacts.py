@@ -161,6 +161,34 @@ class ArtifactAcceptanceTests(unittest.TestCase):
             scenarioCanonicalHashesV2=[digest(i) for i in range(50, 70)])
         self.write_fixture()
 
+    def test_rejects_contradictory_website_metrics(self):
+        # The dashboard displays full-trajectory metrics beside a downsampled
+        # history. Full-history extrema must enclose the exported samples;
+        # they need not equal them. Rehashing contradictory data is not proof.
+        for scenario in self.web["scenarios"]:
+            scenario["metrics"] = {
+                "minimumTemperature_K": 293.15,
+                "peakTemperature_K": 306.15,
+                "coolingEnergy_J": 0.0,
+                "timeAboveThreshold_s": 0.0,
+            }
+        cases = (
+            ("peakTemperature_K", 300.0),
+            ("minimumTemperature_K", 295.0),
+            ("coolingEnergy_J", -1.0),
+            ("timeAboveThreshold_s", 2.0),
+        )
+        for key, invalid in cases:
+            with self.subTest(metric=key):
+                original = self.web["scenarios"][0]["metrics"][key]
+                self.web["scenarios"][0]["metrics"][key] = invalid
+                try:
+                    self.write_fixture()
+                    with self.assertRaisesRegex(AssertionError, "website.*metrics"):
+                        self.verify()
+                finally:
+                    self.web["scenarios"][0]["metrics"][key] = original
+
     def test_fresh_artifacts_require_v2_algorithm(self):
         with mock.patch.dict(os.environ, {"REQUIRE_SCENARIO_HASH_V2": "1"}):
             with self.assertRaisesRegex(AssertionError, "scenario hash v2 algorithm"):
