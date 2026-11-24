@@ -49,7 +49,13 @@ class ArtifactAcceptanceTests(unittest.TestCase):
                  "temperature_C": [[20 + j for j in range(12)],
                                     [22 + j for j in range(12)]],
                  "boundaryTemperature_C": [[20] * 12, [20] * 12],
-                 "zoneCommand": [[0] * 4, [0] * 4]}
+                 "zoneCommand": [[0] * 4, [0] * 4],
+                 "metrics": {
+                     "minimumTemperature_K": 292.15,
+                     "peakTemperature_K": 307.15,
+                     "coolingEnergy_J": 0.0,
+                     "timeAboveThreshold_s": 0.0,
+                 }}
                 for i in range(5)
             ],
         }
@@ -165,13 +171,6 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         # The dashboard displays full-trajectory metrics beside a downsampled
         # history. Full-history extrema must enclose the exported samples;
         # they need not equal them. Rehashing contradictory data is not proof.
-        for scenario in self.web["scenarios"]:
-            scenario["metrics"] = {
-                "minimumTemperature_K": 293.15,
-                "peakTemperature_K": 306.15,
-                "coolingEnergy_J": 0.0,
-                "timeAboveThreshold_s": 0.0,
-            }
         cases = (
             ("peakTemperature_K", 300.0),
             ("minimumTemperature_K", 295.0),
