@@ -3,7 +3,7 @@
   "createdUtc": "2026-11-21",
   "baselineSha": "6b48646da2f6f8b60a13b14e19c4c65e45b17383",
   "candidateBranch": "audit/thermoweave-engineering-20261121",
-  "verificationNote": "Patch status reflects GitHub write acceptance only; MATLAB runtime verification is not yet completed.",
+  "verificationNote": "Historical audit patch statuses and formal findings below are preserved. See postConsolidationEvidence for scoped exact-main hosted MATLAB evidence as of 2026-11-23 UTC. No formal finding or release gate is promoted.",
   "findings": [
     {
       "id": "TW-PHY-001",
@@ -378,5 +378,35 @@
     "optionalIncompleteTest": "TestSimulationIntegration/advancedControllerCoolsHotZonesAndHonorsRate",
     "executedSourceTestSha": "0287e46ed273d3154e0bed9309a318a809702683",
     "note": "General physical gates remain unresolved; later audit-only report commit requires final-head CI."
+  },
+  "postConsolidationEvidence": {
+    "sourceSha": "4d9d9c24875c85f7b0086c9d80e25326fb955c9b",
+    "observedUtc": "2026-11-23",
+    "matlabRelease": "R2024a",
+    "core": {
+      "runId": 45270663603,
+      "passed": 97,
+      "failed": 0,
+      "incomplete": 2
+    },
+    "scientificReproduction": {
+      "runId": 45270663634,
+      "passed": 99,
+      "failed": 0,
+      "incomplete": 0,
+      "codeAnalyzerFindings": 0,
+      "pythonProvenanceTestsPassed": 44,
+      "artifactId": 14864986990,
+      "artifactSha256": "242a8441550c74304c003dcf257aeb5f62d032483692c3d8a7e81fe4a431ccf2"
+    },
+    "scopedEvidence": [
+      "Both advanced-controller/overlap QP tests passed in scientific reproduction, not in core CI.",
+      "Two solvers across three bounded stiffness regimes pass tolerance-sweep regressions.",
+      "E0-E8 PASS; E9 SKIPPED_MISSING_PRODUCT; E10 three 36-node/75-edge cases.",
+      "Fresh web JSON copies and manifest SHA agree; downsampled histories aligned."
+    ],
+    "releaseDecision": "HOLD",
+    "limitation": "Synthetic evidence is not real-cell validation. Licensed Simscape parity, broader physics, cross-release qualification, independent security/IP/governance review and deployed-site parity remain unresolved. Evidence at this source SHA is not evidence for a successor documentation SHA.",
+    "matrix": "audit/SCIENTIFIC_VERIFICATION_MATRIX.md"
   }
 }
