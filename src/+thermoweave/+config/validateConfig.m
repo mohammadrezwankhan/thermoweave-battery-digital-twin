@@ -270,14 +270,20 @@ for index = 1:numel(cfg.faults.events)
     if ~isscalar(type) || ~ismember(type, known)
         error('thermoweave:config:Fault', 'Unsupported fault type.');
     end
+    values = {event.start_s, event.end_s, event.magnitude};
+    isRealScalar = @(value) (isnumeric(value) || islogical(value)) && ...
+        isreal(value) && isscalar(value);
+    if ~all(cellfun(isRealScalar, values))
+        error('thermoweave:config:Fault', ...
+            'Fault start_s, end_s, and magnitude must be real scalars.');
+    end
     mustFinite(event.start_s, 'fault.start_s');
-    if ~isscalar(event.end_s) || isnan(event.end_s) || event.end_s == -Inf
+    if isnan(event.end_s) || event.end_s == -Inf
         error('thermoweave:config:Fault', ...
             'fault.end_s must be finite or positive infinity.');
     end
     mustFinite(event.magnitude, 'fault.magnitude');
-    if ~isscalar(event.start_s) || ~isscalar(event.end_s) || ...
-            event.start_s < 0 || event.end_s < event.start_s
+    if event.start_s < 0 || event.end_s < event.start_s
         error('thermoweave:config:Fault', ...
             'Fault time windows must satisfy 0 <= start_s <= end_s.');
     end
