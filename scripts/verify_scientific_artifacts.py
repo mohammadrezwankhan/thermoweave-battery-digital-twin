@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import re
 import sys
+import time
 import xml.etree.ElementTree as ET
 
 
@@ -427,6 +428,26 @@ def verify():
         raise AssertionError("Unexpected MATLAB verification schema")
     if manifest.get("verification") != verification:
         raise AssertionError("Embedded verification mismatch with regenerated test report")
+    raw_timestamp = verification.get("timestampUtc")
+    if not isinstance(raw_timestamp, str) or not raw_timestamp.strip():
+        raise AssertionError("Missing MATLAB verification timestamp")
+    try:
+        from datetime import datetime
+        ts_str = raw_timestamp.strip()
+        if ts_str.endswith("Z"):
+            ts_dt = datetime.fromisoformat(ts_str[:-1] + "+00:00")
+        else:
+            ts_dt = datetime.fromisoformat(ts_str)
+        if ts_dt.tzinfo is None:
+            raise ValueError("Naive timestamp")
+        timestamp_epoch = ts_dt.timestamp()
+    except Exception as exc:
+        raise AssertionError(f"Malformed MATLAB verification timestamp: {raw_timestamp!r}") from exc
+
+    if timestamp_epoch + 10.0 < marker.stat().st_mtime:
+        raise AssertionError("Stale MATLAB verification timestamp predates artifact regeneration")
+    if timestamp_epoch > max(time.time(), marker.stat().st_mtime) + 300:
+        raise AssertionError("MATLAB verification timestamp is in the future")
     counts = [verification.get(key) for key in
               ("testCount", "passed", "failed", "incomplete")]
     if any(type(n) is not int or n < 0 for n in counts):

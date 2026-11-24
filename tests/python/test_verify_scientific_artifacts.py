@@ -1,6 +1,7 @@
 """Adversarial regression tests for provenance acceptance (no MATLAB required)."""
 import copy
 import csv
+from datetime import datetime, timezone
 import hashlib
 import importlib.util
 import json
@@ -80,6 +81,9 @@ class ArtifactAcceptanceTests(unittest.TestCase):
             "passed": 57, "failed": 0, "incomplete": 1,
             "codeAnalyzerFindings": 0, "gitCommit": "a" * 40,
             "simscapeAdapterStatus": "SKIPPED_MISSING_PRODUCT",
+            "timestampUtc": datetime.fromtimestamp(
+                marker.stat().st_mtime, timezone.utc
+            ).strftime("%Y-%m-%dT%H:%M:%SZ"),
         }
         self.experiments = {
             "matlabRelease": "2024a", "schemaVersion": "thermoweave.experiments/v1",
@@ -557,6 +561,33 @@ class ArtifactAcceptanceTests(unittest.TestCase):
                 self.verify()
 
 
+
+    def test_rejects_missing_stale_or_future_verification_timestamp(self):
+        # The files can be freshly rewritten while the embedded verification
+        # timestamp is missing or belongs to an unrelated run. Match the
+        # duplicated manifest receipt so that its equality check cannot mask
+        # this defect. MATLAB emits UTC timestamps with whole-second precision.
+        marker = self.root / "results/artifact-regeneration-start.flag"
+        start = marker.stat().st_mtime
+        from datetime import datetime, timezone
+        def utc_stamp(seconds):
+            return datetime.fromtimestamp(seconds, timezone.utc).strftime(
+                "%Y-%m-%dT%H:%M:%SZ")
+        self.verification["timestampUtc"] = utc_stamp(start)
+        self.write_fixture()
+        self.verify()
+        for label, value in (
+                ("missing", None), ("malformed", "not-a-timestamp"),
+                ("stale", utc_stamp(start - 3600)),
+                ("future", utc_stamp(start + 86400))):
+            with self.subTest(timestamp=label):
+                if value is None:
+                    self.verification.pop("timestampUtc", None)
+                else:
+                    self.verification["timestampUtc"] = value
+                self.write_fixture()
+                with self.assertRaisesRegex(AssertionError, "timestamp"):
+                    self.verify()
 
     def test_rejects_missing_expected_source_sha(self):
         # A standalone invocation must not silently disable commit binding.
