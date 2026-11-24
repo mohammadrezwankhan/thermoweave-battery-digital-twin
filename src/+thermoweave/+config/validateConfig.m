@@ -341,11 +341,16 @@ if isempty(value)
     target = []; % Empty target means the fault applies globally.
     return
 end
-if isnumeric(value) && isscalar(value)
+if isnumeric(value) && isscalar(value) && isreal(value) && isfinite(value)
     target = value;
     return
 end
-token = regexp(char(string(value)), '\d+', 'match', 'once');
+if ~((ischar(value) && isrow(value)) || ...
+        (isstring(value) && isscalar(value) && ~ismissing(value)))
+    target = [];
+    return
+end
+token = regexp(char(value), '\d+', 'match', 'once');
 if isempty(token)
     target = [];
 else

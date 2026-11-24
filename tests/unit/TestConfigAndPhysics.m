@@ -90,6 +90,38 @@ classdef TestConfigAndPhysics < matlab.unittest.TestCase
             end
         end
 
+        function rejectsMalformedFaultTargetShapes(testCase)
+            cfg = thermoweave.config.defaultConfig();
+            cfg.faults.events = struct('type', 'heat_multiplier', ...
+                'start_s', 1, 'end_s', 2, 'target', 1, 'magnitude', 2);
+            invalid = {[1 2], [1; 2], 1+2i, NaN, Inf, ["cell-1", "cell-2"], ...
+                char('cell-1', 'cell-2'), {'cell-1', 'cell-2'}, struct('index', 1)};
+            for index = 1:numel(invalid)
+                cfg.faults.events.target = invalid{index};
+                testCase.verifyError(@() thermoweave.config.loadScenario(cfg), ...
+                    'thermoweave:config:Fault', sprintf('target case %d', index));
+            end
+        end
+
+        function preservesScalarAndGlobalFaultTargets(testCase)
+            cfg = thermoweave.config.defaultConfig();
+            cfg.faults.events = struct('type', 'heat_multiplier', ...
+                'start_s', 0, 'end_s', 2, 'target', 2, 'magnitude', 3);
+            for target = {2, 'cell-2', "cell-2", []}
+                cfg.faults.events.target = target{1};
+                validated = thermoweave.config.loadScenario(cfg);
+                testCase.verifyEqual(validated.faults.events.target, target{1});
+                initial = struct('heatMultiplier', ones(3, 1));
+                actual = thermoweave.uncertainty.applyFaults(validated, 1, initial);
+                if isempty(target{1})
+                    expected = 3 * ones(3, 1);
+                else
+                    expected = [1; 3; 1];
+                end
+                testCase.verifyEqual(actual.heatMultiplier, expected);
+            end
+        end
+
         function preservesOpenEndedFaultWindow(testCase)
             cfg = thermoweave.config.defaultConfig();
             cfg.faults.events = struct('type', 'heat_multiplier', ...
