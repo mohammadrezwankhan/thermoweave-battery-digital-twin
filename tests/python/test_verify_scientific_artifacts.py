@@ -1,6 +1,7 @@
 """Adversarial regression tests for provenance acceptance (no MATLAB required)."""
 import copy
 import csv
+from datetime import datetime, timezone
 import hashlib
 import importlib.util
 import json
@@ -80,6 +81,9 @@ class ArtifactAcceptanceTests(unittest.TestCase):
             "passed": 57, "failed": 0, "incomplete": 1,
             "codeAnalyzerFindings": 0, "gitCommit": "a" * 40,
             "simscapeAdapterStatus": "SKIPPED_MISSING_PRODUCT",
+            "timestampUtc": datetime.fromtimestamp(
+                marker.stat().st_mtime, timezone.utc
+            ).strftime("%Y-%m-%dT%H:%M:%SZ"),
         }
         self.experiments = {
             "matlabRelease": "2024a", "schemaVersion": "thermoweave.experiments/v1",
