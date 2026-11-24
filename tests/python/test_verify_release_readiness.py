@@ -155,6 +155,18 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.write_json("artifacts/reports/experiment-summary.json", self.experiments)
         self.assert_blocked()
 
+    def test_e9_execution_only_does_not_establish_numerical_parity(self):
+        # This mirrors the current E9 producer: execution and mapping are
+        # recorded, but no independently evaluated numerical comparison.
+        # Even with all other mechanical gates set to PASS in this fixture,
+        # the absence of parity observations must veto publication.
+        self.experiments["records"][9]["evidence"] = {
+            "adapterStatus": "PASS",
+            "message": "Simscape scenario executed and mapped.",
+        }
+        self.write_json("artifacts/reports/experiment-summary.json", self.experiments)
+        self.assert_blocked()
+
     def test_stale_source_sha_blocks_release(self):
         self.verification["gitCommit"] = "b" * 40
         self.write_json("artifacts/reports/verification.json", self.verification)
