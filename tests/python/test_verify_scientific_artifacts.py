@@ -239,6 +239,22 @@ class ArtifactAcceptanceTests(unittest.TestCase):
             ("TestSimscapeModelProvenance", "modifiedModelBytesFailClosed"),
             ("TestIndependentEnergyAcceptance", "coolantEnergyResidualConvergesUnderRefinement"),
             ("TestScientificAuditGates", "advancedExecutionMetadataCannotClaimUnexecutedQP"),
+            ("TestAuditRegressions",
+             "overlappingFaultsRespectControllerClock(controllerMode=baseline)"),
+            ("TestAuditRegressions",
+             "overlappingFaultsRespectControllerClock(controllerMode=advanced)"),
+            ("TestAnisotropicThermalGraph",
+             "toleranceSweepConvergesAcrossStiffness(solver=ode45,scenario=mild)"),
+            ("TestAnisotropicThermalGraph",
+             "toleranceSweepConvergesAcrossStiffness(solver=ode45,scenario=moderate)"),
+            ("TestAnisotropicThermalGraph",
+             "toleranceSweepConvergesAcrossStiffness(solver=ode45,scenario=stiff)"),
+            ("TestAnisotropicThermalGraph",
+             "toleranceSweepConvergesAcrossStiffness(solver=ode15s,scenario=mild)"),
+            ("TestAnisotropicThermalGraph",
+             "toleranceSweepConvergesAcrossStiffness(solver=ode15s,scenario=moderate)"),
+            ("TestAnisotropicThermalGraph",
+             "toleranceSweepConvergesAcrossStiffness(solver=ode15s,scenario=stiff)"),
         ]
         passing_by_class = {
             "TestAuditRegressions": [
@@ -535,6 +551,41 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         junit.write(path, encoding="utf-8")
         with self.assertRaisesRegex(AssertionError, "required scientific regression"):
             self.verify()
+
+    def test_rejects_omitted_overlap_and_stiffness_regressions_with_same_totals(self):
+        # Independently named parameterized cases support the bounded CTRL,
+        # FAULT and NUM evidence. Replacing any one with an unrelated passing
+        # test must not preserve scientific acceptance just by keeping counts.
+        required_cases = [
+            ("TestAuditRegressions",
+             "overlappingFaultsRespectControllerClock(controllerMode=baseline)"),
+            ("TestAuditRegressions",
+             "overlappingFaultsRespectControllerClock(controllerMode=advanced)"),
+            ("TestAnisotropicThermalGraph",
+             "toleranceSweepConvergesAcrossStiffness(solver=ode45,scenario=mild)"),
+            ("TestAnisotropicThermalGraph",
+             "toleranceSweepConvergesAcrossStiffness(solver=ode45,scenario=moderate)"),
+            ("TestAnisotropicThermalGraph",
+             "toleranceSweepConvergesAcrossStiffness(solver=ode45,scenario=stiff)"),
+            ("TestAnisotropicThermalGraph",
+             "toleranceSweepConvergesAcrossStiffness(solver=ode15s,scenario=mild)"),
+            ("TestAnisotropicThermalGraph",
+             "toleranceSweepConvergesAcrossStiffness(solver=ode15s,scenario=moderate)"),
+            ("TestAnisotropicThermalGraph",
+             "toleranceSweepConvergesAcrossStiffness(solver=ode15s,scenario=stiff)"),
+        ]
+        path = self.root / "results/test-results.xml"
+        original = path.read_bytes()
+        for classname, name in required_cases:
+            with self.subTest(classname=classname, name=name):
+                junit = ET.fromstring(original)
+                case = next(case for case in junit.iter("testcase")
+                            if (case.get("classname"), case.get("name"))
+                            == (classname, name))
+                case.set("name", "unrelatedPassingScientificTest")
+                path.write_bytes(ET.tostring(junit, encoding="utf-8"))
+                with self.assertRaisesRegex(AssertionError, "required scientific regression"):
+                    self.verify()
 
     def test_rejects_omitted_model_provenance_regression_with_same_totals(self):
         # A green aggregate count is not evidence that the model-byte
