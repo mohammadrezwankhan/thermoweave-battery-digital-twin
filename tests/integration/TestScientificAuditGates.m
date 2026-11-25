@@ -315,6 +315,39 @@ classdef TestScientificAuditGates < matlab.unittest.TestCase
             testCase.verifyFalse(isfield(evidence, "numericalParity"));
         end
 
+
+        function e9ExperimentReportPreservesCollectorReceipt(testCase)
+            % Explicit offline injection, temporary output only. These are
+            % synthetic software fixtures, never licensed scientific evidence.
+            root = fileparts(fileparts(fileparts(mfilename('fullpath'))));
+            testCase.applyFixture(matlab.unittest.fixtures.PathFixture(fullfile(root,'tools')));
+            folder = matlab.unittest.fixtures.TemporaryFolderFixture;
+            testCase.applyFixture(folder);
+            output = string(fullfile(folder.Folder, 'experiment-summary.json'));
+            [core, adapter, refinedCore, refinedAdapter, ~] = e9ReceiptFixture();
+            adapter.message = "Synthetic baseline execution fixture";
+            refinedAdapter.message = "Synthetic refined execution fixture";
+            coreRunner = @(cfg) e9SelectFixture(cfg, core, refinedCore);
+            adapterRunner = @(cfg) e9SelectFixture(cfg, adapter, refinedAdapter);
+
+            [manifest, execution] = runExperimentSuite(MonteCarloRuns=1, ...
+                OutputPath=output, E9CoreRunner=coreRunner, E9AdapterRunner=adapterRunner);
+            [status, source] = system('git rev-parse HEAD');
+            testCase.assertEqual(status, 0);
+            expected = thermoweave.validation.packE9ParityReceipt( ...
+                core, adapter, refinedCore, refinedAdapter, string(strtrim(source)));
+            raw = fileread(output);
+            report = jsondecode(raw);
+            testCase.assertEqual(string(report.records(10).id), "E9");
+            testCase.verifyEqual(execution, adapter);
+            testCase.verifyEqual(string(report.records(10).status), "PASS");
+            testCase.verifyEqual(string(report.records(10).evidence.adapterStatus), "PASS");
+            testCase.verifyEqual(report.records(10).evidence.numericalParity, ...
+                jsondecode(jsonencode(expected)));
+            testCase.verifyEqual(string(manifest.sha256), ...
+                string(thermoweave.util.hashText(raw)));
+        end
+
     end
 end
 
