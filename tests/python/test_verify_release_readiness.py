@@ -377,13 +377,21 @@ class PagesPublicationGateContractTests(unittest.TestCase):
         self.assertIn("runs-on: [self-hosted, thermoweave-simscape]", workflow)
         self.assertLess(workflow.index('test "$GITHUB_REF" = refs/heads/main'),
                         workflow.index("Stage the locally approved E9 model"))
-        source, archive = workflow.split("Retain exact-main licensed Pages evidence", 1)
+        integration, candidate = workflow.split("\n  candidate:\n", 1)
+        source, archive = integration.split("Retain exact-main licensed Pages evidence", 1)
         self.assertIn('receipt["simscapeAdapterStatus"] != "PASS"', source)
         self.assertIn("python3 scripts/verify_scientific_artifacts.py", source)
         self.assertIn("EXPECTED_SOURCE_SHA: ${{ github.sha }}", source)
         self.assertIn("name: thermoweave-licensed-pages-evidence", archive)
         self.assertNotIn(".slx", archive)
         self.assertNotIn(".satk", archive)
+        candidate_upload = candidate.split("Retain qualified review-only numerical evidence", 1)[1]
+        self.assertIn("name: thermoweave-licensed-candidate-evidence", candidate_upload)
+        for upload in (archive, candidate_upload):
+            self.assertEqual(upload.count("uses: actions/upload-artifact@"), 1)
+            for forbidden in (".slx", ".satk", "simscape/models/"):
+                self.assertNotIn(forbidden, upload)
+            self.assertIn("if-no-files-found: error", upload)
 
 
 if __name__ == "__main__":
