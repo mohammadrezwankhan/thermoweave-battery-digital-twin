@@ -6,9 +6,13 @@ import math
 import os
 from pathlib import Path
 import re
+import runpy
 import sys
 import time
 import xml.etree.ElementTree as ET
+
+# Resolve the sibling verifier independently of the artifact bundle root.
+_RELEASE_VERIFIER_PATH = Path(__file__).resolve().with_name("verify_release_readiness.py")
 
 
 def _reject_nonfinite(value):
@@ -196,6 +200,10 @@ def _verify_scenario_hash_v2(data):
 def verify():
     root = Path(__file__).resolve().parents[1]
     expected_release = os.environ.get("EXPECTED_MATLAB_RELEASE", "2024a")
+    licensed_mode = os.environ.get("REQUIRE_LICENSED_E9", "0")
+    if licensed_mode not in ("0", "1"):
+        raise AssertionError("REQUIRE_LICENSED_E9 must be 0 or 1")
+    require_licensed_e9 = licensed_mode == "1"
     marker = root / "results/artifact-regeneration-start.flag"
     if not marker.is_file():
         raise AssertionError("Missing fresh-generation start marker")
@@ -426,6 +434,13 @@ def verify():
         raise AssertionError(
             "Regenerated MATLAB artifacts belong to a different source commit: "
             + actual_commit + " vs " + expected_source_sha)
+    if require_licensed_e9:
+        if e9 != "PASS":
+            raise AssertionError("Licensed candidate requires executed E9 numerical parity")
+        # Reuse the exact same numerical limits, source/model binding and
+        # endpoint energy oracle as the release veto; do not duplicate them.
+        parity_check = runpy.run_path(str(_RELEASE_VERIFIER_PATH))["_verify_e9_parity"]
+        parity_check(rows, expected_source_sha)
     if verification.get("schemaVersion") != "thermoweave.verification/v1":
         raise AssertionError("Unexpected MATLAB verification schema")
     if manifest.get("verification") != verification:
@@ -456,6 +471,8 @@ def verify():
         raise AssertionError("MATLAB test totals must be nonnegative integers")
     if sum(counts[1:]) != counts[0] or counts[3] > 1:
         raise AssertionError("MATLAB test totals inconsistent or optional skips excessive")
+    if require_licensed_e9 and counts[3] != 0:
+        raise AssertionError("Licensed candidate cannot contain incomplete MATLAB tests")
     if verification.get("failed") != 0:
         raise AssertionError("Native MATLAB test failures recorded")
     # The independent MATLAB JUnit report is the executable test inventory.
@@ -565,7 +582,10 @@ def verify():
         raise AssertionError("Code Analyzer SARIF findings contradict zero warnings")
     _verify_scenario_hash_v2(data)
     print("PASS: fresh versioned MATLAB artifacts, sources, digests and checks")
-    print("Optional licensed Simscape and field-cell validation remain separate gates")
+    if require_licensed_e9:
+        print("PASS: E9 numerical receipt and complete MATLAB test inventory; independent licensed execution and release acceptance remain required")
+    else:
+        print("Optional licensed Simscape and field-cell validation remain separate gates")
 
 
 if __name__ == "__main__":
