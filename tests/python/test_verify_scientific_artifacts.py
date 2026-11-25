@@ -919,5 +919,23 @@ class ArtifactAcceptanceTests(unittest.TestCase):
             self.assertNotIn(forbidden, upload)
 
 
+    def test_legacy_licensed_job_requires_main_and_approval_before_runner(self):
+        # A job-level guard is required before a licensed self-hosted runner
+        # is assigned. A Pages-only check inside the job cannot protect the
+        # ordinary integration mode. Environment protection and runner-group
+        # access controls must additionally be established outside this test.
+        workflow = (HERE / ".github/workflows/simscape-integration.yml").read_text(
+            encoding="utf-8")
+        legacy = workflow.split("\n  integration:\n", 1)[1].split(
+            "\n  candidate:\n", 1)[0]
+        header = legacy.split("\n    steps:\n", 1)[0]
+        self.assertRegex(
+            header, r"(?m)^    if:.*!inputs\.candidate_evidence.*github\.ref\s*==\s*'refs/heads/main'",
+            "Legacy licensed execution must be restricted to main before runner assignment")
+        self.assertRegex(header, r"(?m)^    environment: thermoweave-licensed-main$")
+        self.assertIn("needs: validate-inputs", header)
+        self.assertIn("runs-on: [self-hosted, thermoweave-simscape]", header)
+
+
 if __name__ == "__main__":
     unittest.main()
