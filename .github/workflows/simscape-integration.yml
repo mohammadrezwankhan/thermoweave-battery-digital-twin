@@ -65,21 +65,44 @@ jobs:
 
       - name: Stage the locally approved E9 model and library declaration
         if: inputs.pages_evidence
+        id: stage
+        shell: bash
         run: |
+          set -euo pipefail
           python3 - <<'PY'
           import os
           from pathlib import Path
-          from shutil import copyfile
+          from shutil import copyfileobj
 
+          workspace = Path.cwd().resolve(strict=True)
           source = Path(os.environ["THERMOWEAVE_LICENSED_INPUT_ROOT"]).resolve(strict=True)
+          if source == workspace or workspace in source.parents or source in workspace.parents:
+              raise SystemExit("Licensed input root must be separate from the checkout")
           files = (".satk/reuse-libraries.json", "simscape/models/ThermoWeaveE9Candidate.slx",
                    "simscape/models/thermoweave-model-manifest.json")
-          for name in files:
-              target = Path(name)
-              target.parent.mkdir(parents=True, exist_ok=True)
-              copyfile(source / name, target)
-          Path("results").mkdir(exist_ok=True)
-          Path("results/artifact-regeneration-start.flag").touch()
+          staged = []
+          marker = workspace / "results/artifact-regeneration-start.flag"
+          try:
+              if marker.resolve() != marker or marker.exists():
+                  raise SystemExit("Refusing stale or linked regeneration marker")
+              for name in files:
+                  origin = (source / name).resolve(strict=True)
+                  target = workspace / name
+                  if source not in origin.parents or not origin.is_file():
+                      raise SystemExit("Invalid licensed input location")
+                  if target.resolve() != target or target.exists():
+                      raise SystemExit("Refusing to overwrite or follow linked licensed input")
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  with origin.open("rb") as incoming, target.open("xb") as outgoing:
+                      staged.append(target)
+                      copyfileobj(incoming, outgoing)
+              marker.parent.mkdir(parents=True, exist_ok=True)
+              with marker.open("xb"):
+                  staged.append(marker)
+          except BaseException:
+              for target in reversed(staged):
+                  target.unlink(missing_ok=True)
+              raise
           PY
 
       - name: Set up MATLAB R2024a or newer
@@ -111,6 +134,15 @@ jobs:
           PY
 
           python3 scripts/verify_licensed_release_package.py
+
+      - name: Remove staged local licensed inputs
+        if: ${{ always() && steps.stage.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f -- .satk/reuse-libraries.json \
+            simscape/models/ThermoWeaveE9Candidate.slx \
+            simscape/models/thermoweave-model-manifest.json
 
       - name: Retain exact-main licensed Pages evidence
         if: inputs.pages_evidence
