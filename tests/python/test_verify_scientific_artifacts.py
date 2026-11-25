@@ -1015,5 +1015,71 @@ class ArtifactAcceptanceTests(unittest.TestCase):
 
 
 
+
+    def test_candidate_marker_is_created_transactionally(self):
+        # Run the entire staging shell step, including marker creation, on
+        # disposable placeholders. A failed step cannot rely on later cleanup
+        # conditioned on stage success; it must roll back its own inputs.
+        import subprocess
+        import textwrap
+
+        workflow = (HERE / ".github/workflows/simscape-integration.yml").read_text(
+            encoding="utf-8")
+        candidate = workflow.split("\n  candidate:\n", 1)[1]
+        step = candidate.split("name: Stage approved inputs without overwriting existing files", 1)[1]
+        script = textwrap.dedent(step.split("        run: |\n", 1)[1].split(
+            "\n      - name:", 1)[0])
+        names = (".satk/reuse-libraries.json",
+                 "simscape/models/ThermoWeaveE9Candidate.slx",
+                 "simscape/models/thermoweave-model-manifest.json")
+        for defect in ("none", "stale-marker", "linked-marker", "blocked-parent"):
+            with self.subTest(defect=defect):
+                sandbox = self.root / ("candidate-" + defect)
+                source = sandbox / "source"
+                checkout = sandbox / "checkout"
+                checkout.mkdir(parents=True)
+                for name in names:
+                    path = source / name
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_bytes(b"placeholder only")
+                marker = checkout / "results/artifact-regeneration-start.flag"
+                outside = sandbox / "outside.txt"
+                outside.write_bytes(b"outside approved checkout")
+                before = outside.stat().st_mtime_ns
+                if defect == "stale-marker":
+                    marker.parent.mkdir()
+                    marker.write_bytes(b"old receipt")
+                    os.utime(marker, ns=(1000000000, 1000000000))
+                elif defect == "linked-marker":
+                    marker.parent.mkdir()
+                    marker.symlink_to(outside)
+                elif defect == "blocked-parent":
+                    marker.parent.write_bytes(b"preserve parent file")
+                result = subprocess.run(
+                    ["bash", "-c", script], cwd=checkout,
+                    env={**os.environ, "THERMOWEAVE_LICENSED_INPUT_ROOT": str(source)},
+                    capture_output=True, text=True, check=False)
+                if defect == "none":
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertTrue(marker.is_file())
+                    for name in names:
+                        self.assertEqual((checkout / name).read_bytes(), b"placeholder only")
+                else:
+                    self.assertNotEqual(result.returncode, 0,
+                                        "Unsafe candidate marker accepted")
+                    for name in names:
+                        self.assertFalse((checkout / name).exists(),
+                                         "Failed candidate staging left local inputs behind")
+                    if defect == "stale-marker":
+                        self.assertEqual(marker.read_bytes(), b"old receipt")
+                        self.assertEqual(marker.stat().st_mtime_ns, 1000000000)
+                    elif defect == "linked-marker":
+                        self.assertTrue(marker.is_symlink())
+                        self.assertEqual(outside.read_bytes(), b"outside approved checkout")
+                        self.assertEqual(outside.stat().st_mtime_ns, before)
+                    elif defect == "blocked-parent":
+                        self.assertEqual(marker.parent.read_bytes(), b"preserve parent file")
+
+
 if __name__ == "__main__":
     unittest.main()
