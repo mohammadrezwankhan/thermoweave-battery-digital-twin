@@ -303,6 +303,8 @@ def verify():
                 or not 0 <= duration <= times[-1] - times[0] + 1e-9):
             raise AssertionError("website metrics contradict its sampled history")
     experiments = data["experiments"]
+    if experiments.get("fixtureOnly", False) is not False:
+        raise AssertionError("Fixture-only experiment evidence cannot establish provenance")
     if experiments.get("schemaVersion") != "thermoweave.experiments/v1":
         raise AssertionError("Experiment schema mismatch")
     rows = experiments.get("records", [])
