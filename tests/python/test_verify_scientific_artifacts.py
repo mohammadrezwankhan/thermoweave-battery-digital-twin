@@ -602,6 +602,20 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         with self.assertRaisesRegex(AssertionError, "scenario.*duplicate"):
             self.verify()
 
+    def test_rejects_fixture_only_experiment_evidence(self):
+        # The manifest is refreshed for each marker: rejection must be based
+        # on provenance, not a stale digest or inconsistent numerical data.
+        self.verify()
+        self.experiments["fixtureOnly"] = False
+        self.write_fixture()
+        self.verify()
+        for marker in (True, None, 0, 1, "false", [], {}):
+            with self.subTest(marker=marker):
+                self.experiments["fixtureOnly"] = marker
+                self.write_fixture()
+                with self.assertRaisesRegex(AssertionError, "[Ff]ixture-only"):
+                    self.verify()
+
     def test_rejects_wrong_experiment_manifest_digest(self):
         self.manifest["experiments"]["sha256"] = "0" * 64
         self.write("manifest", self.manifest)
