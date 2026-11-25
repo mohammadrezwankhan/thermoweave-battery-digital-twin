@@ -232,7 +232,10 @@ jobs:
           files = (".satk/reuse-libraries.json", "simscape/models/ThermoWeaveE9Candidate.slx",
                    "simscape/models/thermoweave-model-manifest.json")
           staged = []
+          marker = workspace / "results/artifact-regeneration-start.flag"
           try:
+              if marker.resolve() != marker or marker.exists() or marker.is_symlink():
+                  raise SystemExit("Refusing stale or linked candidate regeneration marker")
               for name in files:
                   origin = (source / name).resolve(strict=True)
                   target = workspace / name
@@ -244,13 +247,14 @@ jobs:
                   with origin.open("rb") as incoming, target.open("xb") as outgoing:
                       staged.append(target)
                       copyfileobj(incoming, outgoing)
+              marker.parent.mkdir(parents=True, exist_ok=True)
+              with marker.open("xb"):
+                  staged.append(marker)
           except BaseException:
-              for target in staged:
+              for target in reversed(staged):
                   target.unlink(missing_ok=True)
               raise
           PY
-          mkdir -p results
-          touch results/artifact-regeneration-start.flag
 
       - name: Run native tests and regenerate candidate artifacts
         uses: matlab-actions/run-build@cf54c2229a74d57eb4e6ba1bbebd45793d37797e # v3
