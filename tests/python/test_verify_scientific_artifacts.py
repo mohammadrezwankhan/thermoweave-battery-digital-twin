@@ -937,5 +937,83 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         self.assertIn("runs-on: [self-hosted, thermoweave-simscape]", header)
 
 
+    def test_main_licensed_staging_is_fail_closed(self):
+        # Run the actual main staging Python against disposable placeholder
+        # files. Never access a licensed model, library or runner in this test.
+        import subprocess
+        import sys
+        import textwrap
+
+        workflow = (HERE / ".github/workflows/simscape-integration.yml").read_text(
+            encoding="utf-8")
+        legacy = workflow.split("\n  integration:\n", 1)[1].split(
+            "\n  candidate:\n", 1)[0]
+        step = legacy.split("name: Stage the locally approved E9 model and library declaration", 1)[1]
+        script = textwrap.dedent(step.split("python3 - <<'PY'\n", 1)[1].split("\n          PY", 1)[0])
+        names = (".satk/reuse-libraries.json",
+                 "simscape/models/ThermoWeaveE9Candidate.slx",
+                 "simscape/models/thermoweave-model-manifest.json")
+        for defect in ("none", "existing-target", "external-source", "missing-last"):
+            with self.subTest(defect=defect):
+                sandbox = self.root / defect
+                source = sandbox / "source"
+                checkout = sandbox / "checkout"
+                checkout.mkdir(parents=True)
+                for name in names:
+                    path = source / name
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_bytes(b"placeholder only")
+                if defect == "existing-target":
+                    target = checkout / names[1]
+                    target.parent.mkdir(parents=True)
+                    target.write_bytes(b"preserve existing bytes")
+                elif defect == "external-source":
+                    outside = sandbox / "outside.txt"
+                    outside.write_bytes(b"outside approved root")
+                    path = source / names[1]
+                    path.unlink()
+                    path.symlink_to(outside)
+                elif defect == "missing-last":
+                    (source / names[2]).unlink()
+                result = subprocess.run(
+                    [sys.executable, "-c", script], cwd=checkout,
+                    env={**os.environ, "THERMOWEAVE_LICENSED_INPUT_ROOT": str(source)},
+                    capture_output=True, text=True, check=False)
+                marker = checkout / "results/artifact-regeneration-start.flag"
+                if defect == "none":
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertTrue(marker.is_file())
+                    for name in names:
+                        self.assertEqual((checkout / name).read_bytes(), b"placeholder only")
+                else:
+                    self.assertNotEqual(result.returncode, 0,
+                                        "Unsafe main licensed staging was accepted")
+                    self.assertFalse(marker.exists())
+                    for name in names:
+                        target = checkout / name
+                        if defect == "existing-target" and name == names[1]:
+                            self.assertEqual(target.read_bytes(), b"preserve existing bytes")
+                        else:
+                            self.assertFalse(target.exists(),
+                                             "Failed staging left local inputs behind")
+
+    def test_main_licensed_staging_has_unconditional_cleanup(self):
+        # Successful staging must be cleaned up even when the native build
+        # or parity verifier fails, before any evidence upload.
+        workflow = (HERE / ".github/workflows/simscape-integration.yml").read_text(
+            encoding="utf-8")
+        legacy = workflow.split("\n  integration:\n", 1)[1].split(
+            "\n  candidate:\n", 1)[0]
+        before_upload = legacy.split("uses: actions/upload-artifact@", 1)[0]
+        self.assertRegex(before_upload, r"(?m)^      - name: Remove staged local licensed inputs$")
+        cleanup = before_upload.split("name: Remove staged local licensed inputs", 1)[1]
+        self.assertRegex(cleanup, r"(?m)^        if:.*always\(\).*steps\.stage\.outcome.*success")
+        for name in (".satk/reuse-libraries.json",
+                     "simscape/models/ThermoWeaveE9Candidate.slx",
+                     "simscape/models/thermoweave-model-manifest.json"):
+            self.assertIn(name, cleanup)
+
+
+
 if __name__ == "__main__":
     unittest.main()
