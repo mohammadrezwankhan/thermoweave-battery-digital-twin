@@ -5,10 +5,34 @@ arguments
     options.MonteCarloRuns (1, 1) double {mustBeInteger,mustBePositive} = 20
     options.OutputPath (1, 1) string = fullfile(projectRoot(), ...
         "artifacts", "reports", "experiment-summary.json")
+    options.E9CoreRunner = []
+    options.E9AdapterRunner = []
 end
 
 root = projectRoot();
 run(fullfile(root, "startup.m"));
+% Injected runners are for isolated regression fixtures only.
+fixtureOnly = ~isempty(options.E9CoreRunner) || ~isempty(options.E9AdapterRunner);
+if fixtureOnly
+    if ~isa(options.E9CoreRunner, "function_handle") || ...
+            ~isa(options.E9AdapterRunner, "function_handle")
+        error("thermoweave:experiments:FixtureRunners", ...
+            "Both test runners must be supplied as function handles.");
+    end
+    outputFile = string(char(java.io.File(char(options.OutputPath)).getCanonicalPath()));
+    tempRoot = string(char(java.io.File(char(tempdir)).getCanonicalPath()));
+    repoRoot = string(char(java.io.File(char(root)).getCanonicalPath()));
+    if ~startsWith(outputFile, tempRoot + filesep, IgnoreCase=ispc) || ...
+            startsWith(outputFile, repoRoot + filesep, IgnoreCase=ispc)
+        error("thermoweave:experiments:FixtureOutput", ...
+            "Injected runners may write only temporary output outside the project.");
+    end
+    coreRunner = options.E9CoreRunner;
+    adapterRunner = options.E9AdapterRunner;
+else
+    coreRunner = @thermoweave.simulate;
+    adapterRunner = @(config) runSimscapeScenario(config, ProjectRoot=string(root));
+end
 records = repmat(record("", "", "", struct, struct), 10, 1);
 
 cfg = thermoweave.config.defaultConfig();
@@ -202,16 +226,17 @@ records(9) = record("E8", passFail(all(isfinite(mcPeaks)) && ...
     "lastSeed", mcSeeds(end), "peakTemperature95th_K", percentile(mcPeaks, 95), ...
     "scenarioCanonicalHashesV2", {cellstr(mcHashesV2)}));
 
-simscapeExecution = runSimscapeScenario(thermoweave.config.defaultConfig(), ...
-    ProjectRoot=string(root));
+[simscapeExecution, e9Evidence] = thermoweave.validation.collectE9ParityEvidence( ...
+    string(e0.metadata.gitCommit), coreRunner, adapterRunner);
 records(10) = record("E9", string(simscapeExecution.status), ...
-    "Core versus optional Simscape adapter", struct, ...
-    struct("adapterStatus", string(simscapeExecution.status), ...
-    "message", string(simscapeExecution.message)));
+    "Core versus optional Simscape adapter", struct, e9Evidence);
 
 payload = struct("schemaVersion", "thermoweave.experiments/v1", ...
     "syntheticData", true, "matlabRelease", string(version("-release")), ...
     "scenarioSpecification", "docs/scenarios.md", "records", records);
+if fixtureOnly
+    payload.fixtureOnly = true;
+end
 folder = fileparts(options.OutputPath); if ~isfolder(folder), mkdir(folder); end
 text = jsonencode(payload); file = fopen(options.OutputPath, "w");
 if file < 0, error("thermoweave:experiments:IO", "Unable to write experiment summary."); end
