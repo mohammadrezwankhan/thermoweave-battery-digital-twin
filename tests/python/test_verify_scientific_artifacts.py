@@ -219,6 +219,19 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         self.assertRegex(step, r"(?m)^\s+REQUIRE_SCENARIO_HASH_V2:\s*['\"]?1['\"]?\s*$",
                          "Licensed release must require canonical v2 provenance")
 
+    def test_licensed_main_producer_requires_numerical_e9(self):
+        # Both licensed evidence producers must reject execution-only E9
+        # before uploading. The later publication veto is not a substitute
+        # for checking numerical parity at the producer.
+        workflow = (HERE / ".github/workflows/simscape-integration.yml").read_text(
+            encoding="utf-8")
+        step = workflow.split(
+            "- name: Require complete exact-source licensed evidence", 1)[1]
+        step = step.split("\n      - name:", 1)[0]
+        self.assertIn("python3 scripts/verify_scientific_artifacts.py", step)
+        self.assertRegex(step, r"(?m)^\s+REQUIRE_LICENSED_E9:\s*['\"]?1['\"]?\s*$",
+                         "Licensed main producer must enforce numerical E9 parity")
+
     def test_accepts_complete_v2_identity_bundle(self):
         self.add_v2_fixture()
         self.verify()
