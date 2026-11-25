@@ -275,6 +275,46 @@ classdef TestScientificAuditGates < matlab.unittest.TestCase
                 core, adapter, refinedCore, wrongGrid, sha), "thermoweave:e9:TimeGrid");
         end
 
+
+        function e9CollectorPreservesActualRunnerOutputs(testCase)
+            % Injected offline fixtures only: no licensed execution or parity claim.
+            [core, adapter, refinedCore, refinedAdapter, sha] = e9ReceiptFixture();
+            adapter.message = "Synthetic baseline execution fixture";
+            refinedAdapter.message = "Synthetic refined execution fixture";
+            coreRunner = @(cfg) e9SelectFixture(cfg, core, refinedCore);
+            adapterRunner = @(cfg) e9SelectFixture(cfg, adapter, refinedAdapter);
+            [execution, evidence] = thermoweave.validation.collectE9ParityEvidence( ...
+                sha, coreRunner, adapterRunner);
+            testCase.verifyEqual(execution, adapter);
+            testCase.verifyEqual(string(evidence.adapterStatus), "PASS");
+            expected = thermoweave.validation.packE9ParityReceipt( ...
+                core, adapter, refinedCore, refinedAdapter, sha);
+            testCase.verifyEqual(evidence.numericalParity, expected);
+        end
+
+        function e9CollectorRetainsSkipWithoutInventingReceipt(testCase)
+            % A skip at either stage must not produce synthetic release evidence.
+            [~, adapter, ~, refinedAdapter, sha] = e9ReceiptFixture();
+            adapter.message = "Synthetic baseline execution fixture";
+            refinedAdapter.message = "Synthetic refined execution fixture";
+            skipped = struct("status", "SKIPPED_MISSING_PRODUCT", ...
+                "message", "Synthetic skip fixture", "result", [], ...
+                "configuration", adapter.configuration);
+            neverCore = @(~) error("thermoweave:test:UnexpectedCore", ...
+                "Core runner must not execute after a skip.");
+            [execution, evidence] = thermoweave.validation.collectE9ParityEvidence( ...
+                sha, neverCore, @(cfg) e9SelectFixture(cfg, skipped, refinedAdapter));
+            testCase.verifyEqual(execution, skipped);
+            testCase.verifyEqual(string(evidence.adapterStatus), "SKIPPED_MISSING_PRODUCT");
+            testCase.verifyFalse(isfield(evidence, "numericalParity"));
+            skipped.configuration = refinedAdapter.configuration;
+            [execution, evidence] = thermoweave.validation.collectE9ParityEvidence( ...
+                sha, neverCore, @(cfg) e9SelectFixture(cfg, adapter, skipped));
+            testCase.verifyEqual(execution, skipped);
+            testCase.verifyEqual(string(evidence.adapterStatus), "SKIPPED_MISSING_PRODUCT");
+            testCase.verifyFalse(isfield(evidence, "numericalParity"));
+        end
+
     end
 end
 
@@ -303,4 +343,16 @@ ledger = struct("generatedHeat_J", stored, "ambientHeat_J", 0, ...
 result = struct("time_s", time, "state", struct("temperature_K", temperature, ...
     "soc", soc), "energyLedger", ledger, "configuration", cfg, ...
     "metadata", struct("matlabRelease", string(version("-release"))));
+end
+
+function output = e9SelectFixture(cfg, baseline, refined)
+% Return only the fixture corresponding to the actual requested configuration.
+if isequaln(cfg, baseline.configuration)
+    output = baseline;
+elseif isequaln(cfg, refined.configuration)
+    output = refined;
+else
+    error("thermoweave:test:UnexpectedConfiguration", ...
+        "Collector must request the fixed baseline and refined configurations.");
+end
 end
