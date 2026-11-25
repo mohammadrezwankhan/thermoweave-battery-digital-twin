@@ -886,5 +886,38 @@ class ArtifactAcceptanceTests(unittest.TestCase):
             self.verify()
 
 
+    def test_licensed_candidate_workflow_is_separate_and_nonpublishing(self):
+        # Existing manual workflow is already on main, so its candidate
+        # mode can be reviewed and run on a branch without merging first.
+        # This is a static contract, not a license or runner authorization.
+        workflow = (HERE / ".github/workflows/simscape-integration.yml").read_text(
+            encoding="utf-8")
+        self.assertRegex(workflow, r"(?m)^      candidate_evidence:$")
+        self.assertRegex(workflow, r"(?m)^      expected_candidate_sha:$")
+        self.assertRegex(workflow, r"(?m)^  candidate:$")
+        existing, candidate = workflow.split("\n  candidate:\n", 1)
+        self.assertRegex(existing, r"(?m)^    if:.*!inputs\.candidate_evidence")
+        self.assertRegex(candidate, r"(?m)^    if:.*inputs\.candidate_evidence.*!inputs\.pages_evidence")
+        self.assertRegex(candidate, r"(?m)^    environment: thermoweave-licensed-candidate$")
+        self.assertIn("runs-on: [self-hosted, thermoweave-simscape]", candidate)
+        self.assertIn("persist-credentials: false", candidate)
+        self.assertIn("inputs.expected_candidate_sha", candidate)
+        self.assertIn('test "$GITHUB_REF" != refs/heads/main', candidate)
+        self.assertIn('test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE_SHA"', candidate)
+        self.assertIn("tasks: artifacts", candidate)
+        self.assertIn("REQUIRE_LICENSED_E9: '1'", candidate)
+        self.assertIn("python3 scripts/verify_scientific_artifacts.py", candidate)
+        self.assertIn("name: thermoweave-licensed-candidate-evidence", candidate)
+        self.assertIn("if-no-files-found: error", candidate)
+        for forbidden in ("pages: write", "contents: write", "id-token: write",
+                          "deploy-pages@", "release/thermoweave-source.zip",
+                          "release/release-manifest.json", "tasks: package"):
+            self.assertNotIn(forbidden, candidate)
+        # Do not upload local licensed model or library declaration.
+        for forbidden in ("simscape/models/", ".satk/"):
+            upload = candidate.split("uses: actions/upload-artifact@", 1)[1]
+            self.assertNotIn(forbidden, upload)
+
+
 if __name__ == "__main__":
     unittest.main()
