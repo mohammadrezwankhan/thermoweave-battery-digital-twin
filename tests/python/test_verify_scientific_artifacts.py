@@ -759,6 +759,72 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         with self.assertRaisesRegex(AssertionError, "required scientific regression"):
             self.verify()
 
+    def test_licensed_candidate_requires_numerical_e9(self):
+        # Opt-in candidate qualification must not accept ordinary hosted
+        # missing-product receipts. These fixtures are software tests only.
+        with mock.patch.dict(os.environ, {"REQUIRE_LICENSED_E9": "1"}):
+            with self.assertRaisesRegex(AssertionError, "(?i)E9|Simscape|licensed"):
+                self.verify()
+
+        def trace():
+            return {
+                "time_s": list(range(601)),
+                "temperature_K": [[298.15] * 12 for _ in range(601)],
+                "soc": [[0.8] * 12 for _ in range(601)],
+                "energyLedger": {
+                    "generatedHeat_J": 10.0, "ambientHeat_J": -4.0,
+                    "coolantHeat_J": -6.0, "externalHeat_J": 0.0,
+                    "storedEnergyChange_J": 0.0, "normalizedResidual": 0.0},
+            }
+
+        row = self.experiments["records"][9]
+        row["status"] = "PASS"
+        self.verification.update(simscapeAdapterStatus="PASS", passed=58, incomplete=0)
+        receipt = {
+            "schemaVersion": "thermoweave.e9-parity/v1",
+            "gitCommit": self.expected_sha, "matlabRelease": "2024a",
+            "modelSha256": "18ad387d658f52930209938881d50ad724a4e7038b8e756b094a82df1812adda",
+            "baseline": {"maxStep_s": 0.25, "core": trace(), "simscape": trace()},
+            "refined": {"maxStep_s": 0.125, "core": trace(), "simscape": trace()},
+        }
+
+        def complete_fixture():
+            self.write_fixture()
+            path = self.root / "results/test-results.xml"
+            junit = ET.parse(path)
+            suite = junit.getroot().find("./testsuite[@name='TestSimulationIntegration']")
+            case = suite.find("testcase")
+            case.remove(case.find("skipped"))
+            suite.set("skipped", "0")
+            junit.write(path, encoding="utf-8")
+
+        with mock.patch.dict(os.environ, {"REQUIRE_LICENSED_E9": "1"}):
+            for defect in ("missing", "source", "temperature", "refinement"):
+                with self.subTest(defect=defect):
+                    row["evidence"] = {"adapterStatus": "PASS",
+                                       "numericalParity": copy.deepcopy(receipt)}
+                    value = row["evidence"]["numericalParity"]
+                    if defect == "missing":
+                        del row["evidence"]["numericalParity"]
+                    elif defect == "source":
+                        value["gitCommit"] = "b" * 40
+                    elif defect == "temperature":
+                        value["baseline"]["simscape"]["temperature_K"][300][0] += 0.11
+                    elif defect == "refinement":
+                        for solver in ("core", "simscape"):
+                            value["refined"][solver]["temperature_K"][300][0] += 0.06
+                    complete_fixture()
+                    with self.assertRaisesRegex(AssertionError, "(?i)E9|parity"):
+                        self.verify()
+            row["evidence"] = {"adapterStatus": "PASS", "numericalParity": receipt}
+            complete_fixture()
+            self.verify()
+            # A matching parity receipt cannot hide incomplete licensed QP.
+            self.verification.update(passed=57, incomplete=1)
+            self.write_fixture()
+            with self.assertRaisesRegex(AssertionError, "(?i)licensed|incomplete|QP"):
+                self.verify()
+
     def test_rejects_simscape_skip_not_attributable_to_missing_product(self):
         # Missing approved model or unresolved policy is not a licensed
         # scientific success and must not be an acceptable hosted E9 skip.
