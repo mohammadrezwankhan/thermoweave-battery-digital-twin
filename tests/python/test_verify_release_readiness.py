@@ -124,6 +124,15 @@ class ReleaseReadinessTests(unittest.TestCase):
     def test_happy_fixture_does_not_claim_real_cell_validation(self):
         release.verify_release_readiness(self.root, self.SHA)
 
+    def test_fixture_only_experiment_report_cannot_authorize_release(self):
+        # runExperimentSuite marks injected-runner output fixtureOnly. Even
+        # internally consistent parity traces and otherwise passing mechanical
+        # gates cannot turn such a report into licensed scientific evidence.
+        self.experiments["fixtureOnly"] = True
+        self.write_json("artifacts/reports/experiment-summary.json", self.experiments)
+        with self.assertRaisesRegex(AssertionError, "(?i)fixture"):
+            release.verify_release_readiness(self.root, self.SHA)
+
     def test_fresh_external_evidence_uses_checked_out_review(self):
         evidence = self.root / "fresh-evidence"
         shutil.copytree(self.root / "artifacts", evidence / "artifacts")
