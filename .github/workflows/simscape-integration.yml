@@ -39,14 +39,18 @@ jobs:
             test "$GITHUB_REF" != refs/heads/main
             [[ "$EXPECTED_SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
             test "$GITHUB_SHA" = "$EXPECTED_SOURCE_SHA"
+          else
+            test "$GITHUB_REF_TYPE" = branch
+            test "$GITHUB_REF" = refs/heads/main
           fi
 
   integration:
     needs: validate-inputs
-    if: ${{ !inputs.candidate_evidence }}
+    if: ${{ !inputs.candidate_evidence && github.ref == 'refs/heads/main' }}
     name: Licensed Simscape integration
-    # Manual dispatch plus the dedicated label prevents accidental execution
-    # on a hosted runner without the required licensed products.
+    # Require main and a separately protected approval environment before
+    # assigning licensed infrastructure. Runner-group restrictions are also required.
+    environment: thermoweave-licensed-main
     runs-on: [self-hosted, thermoweave-simscape]
     timeout-minutes: 60
     steps:
