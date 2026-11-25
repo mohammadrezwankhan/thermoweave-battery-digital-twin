@@ -283,6 +283,9 @@ def verify_release_readiness(
     verification = _read_json(evidence, "artifacts/reports/verification.json")
     manifest = _read_json(evidence, "artifacts/reports/artifact-manifest.json")
     experiments = _read_json(evidence, "artifacts/reports/experiment-summary.json")
+    # Injected experiment runners are regression fixtures, not licensed receipts.
+    if experiments.get("fixtureOnly", False) is not False:
+        raise AssertionError("Fixture-only experiment evidence cannot authorize release")
     study = _read_json(evidence, "artifacts/reports/3d-study-summary.json")
     if verification.get("gitCommit", "").lower() != expected_sha:
         raise AssertionError("Release verification is not bound to tagged source SHA")
