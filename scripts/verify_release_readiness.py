@@ -131,6 +131,12 @@ def _verify_e10(root: Path, study: dict) -> None:
         if not math.isclose(spread, case["finalLayerSpread_K"],
                             rel_tol=1e-7, abs_tol=1e-8):
             raise AssertionError("E10 claimed layer spread disagrees with temperatures")
+        # A full-history peak must encompass every final layer mean.
+        # Kelvin temperatures must be physical and a magnitude cannot be negative.
+        if (min(layers) <= 0 or case["peakTemperature_K"] <= 0
+                or case["peakTemperature_K"] < max(layers) - 1e-9
+                or case["peakEdgeGradient_K"] < 0):
+            raise AssertionError("E10 physically contradictory thermal measurements")
 
     csv_rel = "artifacts/data/3d-study-results.csv"
     if study.get("artifacts", {}).get("table") != csv_rel:
