@@ -290,6 +290,10 @@ def verify():
                 # The site exposes four actuator zones in every scenario.
                 # Cropping every command row to three zones is still data loss.
                 raise AssertionError("website must retain 4 zone commands")
+            # Celsius histories represent physical thermodynamic temperatures.
+            if field in ("temperature_C", "boundaryTemperature_C") and any(
+                    value <= -273.15 for row in series for value in row):
+                raise AssertionError("website temperature field at or below absolute zero: " + field)
             if field == "zoneCommand" and any(
                     not 0 <= value <= 1 for row in series for value in row):
                 raise AssertionError("website zoneCommand outside normalized bounds [0, 1]")
@@ -305,7 +309,8 @@ def verify():
         sampled_minimum = min(map(min, temperatures)) + 273.15
         sampled_peak = max(map(max, temperatures)) + 273.15
         # The exported grid retains both endpoints but can omit temperature extrema.
-        if (minimum > peak or minimum > sampled_minimum + 1e-9
+        if (minimum <= 0 or peak <= 0
+                or minimum > peak or minimum > sampled_minimum + 1e-9
                 or peak < sampled_peak - 1e-9 or cooling < 0 or residual < 0
                 or not 0 <= gradient <= peak - minimum + 1e-9
                 or not 0 <= duration <= times[-1] - times[0] + 1e-9):
