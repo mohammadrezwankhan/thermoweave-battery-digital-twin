@@ -425,6 +425,31 @@ class ArtifactAcceptanceTests(unittest.TestCase):
                 with self.assertRaisesRegex(AssertionError, r"E[0-8]"):
                     self.verify()
 
+    def test_rejects_nonphysical_experiment_kelvin(self):
+        # Keep PASS labels and recompute the manifest digest. All reported
+        # thermodynamic temperatures must be strictly positive in Kelvin.
+        original = copy.deepcopy(self.experiments)
+        cases = [
+            (i, "metrics", "peakTemperature_K", -1.0)
+            for i in (0, 1, 2, 3, 5, 6, 7, 8)
+        ] + [
+            (3, "evidence", "openLoopPeakTemperature_K", 0.0),
+            (4, "evidence", "peakTemperature_K", [-1.0, 300.0, 301.0]),
+            (7, "evidence", "openLoopPeakTemperature_K", -1.0),
+            (7, "evidence", "advancedPeakTemperature_K", 0.0),
+            (8, "evidence", "peakTemperature95th_K", -1.0),
+        ]
+        for index, section, field, invalid in cases:
+            with self.subTest(experiment=index, field=field):
+                self.experiments = copy.deepcopy(original)
+                self.experiments["records"][index][section][field] = invalid
+                self.write_fixture()
+                with self.assertRaisesRegex(AssertionError, r"E[0-8]"):
+                    self.verify()
+        self.experiments = original
+        self.write_fixture()
+        self.verify()
+
     def test_rejects_missing_published_e10_csv(self):
         # Previously the manifest validated JSON but never read the CSV.
         (self.root / "artifacts/data/3d-study-results.csv").unlink()
