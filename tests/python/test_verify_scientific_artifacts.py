@@ -503,6 +503,29 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         with self.assertRaisesRegex(AssertionError, "website.*width"):
             self.verify()
 
+    def test_rejects_nonphysical_website_kelvin(self):
+        # Consistent dimensions, finite values and a recomputed manifest cannot
+        # establish physical validity below absolute zero. Include a cell
+        # history with enclosing metrics, a boundary history, and metrics alone.
+        original = copy.deepcopy(self.web)
+        for target in ("cell", "boundary", "minimum"):
+            with self.subTest(target=target):
+                self.web = copy.deepcopy(original)
+                scenario = self.web["scenarios"][0]
+                if target == "cell":
+                    scenario["temperature_C"][1][0] = -274.15
+                    scenario["metrics"]["minimumTemperature_K"] = -1.0
+                elif target == "boundary":
+                    scenario["boundaryTemperature_C"][1][0] = -274.15
+                else:
+                    scenario["metrics"]["minimumTemperature_K"] = -1.0
+                self.write_fixture()
+                with self.assertRaisesRegex(AssertionError, "website.*temperature|website.*metrics"):
+                    self.verify()
+        self.web = original
+        self.write_fixture()
+        self.verify()
+
     def test_rejects_downsampled_zone_command_width_change(self):
         # Zone commands cannot silently gain or lose actuators between two
         # downsampled samples even when the sample timestamps still align.
