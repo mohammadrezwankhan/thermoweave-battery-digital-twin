@@ -63,6 +63,29 @@ class E10ReleaseScientificIntegrityTests(unittest.TestCase):
         self.write_study_and_csv()
         self.assert_rejected()
 
+    def test_rejects_physically_contradictory_e10_measurements(self):
+        case = self.study["cases"][0]
+        original = dict(case)
+        mutations = {
+            "peak below layer mean": {"peakTemperature_K": 301.0},
+            "negative edge gradient": {"peakEdgeGradient_K": -0.01},
+            "nonpositive absolute layer temperature": {
+                "finalLayerMeanTemperature_K": [-1.0, 301.0, 302.0],
+                "finalLayerSpread_K": 303.0,
+            },
+        }
+        for description, changes in mutations.items():
+            with self.subTest(description=description):
+                case.clear()
+                case.update(original)
+                case.update(changes)
+                self.write_study_and_csv()
+                self.assert_rejected()
+        case.clear()
+        case.update(original)
+        self.write_study_and_csv()
+        fixtures.release.verify_release_readiness(self.root, self.fixture.SHA)
+
     def test_rejects_stale_e10_csv_even_when_json_is_valid(self):
         target = self.root / "artifacts/data/3d-study-results.csv"
         contents = target.read_text(encoding="utf-8")
