@@ -30,6 +30,9 @@ def _verify_experiment_observations(rows):
         value = record.get(key)
         return _finite_number(value) and lower <= value <= upper
 
+    def positive_kelvin(value):
+        return _finite_number(value) and value > 0
+
     def require(condition, experiment, description):
         if not condition:
             raise AssertionError(f"E{experiment} {description}")
@@ -40,7 +43,7 @@ def _verify_experiment_observations(rows):
         require(isinstance(metrics, dict) and isinstance(evidence, dict),
                 index, "must include experiment metrics and evidence")
         peak = metrics.get("peakTemperature_K")
-        require(_finite_number(peak), index, "peak temperature must be finite")
+        require(positive_kelvin(peak), index, "peak temperature must be finite and positive in Kelvin")
         if index not in (4, 8):
             require(bounded(metrics, "integratedEnergyResidualNormalized", 0, 1e-3),
                     index, "independent energy residual outside [0, 1e-3]")
@@ -62,6 +65,7 @@ def _verify_experiment_observations(rows):
                     index, "reverse coolant independent energy residual outside [0, 1e-3]")
         elif index == 3:
             require(bounded(evidence, "peakRiseReductionFraction", 0.15, 1)
+                    and positive_kelvin(evidence.get("openLoopPeakTemperature_K"))
                     and peak <= 318.15, index, "zonal controller misses its stated limits")
         elif index == 4:
             peaks = evidence.get("peakTemperature_K")
@@ -69,7 +73,7 @@ def _verify_experiment_observations(rows):
             draws = evidence.get("drawsPositive")
             require(evidence.get("seeds") == [4401, 4402, 4403]
                     and isinstance(peaks, list) and len(peaks) == 3
-                    and all(_finite_number(value) for value in peaks) and max(peaks) == peak
+                    and all(positive_kelvin(value) for value in peaks) and max(peaks) == peak
                     and isinstance(hashes, list) and len(hashes) == 3
                     and all(isinstance(value, str) and value for value in hashes)
                     and len(set(hashes)) == 3
@@ -89,15 +93,15 @@ def _verify_experiment_observations(rows):
         elif index == 7:
             require(evidence.get("commandsBounded") is True
                     and evidence.get("benefitClaim") == "descriptive-only"
-                    and _finite_number(evidence.get("openLoopPeakTemperature_K"))
-                    and _finite_number(evidence.get("advancedPeakTemperature_K")),
+                    and positive_kelvin(evidence.get("openLoopPeakTemperature_K"))
+                    and positive_kelvin(evidence.get("advancedPeakTemperature_K")),
                     index, "controller comparison observations are inconsistent")
         elif index == 8:
             count = evidence.get("runCount")
             percentile = evidence.get("peakTemperature95th_K")
             require(type(count) is int and count > 0 and evidence.get("firstSeed") == 6100
                     and evidence.get("lastSeed") == 6099 + count
-                    and _finite_number(percentile) and percentile <= peak,
+                    and positive_kelvin(percentile) and percentile <= peak,
                     index, "Monte Carlo observations are inconsistent")
 
 
