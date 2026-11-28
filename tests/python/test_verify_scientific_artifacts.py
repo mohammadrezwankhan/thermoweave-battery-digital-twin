@@ -219,6 +219,19 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         self.assertRegex(step, r"(?m)^\s+REQUIRE_SCENARIO_HASH_V2:\s*['\"]?1['\"]?\s*$",
                          "Licensed release must require canonical v2 provenance")
 
+    def test_licensed_main_producer_requires_numerical_e9(self):
+        # Both licensed evidence producers must reject execution-only E9
+        # before uploading. The later publication veto is not a substitute
+        # for checking numerical parity at the producer.
+        workflow = (HERE / ".github/workflows/simscape-integration.yml").read_text(
+            encoding="utf-8")
+        step = workflow.split(
+            "- name: Require complete exact-source licensed evidence", 1)[1]
+        step = step.split("\n      - name:", 1)[0]
+        self.assertIn("python3 scripts/verify_scientific_artifacts.py", step)
+        self.assertRegex(step, r"(?m)^\s+REQUIRE_LICENSED_E9:\s*['\"]?1['\"]?\s*$",
+                         "Licensed main producer must enforce numerical E9 parity")
+
     def test_accepts_complete_v2_identity_bundle(self):
         self.add_v2_fixture()
         self.verify()
@@ -412,6 +425,31 @@ class ArtifactAcceptanceTests(unittest.TestCase):
                 with self.assertRaisesRegex(AssertionError, r"E[0-8]"):
                     self.verify()
 
+    def test_rejects_nonphysical_experiment_kelvin(self):
+        # Keep PASS labels and recompute the manifest digest. All reported
+        # thermodynamic temperatures must be strictly positive in Kelvin.
+        original = copy.deepcopy(self.experiments)
+        cases = [
+            (i, "metrics", "peakTemperature_K", -1.0)
+            for i in (0, 1, 2, 3, 5, 6, 7, 8)
+        ] + [
+            (3, "evidence", "openLoopPeakTemperature_K", 0.0),
+            (4, "evidence", "peakTemperature_K", [-1.0, 300.0, 301.0]),
+            (7, "evidence", "openLoopPeakTemperature_K", -1.0),
+            (7, "evidence", "advancedPeakTemperature_K", 0.0),
+            (8, "evidence", "peakTemperature95th_K", -1.0),
+        ]
+        for index, section, field, invalid in cases:
+            with self.subTest(experiment=index, field=field):
+                self.experiments = copy.deepcopy(original)
+                self.experiments["records"][index][section][field] = invalid
+                self.write_fixture()
+                with self.assertRaisesRegex(AssertionError, r"E[0-8]"):
+                    self.verify()
+        self.experiments = original
+        self.write_fixture()
+        self.verify()
+
     def test_rejects_missing_published_e10_csv(self):
         # Previously the manifest validated JSON but never read the CSV.
         (self.root / "artifacts/data/3d-study-results.csv").unlink()
@@ -446,6 +484,29 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         self.write_fixture()
         with self.assertRaises((AssertionError, ValueError)):
             self.verify()
+
+    def test_rejects_physically_contradictory_e10_measurements(self):
+        # Rebuild JSON, embedded manifest and CSV together: a matching
+        # receipt is not enough when elementary physical invariants fail.
+        original = copy.deepcopy(self.study)
+        cases = (
+            {"peakTemperature_K": 303.0},
+            {"peakEdgeGradient_K": -0.01},
+            {"finalLayerMeanTemperature_K": [-1.0, 302.0, 304.0],
+             "finalLayerSpread_K": 305.0},
+        )
+        try:
+            for updates in cases:
+                with self.subTest(updates=updates):
+                    self.study = copy.deepcopy(original)
+                    self.study["cases"][0].update(updates)
+                    self.write_fixture()
+                    with self.assertRaisesRegex(AssertionError, "E10"):
+                        self.verify()
+        finally:
+            self.study = original
+            self.write_fixture()
+        self.verify()
 
     def test_rejects_e10_energy_residual_above_declared_limit(self):
         # docs/scenarios.md sets <=1e-3 for the E10 synthetic model.
@@ -489,6 +550,29 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         self.write_fixture()
         with self.assertRaisesRegex(AssertionError, "website.*width"):
             self.verify()
+
+    def test_rejects_nonphysical_website_kelvin(self):
+        # Consistent dimensions, finite values and a recomputed manifest cannot
+        # establish physical validity below absolute zero. Include a cell
+        # history with enclosing metrics, a boundary history, and metrics alone.
+        original = copy.deepcopy(self.web)
+        for target in ("cell", "boundary", "minimum"):
+            with self.subTest(target=target):
+                self.web = copy.deepcopy(original)
+                scenario = self.web["scenarios"][0]
+                if target == "cell":
+                    scenario["temperature_C"][1][0] = -274.15
+                    scenario["metrics"]["minimumTemperature_K"] = -1.0
+                elif target == "boundary":
+                    scenario["boundaryTemperature_C"][1][0] = -274.15
+                else:
+                    scenario["metrics"]["minimumTemperature_K"] = -1.0
+                self.write_fixture()
+                with self.assertRaisesRegex(AssertionError, "website.*temperature|website.*metrics"):
+                    self.verify()
+        self.web = original
+        self.write_fixture()
+        self.verify()
 
     def test_rejects_downsampled_zone_command_width_change(self):
         # Zone commands cannot silently gain or lose actuators between two
@@ -601,6 +685,20 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         self.write_fixture()
         with self.assertRaisesRegex(AssertionError, "scenario.*duplicate"):
             self.verify()
+
+    def test_rejects_fixture_only_experiment_evidence(self):
+        # The manifest is refreshed for each marker: rejection must be based
+        # on provenance, not a stale digest or inconsistent numerical data.
+        self.verify()
+        self.experiments["fixtureOnly"] = False
+        self.write_fixture()
+        self.verify()
+        for marker in (True, None, 0, 1, "false", [], {}):
+            with self.subTest(marker=marker):
+                self.experiments["fixtureOnly"] = marker
+                self.write_fixture()
+                with self.assertRaisesRegex(AssertionError, "[Ff]ixture-only"):
+                    self.verify()
 
     def test_rejects_wrong_experiment_manifest_digest(self):
         self.manifest["experiments"]["sha256"] = "0" * 64
@@ -745,6 +843,72 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         with self.assertRaisesRegex(AssertionError, "required scientific regression"):
             self.verify()
 
+    def test_licensed_candidate_requires_numerical_e9(self):
+        # Opt-in candidate qualification must not accept ordinary hosted
+        # missing-product receipts. These fixtures are software tests only.
+        with mock.patch.dict(os.environ, {"REQUIRE_LICENSED_E9": "1"}):
+            with self.assertRaisesRegex(AssertionError, "(?i)E9|Simscape|licensed"):
+                self.verify()
+
+        def trace():
+            return {
+                "time_s": list(range(601)),
+                "temperature_K": [[298.15] * 12 for _ in range(601)],
+                "soc": [[0.8 - t / 3600] * 12 for t in range(601)],
+                "energyLedger": {
+                    "generatedHeat_J": 10.0, "ambientHeat_J": -4.0,
+                    "coolantHeat_J": -6.0, "externalHeat_J": 0.0,
+                    "storedEnergyChange_J": 0.0, "normalizedResidual": 0.0},
+            }
+
+        row = self.experiments["records"][9]
+        row["status"] = "PASS"
+        self.verification.update(simscapeAdapterStatus="PASS", passed=58, incomplete=0)
+        receipt = {
+            "schemaVersion": "thermoweave.e9-parity/v1",
+            "gitCommit": self.expected_sha, "matlabRelease": "2024a",
+            "modelSha256": "18ad387d658f52930209938881d50ad724a4e7038b8e756b094a82df1812adda",
+            "baseline": {"maxStep_s": 0.25, "core": trace(), "simscape": trace()},
+            "refined": {"maxStep_s": 0.125, "core": trace(), "simscape": trace()},
+        }
+
+        def complete_fixture():
+            self.write_fixture()
+            path = self.root / "results/test-results.xml"
+            junit = ET.parse(path)
+            suite = junit.getroot().find("./testsuite[@name='TestSimulationIntegration']")
+            case = suite.find("testcase")
+            case.remove(case.find("skipped"))
+            suite.set("skipped", "0")
+            junit.write(path, encoding="utf-8")
+
+        with mock.patch.dict(os.environ, {"REQUIRE_LICENSED_E9": "1"}):
+            for defect in ("missing", "source", "temperature", "refinement"):
+                with self.subTest(defect=defect):
+                    row["evidence"] = {"adapterStatus": "PASS",
+                                       "numericalParity": copy.deepcopy(receipt)}
+                    value = row["evidence"]["numericalParity"]
+                    if defect == "missing":
+                        del row["evidence"]["numericalParity"]
+                    elif defect == "source":
+                        value["gitCommit"] = "b" * 40
+                    elif defect == "temperature":
+                        value["baseline"]["simscape"]["temperature_K"][300][0] += 0.11
+                    elif defect == "refinement":
+                        for solver in ("core", "simscape"):
+                            value["refined"][solver]["temperature_K"][300][0] += 0.06
+                    complete_fixture()
+                    with self.assertRaisesRegex(AssertionError, "(?i)E9|parity"):
+                        self.verify()
+            row["evidence"] = {"adapterStatus": "PASS", "numericalParity": receipt}
+            complete_fixture()
+            self.verify()
+            # A matching parity receipt cannot hide incomplete licensed QP.
+            self.verification.update(passed=57, incomplete=1)
+            self.write_fixture()
+            with self.assertRaisesRegex(AssertionError, "(?i)licensed|incomplete|QP"):
+                self.verify()
+
     def test_rejects_simscape_skip_not_attributable_to_missing_product(self):
         # Missing approved model or unresolved policy is not a licensed
         # scientific success and must not be an acceptable hosted E9 skip.
@@ -804,6 +968,201 @@ class ArtifactAcceptanceTests(unittest.TestCase):
         sarif.write_text('{"version":"2.1.0","runs":[]}', encoding="utf-8")
         with self.assertRaisesRegex(AssertionError, "SARIF"):
             self.verify()
+
+
+    def test_licensed_candidate_workflow_is_separate_and_nonpublishing(self):
+        # Existing manual workflow is already on main, so its candidate
+        # mode can be reviewed and run on a branch without merging first.
+        # This is a static contract, not a license or runner authorization.
+        workflow = (HERE / ".github/workflows/simscape-integration.yml").read_text(
+            encoding="utf-8")
+        self.assertRegex(workflow, r"(?m)^      candidate_evidence:$")
+        self.assertRegex(workflow, r"(?m)^      expected_candidate_sha:$")
+        self.assertRegex(workflow, r"(?m)^  candidate:$")
+        existing, candidate = workflow.split("\n  candidate:\n", 1)
+        self.assertRegex(existing, r"(?m)^    if:.*!inputs\.candidate_evidence")
+        self.assertRegex(candidate, r"(?m)^    if:.*inputs\.candidate_evidence.*!inputs\.pages_evidence")
+        self.assertRegex(candidate, r"(?m)^    environment: thermoweave-licensed-candidate$")
+        self.assertIn("runs-on: [self-hosted, thermoweave-simscape]", candidate)
+        self.assertIn("persist-credentials: false", candidate)
+        self.assertIn("inputs.expected_candidate_sha", candidate)
+        self.assertIn('test "$GITHUB_REF" != refs/heads/main', candidate)
+        self.assertIn('test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE_SHA"', candidate)
+        self.assertIn("tasks: artifacts", candidate)
+        self.assertIn("REQUIRE_LICENSED_E9: '1'", candidate)
+        self.assertIn("python3 scripts/verify_scientific_artifacts.py", candidate)
+        self.assertIn("name: thermoweave-licensed-candidate-evidence", candidate)
+        self.assertIn("if-no-files-found: error", candidate)
+        for forbidden in ("pages: write", "contents: write", "id-token: write",
+                          "deploy-pages@", "release/thermoweave-source.zip",
+                          "release/release-manifest.json", "tasks: package"):
+            self.assertNotIn(forbidden, candidate)
+        # Do not upload local licensed model or library declaration.
+        for forbidden in ("simscape/models/", ".satk/"):
+            upload = candidate.split("uses: actions/upload-artifact@", 1)[1]
+            self.assertNotIn(forbidden, upload)
+
+
+    def test_legacy_licensed_job_requires_main_and_approval_before_runner(self):
+        # A job-level guard is required before a licensed self-hosted runner
+        # is assigned. A Pages-only check inside the job cannot protect the
+        # ordinary integration mode. Environment protection and runner-group
+        # access controls must additionally be established outside this test.
+        workflow = (HERE / ".github/workflows/simscape-integration.yml").read_text(
+            encoding="utf-8")
+        legacy = workflow.split("\n  integration:\n", 1)[1].split(
+            "\n  candidate:\n", 1)[0]
+        header = legacy.split("\n    steps:\n", 1)[0]
+        self.assertRegex(
+            header, r"(?m)^    if:.*!inputs\.candidate_evidence.*github\.ref\s*==\s*'refs/heads/main'",
+            "Legacy licensed execution must be restricted to main before runner assignment")
+        self.assertRegex(header, r"(?m)^    environment: thermoweave-licensed-main$")
+        self.assertIn("needs: validate-inputs", header)
+        self.assertIn("runs-on: [self-hosted, thermoweave-simscape]", header)
+
+
+    def test_main_licensed_staging_is_fail_closed(self):
+        # Run the actual main staging Python against disposable placeholder
+        # files. Never access a licensed model, library or runner in this test.
+        import subprocess
+        import sys
+        import textwrap
+
+        workflow = (HERE / ".github/workflows/simscape-integration.yml").read_text(
+            encoding="utf-8")
+        legacy = workflow.split("\n  integration:\n", 1)[1].split(
+            "\n  candidate:\n", 1)[0]
+        step = legacy.split("name: Stage the locally approved E9 model and library declaration", 1)[1]
+        script = textwrap.dedent(step.split("python3 - <<'PY'\n", 1)[1].split("\n          PY", 1)[0])
+        names = (".satk/reuse-libraries.json",
+                 "simscape/models/ThermoWeaveE9Candidate.slx",
+                 "simscape/models/thermoweave-model-manifest.json")
+        for defect in ("none", "existing-target", "external-source", "missing-last"):
+            with self.subTest(defect=defect):
+                sandbox = self.root / defect
+                source = sandbox / "source"
+                checkout = sandbox / "checkout"
+                checkout.mkdir(parents=True)
+                for name in names:
+                    path = source / name
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_bytes(b"placeholder only")
+                if defect == "existing-target":
+                    target = checkout / names[1]
+                    target.parent.mkdir(parents=True)
+                    target.write_bytes(b"preserve existing bytes")
+                elif defect == "external-source":
+                    outside = sandbox / "outside.txt"
+                    outside.write_bytes(b"outside approved root")
+                    path = source / names[1]
+                    path.unlink()
+                    path.symlink_to(outside)
+                elif defect == "missing-last":
+                    (source / names[2]).unlink()
+                result = subprocess.run(
+                    [sys.executable, "-c", script], cwd=checkout,
+                    env={**os.environ, "THERMOWEAVE_LICENSED_INPUT_ROOT": str(source)},
+                    capture_output=True, text=True, check=False)
+                marker = checkout / "results/artifact-regeneration-start.flag"
+                if defect == "none":
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertTrue(marker.is_file())
+                    for name in names:
+                        self.assertEqual((checkout / name).read_bytes(), b"placeholder only")
+                else:
+                    self.assertNotEqual(result.returncode, 0,
+                                        "Unsafe main licensed staging was accepted")
+                    self.assertFalse(marker.exists())
+                    for name in names:
+                        target = checkout / name
+                        if defect == "existing-target" and name == names[1]:
+                            self.assertEqual(target.read_bytes(), b"preserve existing bytes")
+                        else:
+                            self.assertFalse(target.exists(),
+                                             "Failed staging left local inputs behind")
+
+    def test_main_licensed_staging_has_unconditional_cleanup(self):
+        # Successful staging must be cleaned up even when the native build
+        # or parity verifier fails, before any evidence upload.
+        workflow = (HERE / ".github/workflows/simscape-integration.yml").read_text(
+            encoding="utf-8")
+        legacy = workflow.split("\n  integration:\n", 1)[1].split(
+            "\n  candidate:\n", 1)[0]
+        before_upload = legacy.split("uses: actions/upload-artifact@", 1)[0]
+        self.assertRegex(before_upload, r"(?m)^      - name: Remove staged local licensed inputs$")
+        cleanup = before_upload.split("name: Remove staged local licensed inputs", 1)[1]
+        self.assertRegex(cleanup, r"(?m)^        if:.*always\(\).*steps\.stage\.outcome.*success")
+        for name in (".satk/reuse-libraries.json",
+                     "simscape/models/ThermoWeaveE9Candidate.slx",
+                     "simscape/models/thermoweave-model-manifest.json"):
+            self.assertIn(name, cleanup)
+
+
+
+
+    def test_candidate_marker_is_created_transactionally(self):
+        # Run the entire staging shell step, including marker creation, on
+        # disposable placeholders. A failed step cannot rely on later cleanup
+        # conditioned on stage success; it must roll back its own inputs.
+        import subprocess
+        import textwrap
+
+        workflow = (HERE / ".github/workflows/simscape-integration.yml").read_text(
+            encoding="utf-8")
+        candidate = workflow.split("\n  candidate:\n", 1)[1]
+        step = candidate.split("name: Stage approved inputs without overwriting existing files", 1)[1]
+        script = textwrap.dedent(step.split("        run: |\n", 1)[1].split(
+            "\n      - name:", 1)[0])
+        names = (".satk/reuse-libraries.json",
+                 "simscape/models/ThermoWeaveE9Candidate.slx",
+                 "simscape/models/thermoweave-model-manifest.json")
+        for defect in ("none", "stale-marker", "linked-marker", "blocked-parent"):
+            with self.subTest(defect=defect):
+                sandbox = self.root / ("candidate-" + defect)
+                source = sandbox / "source"
+                checkout = sandbox / "checkout"
+                checkout.mkdir(parents=True)
+                for name in names:
+                    path = source / name
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_bytes(b"placeholder only")
+                marker = checkout / "results/artifact-regeneration-start.flag"
+                outside = sandbox / "outside.txt"
+                outside.write_bytes(b"outside approved checkout")
+                before = outside.stat().st_mtime_ns
+                if defect == "stale-marker":
+                    marker.parent.mkdir()
+                    marker.write_bytes(b"old receipt")
+                    os.utime(marker, ns=(1000000000, 1000000000))
+                elif defect == "linked-marker":
+                    marker.parent.mkdir()
+                    marker.symlink_to(outside)
+                elif defect == "blocked-parent":
+                    marker.parent.write_bytes(b"preserve parent file")
+                result = subprocess.run(
+                    ["bash", "-c", script], cwd=checkout,
+                    env={**os.environ, "THERMOWEAVE_LICENSED_INPUT_ROOT": str(source)},
+                    capture_output=True, text=True, check=False)
+                if defect == "none":
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertTrue(marker.is_file())
+                    for name in names:
+                        self.assertEqual((checkout / name).read_bytes(), b"placeholder only")
+                else:
+                    self.assertNotEqual(result.returncode, 0,
+                                        "Unsafe candidate marker accepted")
+                    for name in names:
+                        self.assertFalse((checkout / name).exists(),
+                                         "Failed candidate staging left local inputs behind")
+                    if defect == "stale-marker":
+                        self.assertEqual(marker.read_bytes(), b"old receipt")
+                        self.assertEqual(marker.stat().st_mtime_ns, 1000000000)
+                    elif defect == "linked-marker":
+                        self.assertTrue(marker.is_symlink())
+                        self.assertEqual(outside.read_bytes(), b"outside approved checkout")
+                        self.assertEqual(outside.stat().st_mtime_ns, before)
+                    elif defect == "blocked-parent":
+                        self.assertEqual(marker.parent.read_bytes(), b"preserve parent file")
 
 
 if __name__ == "__main__":

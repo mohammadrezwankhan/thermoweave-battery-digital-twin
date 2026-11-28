@@ -131,6 +131,12 @@ def _verify_e10(root: Path, study: dict) -> None:
         if not math.isclose(spread, case["finalLayerSpread_K"],
                             rel_tol=1e-7, abs_tol=1e-8):
             raise AssertionError("E10 claimed layer spread disagrees with temperatures")
+        # A full-history peak must encompass every final layer mean.
+        # Kelvin temperatures must be physical and a magnitude cannot be negative.
+        if (min(layers) <= 0 or case["peakTemperature_K"] <= 0
+                or case["peakTemperature_K"] < max(layers) - 1e-9
+                or case["peakEdgeGradient_K"] < 0):
+            raise AssertionError("E10 physically contradictory thermal measurements")
 
     csv_rel = "artifacts/data/3d-study-results.csv"
     if study.get("artifacts", {}).get("table") != csv_rel:
@@ -159,6 +165,117 @@ def _verify_e10(root: Path, study: dict) -> None:
         raise AssertionError("E10 CSV has malformed or nonfinite measurements") from exc
 
 
+def _verify_e9_parity(records, expected_sha):
+    """Check raw aligned comparison receipts; never equate execution with parity.
+
+    The historical owner-recorded E9 limits and refinement protocol are in
+    issue #25 (comments 7077394125 and 7078136432). Applying these limits is
+    only a mechanical prerequisite, not renewed approval for this source.
+    The licensed producer and independent reviewer must still authenticate
+    the actual traces, model rights, runtime and exact source.
+    """
+    import math
+
+    e9 = next(record for record in records if record["id"] == "E9")
+    evidence = e9.get("evidence")
+    receipt = evidence.get("numericalParity") if isinstance(evidence, dict) else None
+    if not isinstance(receipt, dict):
+        raise AssertionError("E9 execution does not demonstrate numerical parity: missing receipt")
+    if (evidence.get("adapterStatus") != "PASS"
+            or receipt.get("schemaVersion") != "thermoweave.e9-parity/v1"
+            or receipt.get("gitCommit") != expected_sha
+            or receipt.get("matlabRelease") != "2024a"):
+        raise AssertionError("E9 parity receipt is not bound to exact source and runtime")
+    # R2024a-compatible owner-recorded model, also pinned in
+    # simscape/approvedSimscapeModelDigests.m. Pin rotation requires review.
+    if receipt.get("modelSha256") != (
+            "18ad387d658f52930209938881d50ad724a4e7038b8e756b094a82df1812adda"):
+        raise AssertionError("E9 parity model digest is not the pinned R2024a model")
+
+    def number(value):
+        if type(value) not in (int, float) or not math.isfinite(value):
+            raise AssertionError("E9 parity measurement must be finite and numeric")
+        return value
+
+    def trace(data):
+        if not isinstance(data, dict):
+            raise AssertionError("E9 parity trace missing")
+        # The fixed native E9 scenario has 12 cells, 600 s duration, and a
+        # one-second common output grid. No truncated or resampled subset.
+        times = data.get("time_s")
+        if (not isinstance(times, list) or len(times) != 601
+                or any(number(t) != i for i, t in enumerate(times))):
+            raise AssertionError("E9 parity trace has wrong time grid")
+        for field in ("temperature_K", "soc"):
+            rows = data.get(field)
+            if not isinstance(rows, list) or len(rows) != len(times):
+                raise AssertionError("E9 parity trace has wrong sample count")
+            for row in rows:
+                if not isinstance(row, list) or len(row) != 12:
+                    raise AssertionError("E9 parity trace has wrong cell count")
+                for value in row:
+                    value = number(value)
+                    if (field == "temperature_K" and value <= 0
+                            or field == "soc" and not 0 <= value <= 1):
+                        raise AssertionError("E9 parity trace contains invalid physical state")
+        ledger = data.get("energyLedger")
+        if not isinstance(ledger, dict):
+            raise AssertionError("E9 parity energy ledger missing")
+        terms = [number(ledger.get(k)) for k in (
+            "generatedHeat_J", "ambientHeat_J", "coolantHeat_J", "externalHeat_J")]
+        stored = number(ledger.get("storedEnergyChange_J"))
+        # Native E9 fixes the 12 cell capacities at 40.5 J/K (defaultConfig)
+        # and both producers define stored energy from their temperature
+        # endpoints. Recompute this identity independently for each trace;
+        # agreement between four self-consistent ledgers alone is insufficient.
+        # This is a floating-point/JSON consistency allowance, not a new
+        # scientific parity tolerance.
+        endpoint_stored = 40.5 * math.fsum(
+            end - start for start, end in zip(
+                data["temperature_K"][0], data["temperature_K"][-1]))
+        if not math.isclose(stored, endpoint_stored,
+                            rel_tol=1e-9, abs_tol=1e-6):
+            raise AssertionError("E9 stored energy disagrees with temperature endpoints")
+        residual = abs(stored - sum(terms)) / max(abs(stored), sum(map(abs, terms)), 1e-9)
+        claimed = number(ledger.get("normalizedResidual"))
+        if (not 0 <= claimed <= 1e-4 or residual > 1e-4
+                or not math.isclose(claimed, residual, rel_tol=1e-7, abs_tol=1e-12)):
+            raise AssertionError("E9 parity energy residual exceeds limit or disagrees with ledger")
+        return data
+
+    def compare(first, second, factor):
+        for field, limit in (("temperature_K", 0.10), ("soc", 0.0001)):
+            error = max(abs(x-y) for a, b in zip(first[field], second[field])
+                        for x, y in zip(a, b))
+            if error > factor * limit:
+                raise AssertionError("E9 numerical parity/refinement exceeds " + field + " limit")
+        # Use first trace as the reference for each signed integrated term.
+        for key in ("generatedHeat_J", "ambientHeat_J", "coolantHeat_J",
+                    "externalHeat_J", "storedEnergyChange_J"):
+            x, y = (d["energyLedger"][key] for d in (first, second))
+            if abs(x-y) > factor * max(0.10, 0.005 * abs(x)):
+                raise AssertionError("E9 numerical parity/refinement exceeds energy limit: " + key)
+
+    pairs = []
+    for name, step in (("baseline", 0.25), ("refined", 0.125)):
+        pair = receipt.get(name)
+        if not isinstance(pair, dict) or number(pair.get("maxStep_s")) != step:
+            raise AssertionError("E9 parity baseline/refinement step missing or incorrect")
+        core, simscape = trace(pair.get("core")), trace(pair.get("simscape"))
+        # The fixed portable scenario discharges every cell at 5 A with
+        # 18000 C capacity and unity efficiency. Use its solver tolerances
+        # to check the reference before applying the existing parity limit.
+        for t, row in zip(core["time_s"], core["soc"]):
+            expected_soc = 0.8 - 5 * t / 18000
+            if any(not math.isclose(value, expected_soc, rel_tol=1e-6, abs_tol=1e-8)
+                   for value in row):
+                raise AssertionError("E9 core SOC disagrees with the fixed discharge scenario")
+        compare(core, simscape, 1.0)
+        pairs.append((core, simscape))
+    for baseline, refined in zip(*pairs):
+        compare(baseline, refined, 0.5)
+
+
 def verify_release_readiness(
     root: Path, expected_sha: str, *, evidence_root: Path | None = None
 ) -> None:
@@ -180,6 +297,9 @@ def verify_release_readiness(
     verification = _read_json(evidence, "artifacts/reports/verification.json")
     manifest = _read_json(evidence, "artifacts/reports/artifact-manifest.json")
     experiments = _read_json(evidence, "artifacts/reports/experiment-summary.json")
+    # Injected experiment runners are regression fixtures, not licensed receipts.
+    if experiments.get("fixtureOnly", False) is not False:
+        raise AssertionError("Fixture-only experiment evidence cannot authorize release")
     study = _read_json(evidence, "artifacts/reports/3d-study-summary.json")
     if verification.get("gitCommit", "").lower() != expected_sha:
         raise AssertionError("Release verification is not bound to tagged source SHA")
@@ -205,6 +325,7 @@ def verify_release_readiness(
         raise AssertionError("Missing or duplicate experiment identifiers")
     if any(x.get("status") != "PASS" for x in records):
         raise AssertionError("Synthetic E0-E9 experiment incomplete; E9 parity mandatory")
+    _verify_e9_parity(records, expected_sha)
     _verify_e10(evidence, study)
 
     web_path = evidence / "artifacts/web-data/thermoweave-demo.json"

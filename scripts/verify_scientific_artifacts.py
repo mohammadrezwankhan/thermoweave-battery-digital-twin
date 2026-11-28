@@ -6,9 +6,13 @@ import math
 import os
 from pathlib import Path
 import re
+import runpy
 import sys
 import time
 import xml.etree.ElementTree as ET
+
+# Resolve the sibling verifier independently of the artifact bundle root.
+_RELEASE_VERIFIER_PATH = Path(__file__).resolve().with_name("verify_release_readiness.py")
 
 
 def _reject_nonfinite(value):
@@ -26,6 +30,9 @@ def _verify_experiment_observations(rows):
         value = record.get(key)
         return _finite_number(value) and lower <= value <= upper
 
+    def positive_kelvin(value):
+        return _finite_number(value) and value > 0
+
     def require(condition, experiment, description):
         if not condition:
             raise AssertionError(f"E{experiment} {description}")
@@ -36,7 +43,7 @@ def _verify_experiment_observations(rows):
         require(isinstance(metrics, dict) and isinstance(evidence, dict),
                 index, "must include experiment metrics and evidence")
         peak = metrics.get("peakTemperature_K")
-        require(_finite_number(peak), index, "peak temperature must be finite")
+        require(positive_kelvin(peak), index, "peak temperature must be finite and positive in Kelvin")
         if index not in (4, 8):
             require(bounded(metrics, "integratedEnergyResidualNormalized", 0, 1e-3),
                     index, "independent energy residual outside [0, 1e-3]")
@@ -58,6 +65,7 @@ def _verify_experiment_observations(rows):
                     index, "reverse coolant independent energy residual outside [0, 1e-3]")
         elif index == 3:
             require(bounded(evidence, "peakRiseReductionFraction", 0.15, 1)
+                    and positive_kelvin(evidence.get("openLoopPeakTemperature_K"))
                     and peak <= 318.15, index, "zonal controller misses its stated limits")
         elif index == 4:
             peaks = evidence.get("peakTemperature_K")
@@ -65,7 +73,7 @@ def _verify_experiment_observations(rows):
             draws = evidence.get("drawsPositive")
             require(evidence.get("seeds") == [4401, 4402, 4403]
                     and isinstance(peaks, list) and len(peaks) == 3
-                    and all(_finite_number(value) for value in peaks) and max(peaks) == peak
+                    and all(positive_kelvin(value) for value in peaks) and max(peaks) == peak
                     and isinstance(hashes, list) and len(hashes) == 3
                     and all(isinstance(value, str) and value for value in hashes)
                     and len(set(hashes)) == 3
@@ -85,15 +93,15 @@ def _verify_experiment_observations(rows):
         elif index == 7:
             require(evidence.get("commandsBounded") is True
                     and evidence.get("benefitClaim") == "descriptive-only"
-                    and _finite_number(evidence.get("openLoopPeakTemperature_K"))
-                    and _finite_number(evidence.get("advancedPeakTemperature_K")),
+                    and positive_kelvin(evidence.get("openLoopPeakTemperature_K"))
+                    and positive_kelvin(evidence.get("advancedPeakTemperature_K")),
                     index, "controller comparison observations are inconsistent")
         elif index == 8:
             count = evidence.get("runCount")
             percentile = evidence.get("peakTemperature95th_K")
             require(type(count) is int and count > 0 and evidence.get("firstSeed") == 6100
                     and evidence.get("lastSeed") == 6099 + count
-                    and _finite_number(percentile) and percentile <= peak,
+                    and positive_kelvin(percentile) and percentile <= peak,
                     index, "Monte Carlo observations are inconsistent")
 
 
@@ -196,6 +204,10 @@ def _verify_scenario_hash_v2(data):
 def verify():
     root = Path(__file__).resolve().parents[1]
     expected_release = os.environ.get("EXPECTED_MATLAB_RELEASE", "2024a")
+    licensed_mode = os.environ.get("REQUIRE_LICENSED_E9", "0")
+    if licensed_mode not in ("0", "1"):
+        raise AssertionError("REQUIRE_LICENSED_E9 must be 0 or 1")
+    require_licensed_e9 = licensed_mode == "1"
     marker = root / "results/artifact-regeneration-start.flag"
     if not marker.is_file():
         raise AssertionError("Missing fresh-generation start marker")
@@ -282,6 +294,10 @@ def verify():
                 # The site exposes four actuator zones in every scenario.
                 # Cropping every command row to three zones is still data loss.
                 raise AssertionError("website must retain 4 zone commands")
+            # Celsius histories represent physical thermodynamic temperatures.
+            if field in ("temperature_C", "boundaryTemperature_C") and any(
+                    value <= -273.15 for row in series for value in row):
+                raise AssertionError("website temperature field at or below absolute zero: " + field)
             if field == "zoneCommand" and any(
                     not 0 <= value <= 1 for row in series for value in row):
                 raise AssertionError("website zoneCommand outside normalized bounds [0, 1]")
@@ -297,12 +313,15 @@ def verify():
         sampled_minimum = min(map(min, temperatures)) + 273.15
         sampled_peak = max(map(max, temperatures)) + 273.15
         # The exported grid retains both endpoints but can omit temperature extrema.
-        if (minimum > peak or minimum > sampled_minimum + 1e-9
+        if (minimum <= 0 or peak <= 0
+                or minimum > peak or minimum > sampled_minimum + 1e-9
                 or peak < sampled_peak - 1e-9 or cooling < 0 or residual < 0
                 or not 0 <= gradient <= peak - minimum + 1e-9
                 or not 0 <= duration <= times[-1] - times[0] + 1e-9):
             raise AssertionError("website metrics contradict its sampled history")
     experiments = data["experiments"]
+    if experiments.get("fixtureOnly", False) is not False:
+        raise AssertionError("Fixture-only experiment evidence cannot establish provenance")
     if experiments.get("schemaVersion") != "thermoweave.experiments/v1":
         raise AssertionError("Experiment schema mismatch")
     rows = experiments.get("records", [])
@@ -357,6 +376,12 @@ def verify():
                     "peakTemperature_K", "peakEdgeGradient_K",
                     "finalLayerSpread_K", "energyResidualNormalized"))):
             raise AssertionError("E10 nonfinite or missing scientific measurement")
+        # A full-history peak must encompass every final layer mean.
+        # Kelvin temperatures must be physical and a magnitude cannot be negative.
+        if (min(layers) <= 0 or case["peakTemperature_K"] <= 0
+                or case["peakTemperature_K"] < max(layers) - 1e-9
+                or case["peakEdgeGradient_K"] < 0):
+            raise AssertionError("E10 physically contradictory thermal measurements")
         # docs/scenarios.md defines a <=1e-3 normalized energy-residual
         # acceptance gate for E10. Merely requiring finiteness could permit
         # a physically unacceptable study to be published as verified.
@@ -424,6 +449,13 @@ def verify():
         raise AssertionError(
             "Regenerated MATLAB artifacts belong to a different source commit: "
             + actual_commit + " vs " + expected_source_sha)
+    if require_licensed_e9:
+        if e9 != "PASS":
+            raise AssertionError("Licensed candidate requires executed E9 numerical parity")
+        # Reuse the exact same numerical limits, source/model binding and
+        # endpoint energy oracle as the release veto; do not duplicate them.
+        parity_check = runpy.run_path(str(_RELEASE_VERIFIER_PATH))["_verify_e9_parity"]
+        parity_check(rows, expected_source_sha)
     if verification.get("schemaVersion") != "thermoweave.verification/v1":
         raise AssertionError("Unexpected MATLAB verification schema")
     if manifest.get("verification") != verification:
@@ -454,6 +486,8 @@ def verify():
         raise AssertionError("MATLAB test totals must be nonnegative integers")
     if sum(counts[1:]) != counts[0] or counts[3] > 1:
         raise AssertionError("MATLAB test totals inconsistent or optional skips excessive")
+    if require_licensed_e9 and counts[3] != 0:
+        raise AssertionError("Licensed candidate cannot contain incomplete MATLAB tests")
     if verification.get("failed") != 0:
         raise AssertionError("Native MATLAB test failures recorded")
     # The independent MATLAB JUnit report is the executable test inventory.
@@ -563,7 +597,10 @@ def verify():
         raise AssertionError("Code Analyzer SARIF findings contradict zero warnings")
     _verify_scenario_hash_v2(data)
     print("PASS: fresh versioned MATLAB artifacts, sources, digests and checks")
-    print("Optional licensed Simscape and field-cell validation remain separate gates")
+    if require_licensed_e9:
+        print("PASS: E9 numerical receipt and complete MATLAB test inventory; independent licensed execution and release acceptance remain required")
+    else:
+        print("Optional licensed Simscape and field-cell validation remain separate gates")
 
 
 if __name__ == "__main__":

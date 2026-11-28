@@ -7,15 +7,50 @@ on:
         description: Generate exact-main licensed Pages and tag-release evidence
         type: boolean
         default: false
+      candidate_evidence:
+        description: Generate review-only licensed evidence for an approved candidate SHA
+        type: boolean
+        default: false
+      expected_candidate_sha:
+        description: Full reviewed candidate commit SHA (required in candidate mode)
+        type: string
+        required: false
 
 permissions:
   contents: read
 
 jobs:
+  validate-inputs:
+    name: Validate manual evidence mode
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Reject conflicting or unbound candidate requests
+        env:
+          CANDIDATE: ${{ inputs.candidate_evidence }}
+          PAGES: ${{ inputs.pages_evidence }}
+          EXPECTED_SOURCE_SHA: ${{ inputs.expected_candidate_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$CANDIDATE" == true ]]; then
+            test "$PAGES" != true
+            test "$GITHUB_REF_TYPE" = branch
+            test "$GITHUB_REF" != refs/heads/main
+            [[ "$EXPECTED_SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
+            test "$GITHUB_SHA" = "$EXPECTED_SOURCE_SHA"
+          else
+            test "$GITHUB_REF_TYPE" = branch
+            test "$GITHUB_REF" = refs/heads/main
+          fi
+
   integration:
+    needs: validate-inputs
+    if: ${{ !inputs.candidate_evidence && github.ref == 'refs/heads/main' }}
     name: Licensed Simscape integration
-    # Manual dispatch plus the dedicated label prevents accidental execution
-    # on a hosted runner without the required licensed products.
+    # Require main and a separately protected approval environment before
+    # assigning licensed infrastructure. Runner-group restrictions are also required.
+    environment: thermoweave-licensed-main
     runs-on: [self-hosted, thermoweave-simscape]
     timeout-minutes: 60
     steps:
@@ -30,21 +65,44 @@ jobs:
 
       - name: Stage the locally approved E9 model and library declaration
         if: inputs.pages_evidence
+        id: stage
+        shell: bash
         run: |
+          set -euo pipefail
           python3 - <<'PY'
           import os
           from pathlib import Path
-          from shutil import copyfile
+          from shutil import copyfileobj
 
+          workspace = Path.cwd().resolve(strict=True)
           source = Path(os.environ["THERMOWEAVE_LICENSED_INPUT_ROOT"]).resolve(strict=True)
+          if source == workspace or workspace in source.parents or source in workspace.parents:
+              raise SystemExit("Licensed input root must be separate from the checkout")
           files = (".satk/reuse-libraries.json", "simscape/models/ThermoWeaveE9Candidate.slx",
                    "simscape/models/thermoweave-model-manifest.json")
-          for name in files:
-              target = Path(name)
-              target.parent.mkdir(parents=True, exist_ok=True)
-              copyfile(source / name, target)
-          Path("results").mkdir(exist_ok=True)
-          Path("results/artifact-regeneration-start.flag").touch()
+          staged = []
+          marker = workspace / "results/artifact-regeneration-start.flag"
+          try:
+              if marker.resolve() != marker or marker.exists():
+                  raise SystemExit("Refusing stale or linked regeneration marker")
+              for name in files:
+                  origin = (source / name).resolve(strict=True)
+                  target = workspace / name
+                  if source not in origin.parents or not origin.is_file():
+                      raise SystemExit("Invalid licensed input location")
+                  if target.resolve() != target or target.exists():
+                      raise SystemExit("Refusing to overwrite or follow linked licensed input")
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  with origin.open("rb") as incoming, target.open("xb") as outgoing:
+                      staged.append(target)
+                      copyfileobj(incoming, outgoing)
+              marker.parent.mkdir(parents=True, exist_ok=True)
+              with marker.open("xb"):
+                  staged.append(marker)
+          except BaseException:
+              for target in reversed(staged):
+                  target.unlink(missing_ok=True)
+              raise
           PY
 
       - name: Set up MATLAB R2024a or newer
@@ -61,6 +119,7 @@ jobs:
         if: inputs.pages_evidence
         env:
           REQUIRE_SCENARIO_HASH_V2: '1'
+          REQUIRE_LICENSED_E9: '1'
           EXPECTED_MATLAB_RELEASE: '2024a'
           EXPECTED_SOURCE_SHA: ${{ github.sha }}
         run: |
@@ -76,6 +135,15 @@ jobs:
           PY
 
           python3 scripts/verify_licensed_release_package.py
+
+      - name: Remove staged local licensed inputs
+        if: ${{ always() && steps.stage.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f -- .satk/reuse-libraries.json \
+            simscape/models/ThermoWeaveE9Candidate.slx \
+            simscape/models/thermoweave-model-manifest.json
 
       - name: Retain exact-main licensed Pages evidence
         if: inputs.pages_evidence
@@ -98,5 +166,135 @@ jobs:
             docs/assets/thermoweave-demo.json
             release/thermoweave-source.zip
             release/release-manifest.json
+          if-no-files-found: error
+          retention-days: 14
+
+  candidate:
+    needs: validate-inputs
+    if: ${{ inputs.candidate_evidence && !inputs.pages_evidence }}
+    name: Licensed candidate evidence (review only)
+    # Configure required reviewers and restricted branches on this environment
+    # before dispatch; no license or runner availability is implied here.
+    environment: thermoweave-licensed-candidate
+    runs-on: [self-hosted, thermoweave-simscape]
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    concurrency:
+      group: thermoweave-licensed-candidate
+      cancel-in-progress: false
+    env:
+      EXPECTED_SOURCE_SHA: ${{ inputs.expected_candidate_sha }}
+      APPROVED_SOURCE_SHA: ${{ vars.THERMOWEAVE_LICENSED_CANDIDATE_SHA }}
+    steps:
+      - name: Require independently authorized exact candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_TYPE" = branch
+          test "$GITHUB_REF" != refs/heads/main
+          [[ "$EXPECTED_SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$GITHUB_SHA" = "$EXPECTED_SOURCE_SHA"
+          test "$APPROVED_SOURCE_SHA" = "$EXPECTED_SOURCE_SHA"
+
+      - name: Check out exact reviewed candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          clean: true
+
+      - name: Verify checkout before accessing local licensed inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE_SHA"
+          test -z "$(git status --porcelain)"
+
+      - name: Set up MATLAB R2024a
+        uses: matlab-actions/setup-matlab@f9e43010f1ae678f7cfa0542fe2a4f60f7d1ad8d # v3
+        with:
+          release: R2024a
+
+      - name: Stage approved inputs without overwriting existing files
+        id: stage
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          from shutil import copyfileobj
+
+          workspace = Path.cwd().resolve(strict=True)
+          source = Path(os.environ["THERMOWEAVE_LICENSED_INPUT_ROOT"]).resolve(strict=True)
+          if source == workspace or workspace in source.parents or source in workspace.parents:
+              raise SystemExit("Licensed input root must be separate from the checkout")
+          files = (".satk/reuse-libraries.json", "simscape/models/ThermoWeaveE9Candidate.slx",
+                   "simscape/models/thermoweave-model-manifest.json")
+          staged = []
+          marker = workspace / "results/artifact-regeneration-start.flag"
+          try:
+              if marker.resolve() != marker or marker.exists() or marker.is_symlink():
+                  raise SystemExit("Refusing stale or linked candidate regeneration marker")
+              for name in files:
+                  origin = (source / name).resolve(strict=True)
+                  target = workspace / name
+                  if source not in origin.parents or not origin.is_file():
+                      raise SystemExit("Invalid licensed input location")
+                  if target.resolve() != target or target.exists():
+                      raise SystemExit("Refusing to overwrite or follow linked candidate input")
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  with origin.open("rb") as incoming, target.open("xb") as outgoing:
+                      staged.append(target)
+                      copyfileobj(incoming, outgoing)
+              marker.parent.mkdir(parents=True, exist_ok=True)
+              with marker.open("xb"):
+                  staged.append(marker)
+          except BaseException:
+              for target in reversed(staged):
+                  target.unlink(missing_ok=True)
+              raise
+          PY
+
+      - name: Run native tests and regenerate candidate artifacts
+        uses: matlab-actions/run-build@cf54c2229a74d57eb4e6ba1bbebd45793d37797e # v3
+        with:
+          tasks: artifacts
+
+      - name: Require strict fresh exact-source scientific evidence
+        env:
+          EXPECTED_MATLAB_RELEASE: '2024a'
+          REQUIRE_SCENARIO_HASH_V2: '1'
+          REQUIRE_LICENSED_E9: '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE_SHA"
+          python3 scripts/verify_scientific_artifacts.py
+
+      - name: Remove staged local licensed inputs
+        if: ${{ always() && steps.stage.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f -- .satk/reuse-libraries.json \
+            simscape/models/ThermoWeaveE9Candidate.slx \
+            simscape/models/thermoweave-model-manifest.json
+
+      - name: Retain qualified review-only numerical evidence
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: thermoweave-licensed-candidate-evidence
+          path: |
+            results/test-results.xml
+            results/code-issues.sarif
+            artifacts/reports/verification.json
+            artifacts/reports/artifact-manifest.json
+            artifacts/reports/experiment-summary.json
+            artifacts/reports/3d-study-summary.json
+            artifacts/data/3d-study-results.csv
+            artifacts/web-data/thermoweave-demo.json
+            docs/assets/thermoweave-demo.json
           if-no-files-found: error
           retention-days: 14

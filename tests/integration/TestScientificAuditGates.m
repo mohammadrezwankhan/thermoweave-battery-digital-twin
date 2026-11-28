@@ -232,5 +232,160 @@ classdef TestScientificAuditGates < matlab.unittest.TestCase
             testCase.verifyLessThan(result.energyLedger.normalizedResidual,1e-4);
         end
 
+        function e9ParityReceiptPreservesFourRawHistories(testCase)
+            % Synthetic serialization fixture only: no licensed run or parity claim.
+            [core, adapter, refinedCore, refinedAdapter, sha] = e9ReceiptFixture();
+            receipt = thermoweave.validation.packE9ParityReceipt( ...
+                core, adapter, refinedCore, refinedAdapter, sha);
+            testCase.verifyEqual(string(receipt.schemaVersion), "thermoweave.e9-parity/v1");
+            testCase.verifyEqual(string(receipt.gitCommit), sha);
+            testCase.verifyEqual(string(receipt.matlabRelease), string(version("-release")));
+            testCase.verifyEqual(string(receipt.modelSha256), string(adapter.modelSha256));
+            testCase.verifyEqual(receipt.baseline.maxStep_s, 0.25);
+            testCase.verifyEqual(receipt.refined.maxStep_s, 0.125);
+            actual = {receipt.baseline.core, receipt.baseline.simscape, ...
+                receipt.refined.core, receipt.refined.simscape};
+            expected = {core, adapter.result, refinedCore, refinedAdapter.result};
+            for k = 1:numel(expected)
+                testCase.verifyEqual(actual{k}.time_s, expected{k}.time_s);
+                testCase.verifyEqual(actual{k}.temperature_K, expected{k}.state.temperature_K);
+                testCase.verifyEqual(actual{k}.soc, expected{k}.state.soc);
+                testCase.verifyEqual(actual{k}.energyLedger, expected{k}.energyLedger);
+            end
+            decoded = jsondecode(jsonencode(receipt));
+            testCase.verifySize(decoded.baseline.core.temperature_K, [601 12]);
+            testCase.verifySize(decoded.refined.simscape.soc, [601 12]);
+        end
+
+        function e9ParityReceiptRejectsIncompleteOrMisboundInputs(testCase)
+            % Successful packaging must not mask a skip, model change or bad grid.
+            [core, adapter, refinedCore, refinedAdapter, sha] = e9ReceiptFixture();
+            skipped = refinedAdapter;
+            skipped.status = "SKIPPED_MISSING_PRODUCT";
+            skipped.result = [];
+            testCase.verifyError(@() thermoweave.validation.packE9ParityReceipt( ...
+                core, adapter, refinedCore, skipped, sha), "thermoweave:e9:AdapterNotExecuted");
+            different = refinedAdapter;
+            different.modelSha256 = string(repmat('0',1,64));
+            testCase.verifyError(@() thermoweave.validation.packE9ParityReceipt( ...
+                core, adapter, refinedCore, different, sha), "thermoweave:e9:ModelMismatch");
+            wrongGrid = refinedAdapter;
+            wrongGrid.result.time_s(end) = 599.5;
+            testCase.verifyError(@() thermoweave.validation.packE9ParityReceipt( ...
+                core, adapter, refinedCore, wrongGrid, sha), "thermoweave:e9:TimeGrid");
+        end
+
+
+        function e9CollectorPreservesActualRunnerOutputs(testCase)
+            % Injected offline fixtures only: no licensed execution or parity claim.
+            [core, adapter, refinedCore, refinedAdapter, sha] = e9ReceiptFixture();
+            adapter.message = "Synthetic baseline execution fixture";
+            refinedAdapter.message = "Synthetic refined execution fixture";
+            coreRunner = @(cfg) e9SelectFixture(cfg, core, refinedCore);
+            adapterRunner = @(cfg) e9SelectFixture(cfg, adapter, refinedAdapter);
+            [execution, evidence] = thermoweave.validation.collectE9ParityEvidence( ...
+                sha, coreRunner, adapterRunner);
+            testCase.verifyEqual(execution, adapter);
+            testCase.verifyEqual(string(evidence.adapterStatus), "PASS");
+            expected = thermoweave.validation.packE9ParityReceipt( ...
+                core, adapter, refinedCore, refinedAdapter, sha);
+            testCase.verifyEqual(evidence.numericalParity, expected);
+        end
+
+        function e9CollectorRetainsSkipWithoutInventingReceipt(testCase)
+            % A skip at either stage must not produce synthetic release evidence.
+            [~, adapter, ~, refinedAdapter, sha] = e9ReceiptFixture();
+            adapter.message = "Synthetic baseline execution fixture";
+            refinedAdapter.message = "Synthetic refined execution fixture";
+            skipped = struct("status", "SKIPPED_MISSING_PRODUCT", ...
+                "message", "Synthetic skip fixture", "result", [], ...
+                "configuration", adapter.configuration);
+            neverCore = @(~) error("thermoweave:test:UnexpectedCore", ...
+                "Core runner must not execute after a skip.");
+            [execution, evidence] = thermoweave.validation.collectE9ParityEvidence( ...
+                sha, neverCore, @(cfg) e9SelectFixture(cfg, skipped, refinedAdapter));
+            testCase.verifyEqual(execution, skipped);
+            testCase.verifyEqual(string(evidence.adapterStatus), "SKIPPED_MISSING_PRODUCT");
+            testCase.verifyFalse(isfield(evidence, "numericalParity"));
+            skipped.configuration = refinedAdapter.configuration;
+            [execution, evidence] = thermoweave.validation.collectE9ParityEvidence( ...
+                sha, neverCore, @(cfg) e9SelectFixture(cfg, adapter, skipped));
+            testCase.verifyEqual(execution, skipped);
+            testCase.verifyEqual(string(evidence.adapterStatus), "SKIPPED_MISSING_PRODUCT");
+            testCase.verifyFalse(isfield(evidence, "numericalParity"));
+        end
+
+
+        function e9ExperimentReportPreservesCollectorReceipt(testCase)
+            % Explicit offline injection, temporary output only. These are
+            % synthetic software fixtures, never licensed scientific evidence.
+            root = fileparts(fileparts(fileparts(mfilename('fullpath'))));
+            testCase.applyFixture(matlab.unittest.fixtures.PathFixture(fullfile(root,'tools')));
+            folder = matlab.unittest.fixtures.TemporaryFolderFixture;
+            testCase.applyFixture(folder);
+            output = string(fullfile(folder.Folder, 'experiment-summary.json'));
+            [core, adapter, refinedCore, refinedAdapter, ~] = e9ReceiptFixture();
+            adapter.message = "Synthetic baseline execution fixture";
+            refinedAdapter.message = "Synthetic refined execution fixture";
+            coreRunner = @(cfg) e9SelectFixture(cfg, core, refinedCore);
+            adapterRunner = @(cfg) e9SelectFixture(cfg, adapter, refinedAdapter);
+
+            [manifest, execution] = runExperimentSuite(MonteCarloRuns=1, ...
+                OutputPath=output, E9CoreRunner=coreRunner, E9AdapterRunner=adapterRunner);
+            [status, source] = system('git rev-parse HEAD');
+            testCase.assertEqual(status, 0);
+            expected = thermoweave.validation.packE9ParityReceipt( ...
+                core, adapter, refinedCore, refinedAdapter, string(strtrim(source)));
+            raw = fileread(output);
+            report = jsondecode(raw);
+            testCase.assertEqual(string(report.records(10).id), "E9");
+            testCase.verifyEqual(execution, adapter);
+            testCase.verifyEqual(string(report.records(10).status), "PASS");
+            testCase.verifyEqual(string(report.records(10).evidence.adapterStatus), "PASS");
+            testCase.verifyEqual(report.records(10).evidence.numericalParity, ...
+                jsondecode(jsonencode(expected)));
+            testCase.verifyEqual(string(manifest.sha256), ...
+                string(thermoweave.util.hashText(raw)));
+        end
+
     end
+end
+
+% Deliberately distinct synthetic histories exercise lossless packaging, not parity.
+function [core, adapter, refinedCore, refinedAdapter, sha] = e9ReceiptFixture()
+cfg = thermoweave.config.defaultConfig();
+sha = string(repmat('a',1,40));
+digest = "18ad387d658f52930209938881d50ad724a4e7038b8e756b094a82df1812adda";
+core = e9SyntheticTrace(cfg, 0.01);
+adapter = struct("status", "PASS", "modelSha256", digest, ...
+    "result", e9SyntheticTrace(cfg, 0.02), "configuration", cfg);
+cfg.simulation.maxStep_s = 0.125;
+refinedCore = e9SyntheticTrace(cfg, 0.03);
+refinedAdapter = struct("status", "PASS", "modelSha256", digest, ...
+    "result", e9SyntheticTrace(cfg, 0.04), "configuration", cfg);
+end
+
+function result = e9SyntheticTrace(cfg, delta)
+time = (0:600)';
+temperature = 298.15 + delta*(time/600)*ones(1,12);
+soc = repmat(0.8-time/3600,1,12);
+stored = cfg.cell.thermalCapacity_J_per_K * sum(temperature(end,:)-temperature(1,:));
+ledger = struct("generatedHeat_J", stored, "ambientHeat_J", 0, ...
+    "coolantHeat_J", 0, "externalHeat_J", 0, "storedEnergyChange_J", stored, ...
+    "normalizedResidual", 0);
+result = struct("time_s", time, "state", struct("temperature_K", temperature, ...
+    "soc", soc), "energyLedger", ledger, "configuration", cfg, ...
+    "metadata", struct("matlabRelease", string(version("-release"))));
+end
+
+function output = e9SelectFixture(cfg, baseline, refined)
+% Return only the fixture corresponding to the actual requested configuration.
+if isequaln(cfg, baseline.configuration)
+    output = baseline;
+elseif isequaln(cfg, refined.configuration)
+    output = refined;
+else
+    error("thermoweave:test:UnexpectedConfiguration", ...
+        "Collector must request the fixed baseline and refined configurations.");
+end
 end

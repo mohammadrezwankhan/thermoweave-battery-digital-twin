@@ -43,6 +43,27 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.web = {"matlabRelease": "2024a", "scenarios": [{"id": str(i)} for i in range(5)]}
         self.experiments = {"matlabRelease": "2024a", "records": [
             {"id": "E" + str(i), "status": "PASS"} for i in range(10)]}
+        # Synthetic comparison traces exercise the mechanical contract only.
+        # These are NOT licensed execution data or a scientific acceptance.
+        def trace():
+            return {
+                "time_s": list(range(601)),
+                "temperature_K": [[298.15] * 12 for _ in range(601)],
+                "soc": [[0.8 - t / 3600] * 12 for t in range(601)],
+                "energyLedger": {"generatedHeat_J": 10.0, "ambientHeat_J": -4.0,
+                                 "coolantHeat_J": -6.0, "externalHeat_J": 0.0,
+                                 "storedEnergyChange_J": 0.0, "normalizedResidual": 0.0},
+            }
+        self.experiments["records"][9]["evidence"] = {
+            "adapterStatus": "PASS",
+            "numericalParity": {
+                "schemaVersion": "thermoweave.e9-parity/v1",
+                "gitCommit": self.SHA, "matlabRelease": "2024a",
+                "modelSha256": "18ad387d658f52930209938881d50ad724a4e7038b8e756b094a82df1812adda",
+                "baseline": {"maxStep_s": 0.25, "core": trace(), "simscape": trace()},
+                "refined": {"maxStep_s": 0.125, "core": trace(), "simscape": trace()},
+            },
+        }
         self.verification = {"gitCommit": self.SHA, "matlabRelease": "2024a",
                              "testCount": 63, "passed": 63, "failed": 0,
                              "incomplete": 0, "codeAnalyzerFindings": 0,
@@ -103,6 +124,15 @@ class ReleaseReadinessTests(unittest.TestCase):
     def test_happy_fixture_does_not_claim_real_cell_validation(self):
         release.verify_release_readiness(self.root, self.SHA)
 
+    def test_fixture_only_experiment_report_cannot_authorize_release(self):
+        # runExperimentSuite marks injected-runner output fixtureOnly. Even
+        # internally consistent parity traces and otherwise passing mechanical
+        # gates cannot turn such a report into licensed scientific evidence.
+        self.experiments["fixtureOnly"] = True
+        self.write_json("artifacts/reports/experiment-summary.json", self.experiments)
+        with self.assertRaisesRegex(AssertionError, "(?i)fixture"):
+            release.verify_release_readiness(self.root, self.SHA)
+
     def test_fresh_external_evidence_uses_checked_out_review(self):
         evidence = self.root / "fresh-evidence"
         shutil.copytree(self.root / "artifacts", evidence / "artifacts")
@@ -152,6 +182,88 @@ class ReleaseReadinessTests(unittest.TestCase):
 
     def test_e9_skip_blocks_release(self):
         self.experiments["records"][9]["status"] = "SKIPPED_MISSING_PRODUCT"
+        self.write_json("artifacts/reports/experiment-summary.json", self.experiments)
+        self.assert_blocked()
+
+    def test_e9_execution_only_does_not_establish_numerical_parity(self):
+        # This mirrors the current E9 producer: execution and mapping are
+        # recorded, but no independently evaluated numerical comparison.
+        # Even with all other mechanical gates set to PASS in this fixture,
+        # the absence of parity observations must veto publication.
+        self.experiments["records"][9]["evidence"] = {
+            "adapterStatus": "PASS",
+            "message": "Simscape scenario executed and mapped.",
+        }
+        self.write_json("artifacts/reports/experiment-summary.json", self.experiments)
+        self.assert_blocked()
+
+    def test_e9_parity_rejects_invalid_comparison_receipts(self):
+        import copy
+        record = self.experiments["records"][9]
+        original = copy.deepcopy(record["evidence"])
+        for case in ("wrong-source", "wrong-model", "wrong-runtime", "missing-refined",
+                     "wrong-step", "truncated", "temperature", "soc", "energy",
+                     "residual", "refinement"):
+            with self.subTest(case=case):
+                record["evidence"] = copy.deepcopy(original)
+                receipt = record["evidence"]["numericalParity"]
+                baseline = receipt["baseline"]
+                refined = receipt["refined"]
+                if case == "wrong-source":
+                    receipt["gitCommit"] = "b" * 40
+                elif case == "wrong-model":
+                    receipt["modelSha256"] = "b" * 64
+                elif case == "wrong-runtime":
+                    receipt["matlabRelease"] = "2026a"
+                elif case == "missing-refined":
+                    del receipt["refined"]
+                elif case == "wrong-step":
+                    refined["maxStep_s"] = 0.25
+                elif case == "truncated":
+                    baseline["simscape"]["temperature_K"].pop()
+                elif case == "temperature":
+                    baseline["simscape"]["temperature_K"][300][0] += 0.11
+                elif case == "soc":
+                    baseline["simscape"]["soc"][300][0] += 0.0002
+                elif case == "energy":
+                    ledger = baseline["simscape"]["energyLedger"]
+                    ledger["generatedHeat_J"] += 1
+                    ledger["ambientHeat_J"] -= 1
+                elif case == "residual":
+                    baseline["simscape"]["energyLedger"]["storedEnergyChange_J"] = 1
+                elif case == "refinement":
+                    for key in ("core", "simscape"):
+                        refined[key]["temperature_K"][300][0] += 0.06
+                self.write_json("artifacts/reports/experiment-summary.json", self.experiments)
+                self.assert_blocked()
+
+    def test_e9_parity_rejects_shared_soc_error(self):
+        from copy import deepcopy
+
+        original = self.experiments["records"]
+        for label, soc in (
+                ("constant", [[0.8] * 12 for _ in range(601)]),
+                ("wrong initial value", [[0.7 - t / 3600] * 12 for t in range(601)])):
+            with self.subTest(label=label):
+                records = deepcopy(original)
+                receipt = records[9]["evidence"]["numericalParity"]
+                for phase in ("baseline", "refined"):
+                    for solver in ("core", "simscape"):
+                        receipt[phase][solver]["soc"] = soc
+                with self.assertRaisesRegex(AssertionError, "E9 core SOC"):
+                    release._verify_e9_parity(records, self.SHA)
+
+    def test_e9_parity_rejects_ledger_inconsistent_with_temperature_endpoints(self):
+        # All four traces have identical initial and final temperatures:
+        # fixed native E9 cell heat capacity therefore implies zero stored
+        # thermal energy change. Equal, internally balanced ledgers cannot
+        # establish conservation if they contradict the measured endpoints.
+        receipt = self.experiments["records"][9]["evidence"]["numericalParity"]
+        for name in ("baseline", "refined"):
+            for solver in ("core", "simscape"):
+                ledger = receipt[name][solver]["energyLedger"]
+                ledger["generatedHeat_J"] += 100.0
+                ledger["storedEnergyChange_J"] += 100.0
         self.write_json("artifacts/reports/experiment-summary.json", self.experiments)
         self.assert_blocked()
 
@@ -281,13 +393,21 @@ class PagesPublicationGateContractTests(unittest.TestCase):
         self.assertIn("runs-on: [self-hosted, thermoweave-simscape]", workflow)
         self.assertLess(workflow.index('test "$GITHUB_REF" = refs/heads/main'),
                         workflow.index("Stage the locally approved E9 model"))
-        source, archive = workflow.split("Retain exact-main licensed Pages evidence", 1)
+        integration, candidate = workflow.split("\n  candidate:\n", 1)
+        source, archive = integration.split("Retain exact-main licensed Pages evidence", 1)
         self.assertIn('receipt["simscapeAdapterStatus"] != "PASS"', source)
         self.assertIn("python3 scripts/verify_scientific_artifacts.py", source)
         self.assertIn("EXPECTED_SOURCE_SHA: ${{ github.sha }}", source)
         self.assertIn("name: thermoweave-licensed-pages-evidence", archive)
         self.assertNotIn(".slx", archive)
         self.assertNotIn(".satk", archive)
+        candidate_upload = candidate.split("Retain qualified review-only numerical evidence", 1)[1]
+        self.assertIn("name: thermoweave-licensed-candidate-evidence", candidate_upload)
+        for upload in (archive, candidate_upload):
+            self.assertEqual(upload.count("uses: actions/upload-artifact@"), 1)
+            for forbidden in (".slx", ".satk", "simscape/models/"):
+                self.assertNotIn(forbidden, upload)
+            self.assertIn("if-no-files-found: error", upload)
 
 
 if __name__ == "__main__":
