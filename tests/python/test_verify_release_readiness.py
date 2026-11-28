@@ -49,7 +49,7 @@ class ReleaseReadinessTests(unittest.TestCase):
             return {
                 "time_s": list(range(601)),
                 "temperature_K": [[298.15] * 12 for _ in range(601)],
-                "soc": [[0.8] * 12 for _ in range(601)],
+                "soc": [[0.8 - t / 3600] * 12 for t in range(601)],
                 "energyLedger": {"generatedHeat_J": 10.0, "ambientHeat_J": -4.0,
                                  "coolantHeat_J": -6.0, "externalHeat_J": 0.0,
                                  "storedEnergyChange_J": 0.0, "normalizedResidual": 0.0},
@@ -236,6 +236,22 @@ class ReleaseReadinessTests(unittest.TestCase):
                         refined[key]["temperature_K"][300][0] += 0.06
                 self.write_json("artifacts/reports/experiment-summary.json", self.experiments)
                 self.assert_blocked()
+
+    def test_e9_parity_rejects_shared_soc_error(self):
+        from copy import deepcopy
+
+        original = self.experiments["records"]
+        for label, soc in (
+                ("constant", [[0.8] * 12 for _ in range(601)]),
+                ("wrong initial value", [[0.7 - t / 3600] * 12 for t in range(601)])):
+            with self.subTest(label=label):
+                records = deepcopy(original)
+                receipt = records[9]["evidence"]["numericalParity"]
+                for phase in ("baseline", "refined"):
+                    for solver in ("core", "simscape"):
+                        receipt[phase][solver]["soc"] = soc
+                with self.assertRaisesRegex(AssertionError, "E9 core SOC"):
+                    release._verify_e9_parity(records, self.SHA)
 
     def test_e9_parity_rejects_ledger_inconsistent_with_temperature_endpoints(self):
         # All four traces have identical initial and final temperatures:

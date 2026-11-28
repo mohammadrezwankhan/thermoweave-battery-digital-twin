@@ -854,7 +854,7 @@ class ArtifactAcceptanceTests(unittest.TestCase):
             return {
                 "time_s": list(range(601)),
                 "temperature_K": [[298.15] * 12 for _ in range(601)],
-                "soc": [[0.8] * 12 for _ in range(601)],
+                "soc": [[0.8 - t / 3600] * 12 for t in range(601)],
                 "energyLedger": {
                     "generatedHeat_J": 10.0, "ambientHeat_J": -4.0,
                     "coolantHeat_J": -6.0, "externalHeat_J": 0.0,

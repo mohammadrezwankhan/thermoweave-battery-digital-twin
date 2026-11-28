@@ -262,6 +262,14 @@ def _verify_e9_parity(records, expected_sha):
         if not isinstance(pair, dict) or number(pair.get("maxStep_s")) != step:
             raise AssertionError("E9 parity baseline/refinement step missing or incorrect")
         core, simscape = trace(pair.get("core")), trace(pair.get("simscape"))
+        # The fixed portable scenario discharges every cell at 5 A with
+        # 18000 C capacity and unity efficiency. Use its solver tolerances
+        # to check the reference before applying the existing parity limit.
+        for t, row in zip(core["time_s"], core["soc"]):
+            expected_soc = 0.8 - 5 * t / 18000
+            if any(not math.isclose(value, expected_soc, rel_tol=1e-6, abs_tol=1e-8)
+                   for value in row):
+                raise AssertionError("E9 core SOC disagrees with the fixed discharge scenario")
         compare(core, simscape, 1.0)
         pairs.append((core, simscape))
     for baseline, refined in zip(*pairs):
